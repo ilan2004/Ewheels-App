@@ -1,0 +1,28 @@
+import React from 'react';
+import { ViewStyle } from 'react-native';
+import { Image } from 'expo-image';
+
+interface NavbarLogoProps {
+  width?: number;
+  height?: number;
+  style?: ViewStyle;
+}
+
+export function NavbarLogo({ width = 120, height = 50, style }: NavbarLogoProps) {
+  return (
+    <Image
+      source={require('../ewheels logo navbar.png')}
+      style={[
+        {
+          width,
+          height,
+        },
+        style,
+      ]}
+      contentFit="contain"
+      cachePolicy="memory-disk"
+      allowDownscaling={false}
+      recyclingKey="navbar-logo"
+    />
+  );
+}

@@ -1,0 +1,46 @@
+-- Create vehicles table and fix foreign key relationship
+
+-- 1. Create the missing vehicles table if it doesn't exist
+CREATE TABLE IF NOT EXISTS vehicles (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  customer_id UUID REFERENCES customers(id) ON DELETE CASCADE,
+  make VARCHAR(100),
+  model VARCHAR(100), 
+  year INTEGER,
+  registration_number VARCHAR(50) UNIQUE,
+  chassis_number VARCHAR(100),
+  motor_number VARCHAR(100),
+  battery_type VARCHAR(100),
+  location_id UUID REFERENCES locations(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Add indexes for vehicles
+CREATE INDEX IF NOT EXISTS idx_vehicles_customer_id ON vehicles(customer_id);
+CREATE INDEX IF NOT EXISTS idx_vehicles_registration ON vehicles(registration_number);
+
+-- Enable RLS on vehicles
+ALTER TABLE vehicles ENABLE ROW LEVEL SECURITY;
+
+-- Create policy for vehicles
+DROP POLICY IF EXISTS "Enable read access for all users" ON vehicles;
+DROP POLICY IF EXISTS "Enable insert for authenticated users" ON vehicles;
+DROP POLICY IF EXISTS "Enable update for authenticated users" ON vehicles;
+
+CREATE POLICY "Enable read access for all users" ON vehicles FOR SELECT USING (true);
+CREATE POLICY "Enable insert for authenticated users" ON vehicles FOR INSERT WITH CHECK (true);
+CREATE POLICY "Enable update for authenticated users" ON vehicles FOR UPDATE USING (true);
+
+-- 2. Add the missing foreign key relationship between profiles and app_roles
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints 
+    WHERE constraint_name = 'fk_app_roles_user_id'
+  ) THEN
+    ALTER TABLE app_roles 
+    ADD CONSTRAINT fk_app_roles_user_id 
+    FOREIGN KEY (user_id) REFERENCES profiles(user_id) ON DELETE CASCADE;
+  END IF;
+END $$;
