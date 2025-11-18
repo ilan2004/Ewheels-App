@@ -13,7 +13,7 @@ import * as MediaLibrary from 'expo-media-library';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors, Typography, Spacing } from '@/constants/design-system';
+import { Colors, Typography, Spacing, BrandColors } from '@/constants/design-system';
 import { useMediaHubStore } from '@/stores/mediaHubStore';
 import { useAuthStore } from '@/stores/authStore';
 import JobCardSelector from './JobCardSelector';
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.neutral[50],
+    backgroundColor: BrandColors.surface,
     paddingHorizontal: Spacing.xl,
   },
   permissionCard: {

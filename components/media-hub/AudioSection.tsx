@@ -19,7 +19,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors, Typography, Spacing } from '@/constants/design-system';
+import { Colors, Typography, Spacing, BrandColors } from '@/constants/design-system';
 import { useMediaHubStore } from '@/stores/mediaHubStore';
 import { useAuthStore } from '@/stores/authStore';
 import JobCardSelector from './JobCardSelector';
@@ -385,7 +385,7 @@ export default function AudioSection() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.neutral[50],
+    backgroundColor: BrandColors.surface,
   },
   
   // Permission styles
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.neutral[50],
+    backgroundColor: BrandColors.surface,
     paddingHorizontal: Spacing.xl,
   },
   permissionCard: {
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: Colors.white,
+    backgroundColor: BrandColors.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.base,
@@ -555,7 +555,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: Colors.white,
+    backgroundColor: BrandColors.surface,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,

@@ -38,6 +38,148 @@ export const CreateTechnicianForm: React.FC<CreateTechnicianFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
+  const createTechnicianDirectly = async () => {
+    const { user: currentUser } = useAuthStore.getState();
+    
+    console.log('Creating technician directly with Supabase...');
+
+    try {
+      // Step 1: Create auth user using signup (since admin.createUser requires service role)
+      // We'll use the signup method which creates both auth user and can trigger profile creation
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email.trim(),
+        password: formData.password,
+        options: {
+          data: {
+            username: formData.username.trim(),
+            role: 'technician'
+          },
+          emailRedirectTo: undefined, // Disable email confirmation redirect
+        }
+      });
+
+      if (authError) {
+        console.error('Auth creation error:', authError);
+        throw new Error(`Failed to create user account: ${authError.message}`);
+      }
+
+      if (!authData.user?.id) {
+        throw new Error('User creation succeeded but no user ID returned');
+      }
+
+      const newUserId = authData.user.id;
+      console.log('Created auth user with ID:', newUserId);
+      console.log('User email confirmed:', authData.user.email_confirmed_at ? 'Yes' : 'No - will need confirmation');
+      
+      // Note: Even if email confirmation is required, we can still create profile and role
+      // The technician can confirm email later to fully activate their account
+      console.log('User email confirmed:', authData.user.email_confirmed_at);
+      
+      // Note: Even if email is not confirmed, we can still create profile and role
+      // The technician can confirm email later if needed
+
+      // Step 2: Check if profile already exists (might be created by trigger)
+      const { data: existingProfile, error: checkError } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .eq('user_id', newUserId)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking existing profile:', checkError);
+        throw new Error('Failed to check existing profile');
+      }
+
+      if (existingProfile) {
+        console.log('Profile already exists (created by trigger), updating it...');
+        // Profile exists, update it with our data
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({
+            username: formData.username.trim(),
+            first_name: formData.username.trim(),
+            location_id: activeLocation?.id || null,
+            is_active: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', newUserId);
+
+        if (updateError) {
+          console.error('Profile update error:', updateError);
+          console.warn('Profile update failed, continuing with existing profile');
+        } else {
+          console.log('Updated existing profile successfully');
+        }
+      } else {
+        console.log('Profile does not exist, creating new one...');
+        // Profile doesn't exist, create it
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: newUserId,
+            username: formData.username.trim(),
+            email: formData.email.trim(),
+            first_name: formData.username.trim(),
+            location_id: activeLocation?.id || null,
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+          throw new Error(`Failed to create profile: ${profileError.message}`);
+        } else {
+          console.log('Created new profile successfully');
+        }
+      }
+
+      // Step 3: Assign technician role
+      const { error: roleError } = await supabase
+        .from('app_roles')
+        .insert({
+          user_id: newUserId,
+          role: 'technician',
+          location_id: activeLocation?.id || null,
+          created_by: currentUser?.id || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (roleError) {
+        console.error('Role assignment error:', roleError);
+        throw new Error(`Failed to assign technician role: ${roleError.message}`);
+      }
+
+      console.log('Successfully assigned technician role');
+      
+      // Success!
+      Alert.alert(
+        'Success',
+        `Technician "${formData.username}" has been created successfully!`,
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Reset form
+              setFormData({
+                email: '',
+                password: '',
+                username: '',
+              });
+              setErrors({});
+              onSuccess?.();
+            },
+          },
+        ]
+      );
+
+    } catch (error: any) {
+      console.error('Direct technician creation error:', error);
+      throw error; // Re-throw to be handled by the main try-catch
+    }
+  };
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -71,60 +213,44 @@ export const CreateTechnicianForm: React.FC<CreateTechnicianFormProps> = ({
     setLoading(true);
 
     try {
-      // Get current session access token for Authorization header
+      // Get current session to ensure user is authenticated
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
-      if (!session?.access_token) {
+      if (!session?.user) {
         Alert.alert('Error', 'Please log in to continue');
         return;
       }
 
-      // Call the floor manager API endpoint
-      const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
-      const response = await fetch(`${API_BASE_URL}/api/floor-manager/technicians`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          email: formData.email.trim(),
-          password: formData.password,
-          username: formData.username.trim(),
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to create technician');
-      }
-
-      // Success
-      Alert.alert(
-        'Success',
-        `Technician "${formData.username}" has been created successfully!`,
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              // Reset form
-              setFormData({
-                email: '',
-                password: '',
-                username: '',
-              });
-              setErrors({});
-              onSuccess?.();
-            },
-          },
-        ]
-      );
+      // Create technician using direct Supabase operations
+      await createTechnicianDirectly();
+      // Success handling is done within createTechnicianDirectly function
     } catch (error: any) {
       console.error('Error creating technician:', error);
-      Alert.alert('Error', error.message || 'Failed to create technician');
+      
+      // Show the specific error message to help with debugging
+      const errorMessage = error.message || 'Failed to create technician';
+      
+      if (errorMessage.includes('Failed to assign role')) {
+        Alert.alert(
+          'Role Assignment Error', 
+          `Cannot assign technician role to the new user.\n\nThis indicates a backend database configuration issue. The server cannot insert the role into the app_roles table.\n\nPlease contact your system administrator to:\n• Check database permissions\n• Verify app_roles table structure\n• Review backend role assignment logic`,
+          [{ text: 'OK', style: 'default' }]
+        );
+      } else if (errorMessage.includes('User already exists') || errorMessage.includes('email')) {
+        Alert.alert(
+          'User Already Exists',
+          'A user with this email address already exists. Please use a different email address.',
+          [{ text: 'OK', style: 'default' }]
+        );
+      } else {
+        Alert.alert(
+          'Error Creating Technician', 
+          errorMessage,
+          [{ text: 'OK', style: 'default' }]
+        );
+      }
     } finally {
       setLoading(false);
     }

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
@@ -16,12 +17,14 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuthStore } from '@/stores/authStore';
 import { useLocationStore } from '@/stores/locationStore';
 import { floorManagerService } from '@/services/floorManagerService';
+import { BrandColors, Typography, Spacing, BorderRadius, Shadows, AssignmentOverviewColors } from '@/constants/design-system';
 
 interface QuickStatProps {
   title: string;
   value: number | string;
   color: string;
-  backgroundColor: string;
+  backgroundColor?: string;
+  gradientColors?: string[];
   icon: string;
   onPress?: () => void;
 }
@@ -31,23 +34,46 @@ const QuickStat: React.FC<QuickStatProps> = ({
   value,
   color,
   backgroundColor,
+  gradientColors,
   icon,
   onPress,
-}) => (
-  <TouchableOpacity
-    style={[styles.statCard, { borderLeftColor: color, backgroundColor }]}
-    onPress={onPress}
-    disabled={!onPress}
-  >
+}) => {
+  const cardContent = (
     <View style={styles.statContent}>
       <View style={styles.statHeader}>
-        <IconSymbol name={icon} size={24} color={color} />
-        <Text style={styles.statTitle}>{title}</Text>
+        <IconSymbol name={icon} size={20} color={color} />
+        <Text style={[styles.statTitle, { color }]}>{title}</Text>
       </View>
       <Text style={[styles.statValue, { color }]}>{value}</Text>
     </View>
-  </TouchableOpacity>
-);
+  );
+
+  if (gradientColors) {
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        disabled={!onPress}
+      >
+        <LinearGradient
+          colors={gradientColors}
+          style={styles.statCard}
+        >
+          {cardContent}
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  }
+
+  return (
+    <TouchableOpacity
+      style={[styles.statCard, { backgroundColor }]}
+      onPress={onPress}
+      disabled={!onPress}
+    >
+      {cardContent}
+    </TouchableOpacity>
+  );
+};
 
 interface TechnicianCardProps {
   technician: {
@@ -65,35 +91,42 @@ const TechnicianCard: React.FC<TechnicianCardProps> = ({ technician, onPress }) 
   const utilizationPercent = (technician.activeTickets / technician.capacity) * 100;
   const utilizationColor = 
     utilizationPercent >= 100 ? '#EF4444' : 
-    utilizationPercent >= 75 ? '#F59E0B' : 
-    '#10B981';
+    utilizationPercent >= 75 ? BrandColors.primary : 
+    BrandColors.title;
 
   return (
     <TouchableOpacity style={styles.technicianCard} onPress={onPress}>
-      <View style={styles.technicianInfo}>
-        <Text style={styles.technicianName}>{technician.name}</Text>
-        <Text style={styles.technicianEmail}>{technician.email}</Text>
-        <View style={styles.workloadInfo}>
+      <View style={styles.technicianHeader}>
+        <View style={styles.technicianInfo}>
+          <Text style={styles.technicianName}>{technician.name}</Text>
+          <Text style={styles.technicianEmail}>{technician.email}</Text>
+        </View>
+        <View style={styles.workloadBadge}>
           <Text style={styles.workloadText}>
-            {technician.activeTickets}/{technician.capacity} Job Cards
+            {technician.activeTickets}/{technician.capacity}
           </Text>
-          {technician.oldestTicketDays && technician.oldestTicketDays > 0 && (
-            <Text style={styles.oldestTicket}>
-              Oldest: {technician.oldestTicketDays} days
-            </Text>
-          )}
         </View>
       </View>
-      <View style={styles.utilizationIndicator}>
-        <View
-          style={[
-            styles.utilizationBar,
-            {
-              width: `${Math.min(utilizationPercent, 100)}%`,
-              backgroundColor: utilizationColor,
-            },
-          ]}
-        />
+      <View style={styles.technicianDetails}>
+        {technician.oldestTicketDays && technician.oldestTicketDays > 0 && (
+          <Text style={styles.oldestTicket}>
+            Oldest job: {technician.oldestTicketDays} days ago
+          </Text>
+        )}
+        <View style={styles.utilizationSection}>
+          <Text style={styles.utilizationLabel}>Capacity</Text>
+          <View style={styles.utilizationIndicator}>
+            <View
+              style={[
+                styles.utilizationBar,
+                {
+                  width: `${Math.min(utilizationPercent, 100)}%`,
+                  backgroundColor: utilizationColor,
+                },
+              ]}
+            />
+          </View>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -172,58 +205,73 @@ export default function FloorManagerDashboard() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
-        {/* Header */}
-        <View style={styles.header}>
+        {/* Header Card */}
+        <View style={styles.headerCard}>
           <View style={styles.headerContent}>
-            <ThemedText type="title" style={styles.greeting}>
-              {getGreeting()}, {userName}!
-            </ThemedText>
-            <ThemedText style={styles.subtitle}>
-              Floor Manager Dashboard
-            </ThemedText>
-            {activeLocation && (
-              <ThemedText style={styles.location}>
-                📍 {activeLocation.name}
-              </ThemedText>
-            )}
+            <View style={styles.greetingSection}>
+              <Text style={styles.greeting}>
+                {getGreeting()}, {userName}!
+              </Text>
+              <Text style={styles.subtitle}>
+                Floor Manager Dashboard
+              </Text>
+              {activeLocation && (
+                <View style={styles.locationRow}>
+                  <IconSymbol name="location" size={14} color={BrandColors.title} />
+                  <Text style={styles.location}>
+                    {activeLocation.name}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <View style={styles.headerStats}>
+              <View style={styles.quickStatItem}>
+                <Text style={styles.quickStatValue}>{stats?.inProgressTickets || 0}</Text>
+                <Text style={styles.quickStatLabel}>Active</Text>
+              </View>
+              <View style={styles.quickStatItem}>
+                <Text style={styles.quickStatValue}>{technicians?.length || 0}</Text>
+                <Text style={styles.quickStatLabel}>Technicians</Text>
+              </View>
+            </View>
           </View>
         </View>
 
         {/* Quick Stats */}
         <View style={styles.section}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>
+          <Text style={styles.sectionTitle}>
             Assignment Overview
-          </ThemedText>
+          </Text>
           <View style={styles.statsGrid}>
             <QuickStat
               title="Unassigned"
               value={stats?.unassignedTickets || 0}
-              color="#EF4444"
-              backgroundColor="#FEF2F2"
+              color={AssignmentOverviewColors.unassigned.text}
+              gradientColors={AssignmentOverviewColors.unassigned.gradient}
               icon="exclamationmark.triangle"
               onPress={() => router.push('/jobcards?filter=unassigned')}
             />
             <QuickStat
               title="In Progress"
               value={stats?.inProgressTickets || 0}
-              color="#8B5CF6"
-              backgroundColor="#F5F3FF"
+              color={AssignmentOverviewColors.in_progress.text}
+              gradientColors={AssignmentOverviewColors.in_progress.gradient}
               icon="gearshape.2"
               onPress={() => router.push('/jobcards?filter=in_progress')}
             />
             <QuickStat
               title="Due Today"
               value={stats?.dueToday || 0}
-              color="#F59E0B"
-              backgroundColor="#FFFBEB"
+              color={AssignmentOverviewColors.due_today.text}
+              gradientColors={AssignmentOverviewColors.due_today.gradient}
               icon="clock"
               onPress={() => router.push('/jobcards?filter=today')}
             />
             <QuickStat
               title="Overdue"
               value={stats?.overdue || 0}
-              color="#DC2626"
-              backgroundColor="#FEF2F2"
+              color={AssignmentOverviewColors.overdue.text}
+              gradientColors={AssignmentOverviewColors.overdue.gradient}
               icon="clock.badge.exclamationmark"
               onPress={() => router.push('/jobcards?filter=overdue')}
             />
@@ -232,24 +280,24 @@ export default function FloorManagerDashboard() {
 
         {/* Quick Actions */}
         <View style={styles.section}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>
+          <Text style={styles.sectionTitle}>
             Quick Actions
-          </ThemedText>
+          </Text>
           <View style={styles.actionsGrid}>
             <TouchableOpacity
-              style={styles.actionCard}
+              style={[styles.actionCard, styles.primaryActionCard]}
               onPress={() => router.push('/jobcards')}
             >
-              <IconSymbol name="doc.text.magnifyingglass" size={32} color="#3B82F6" />
+              <IconSymbol name="doc.text.magnifyingglass" size={28} color={BrandColors.primary} />
               <Text style={styles.actionTitle}>View Job Cards</Text>
               <Text style={styles.actionSubtitle}>Assign & manage tickets</Text>
             </TouchableOpacity>
             
             <TouchableOpacity
-              style={styles.actionCard}
+              style={[styles.actionCard, styles.greenActionCard]}
               onPress={() => router.push('/create-technician')}
             >
-              <IconSymbol name="person.badge.plus" size={32} color="#8B5CF6" />
+              <IconSymbol name="person.badge.plus" size={28} color={BrandColors.title} />
               <Text style={styles.actionTitle}>Add Technician</Text>
               <Text style={styles.actionSubtitle}>Create new team member</Text>
             </TouchableOpacity>
@@ -259,9 +307,9 @@ export default function FloorManagerDashboard() {
         {/* Technician Overview */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <ThemedText type="subtitle" style={styles.sectionTitle}>
+            <Text style={styles.sectionTitle}>
               Team Overview
-            </ThemedText>
+            </Text>
             <TouchableOpacity onPress={() => router.push('/team')}>
               <Text style={styles.viewAllText}>View All</Text>
             </TouchableOpacity>
@@ -291,208 +339,264 @@ export default function FloorManagerDashboard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: BrandColors.surface,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: Spacing['2xl'],
   },
-  header: {
-    padding: 20,
-    paddingTop: 30,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+  // Header Card (similar to invoice cards)
+  headerCard: {
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: BrandColors.ink + '10',
+    margin: Spacing.lg,
+    marginBottom: Spacing.md,
+    ...Shadows.sm,
   },
   headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: Spacing.base,
+  },
+  greetingSection: {
     flex: 1,
   },
   greeting: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
+    fontSize: Typography.fontSize.xl,
+    fontFamily: Typography.fontFamily.bold,
+    color: BrandColors.title,
+    marginBottom: 2,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginTop: 4,
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '80',
+    marginBottom: Spacing.xs,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
   },
   location: {
-    fontSize: 12,
-    color: '#059669',
-    marginTop: 4,
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.medium,
+    color: BrandColors.title,
+  },
+  headerStats: {
+    flexDirection: 'row',
+    gap: Spacing.base,
+  },
+  quickStatItem: {
+    alignItems: 'center',
+  },
+  quickStatValue: {
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+    color: BrandColors.primary,
+  },
+  quickStatLabel: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.medium,
+    color: BrandColors.ink + '60',
   },
   section: {
-    padding: 20,
-    paddingTop: 16,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.base,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: Spacing.base,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 16,
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.title,
+    marginBottom: Spacing.base,
   },
   viewAllText: {
-    fontSize: 14,
-    color: '#3B82F6',
-    fontWeight: '500',
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: BrandColors.primary,
   },
   statsGrid: {
-    gap: 12,
+    gap: Spacing.md,
   },
   statCard: {
-    borderRadius: 12,
-    padding: 16,
-    borderLeftWidth: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: BrandColors.ink + '10',
+    padding: Spacing.base,
+    ...Shadows.sm,
   },
   statContent: {
-    gap: 8,
+    gap: Spacing.sm,
   },
   statHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: Spacing.sm,
   },
   statTitle: {
-    fontSize: 14,
-    color: '#6B7280',
-    fontWeight: '500',
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: BrandColors.ink + '80',
   },
   statValue: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: Typography.fontSize['2xl'],
+    fontFamily: Typography.fontFamily.bold,
   },
   actionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: Spacing.md,
   },
   actionCard: {
     flex: 1,
     minWidth: '48%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: BrandColors.ink + '10',
+    padding: Spacing.lg,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    ...Shadows.sm,
+  },
+  primaryActionCard: {
+    borderColor: BrandColors.primary + '20',
+    backgroundColor: BrandColors.primary + '05',
+  },
+  greenActionCard: {
+    borderColor: BrandColors.title + '20',
+    backgroundColor: BrandColors.title + '05',
   },
   actionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    marginTop: 12,
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.ink,
+    marginTop: Spacing.sm,
     textAlign: 'center',
   },
   actionSubtitle: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 4,
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '80',
+    marginTop: Spacing.xs,
     textAlign: 'center',
   },
   techniciansContainer: {
-    gap: 12,
+    gap: Spacing.md,
   },
   technicianCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: BrandColors.ink + '10',
+    padding: Spacing.base,
+    ...Shadows.sm,
+  },
+  technicianHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: Spacing.sm,
   },
   technicianInfo: {
-    marginBottom: 12,
+    flex: 1,
   },
   technicianName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.ink,
     marginBottom: 2,
   },
   technicianEmail: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 8,
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '80',
   },
-  workloadInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  workloadBadge: {
+    backgroundColor: BrandColors.primary + '10',
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
   },
   workloadText: {
-    fontSize: 14,
-    color: '#374151',
-    fontWeight: '500',
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.primary,
+  },
+  technicianDetails: {
+    gap: Spacing.xs,
   },
   oldestTicket: {
-    fontSize: 12,
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.regular,
     color: '#DC2626',
-    fontWeight: '500',
+  },
+  utilizationSection: {
+    gap: Spacing.xs,
+  },
+  utilizationLabel: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.medium,
+    color: BrandColors.ink + '80',
   },
   utilizationIndicator: {
     height: 4,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 2,
+    backgroundColor: BrandColors.ink + '20',
+    borderRadius: BorderRadius.sm,
     overflow: 'hidden',
   },
   utilizationBar: {
     height: '100%',
-    borderRadius: 2,
+    borderRadius: BorderRadius.sm,
   },
   emptyCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 32,
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: BrandColors.ink + '10',
+    padding: Spacing['2xl'],
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    ...Shadows.sm,
   },
   emptyText: {
-    fontSize: 16,
-    color: '#6B7280',
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '80',
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: Spacing.lg,
   },
   errorText: {
-    fontSize: 16,
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.medium,
     color: '#EF4444',
-    marginBottom: 16,
+    marginBottom: Spacing.base,
     textAlign: 'center',
   },
   retryButton: {
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
+    backgroundColor: BrandColors.primary,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    ...Shadows.sm,
   },
   retryText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.surface,
   },
 });

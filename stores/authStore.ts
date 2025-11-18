@@ -30,9 +30,20 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       
       // Demo credentials only in mock mode
       if (process.env.EXPO_PUBLIC_USE_MOCK_API === 'true' && email.includes('@evwheels.com')) {
-        // Create a mock user for development
+        // Create a mock user for development with consistent IDs for technicians
+        let userId = 'mock-user-id-' + Date.now();
+        
+        // Use consistent tech IDs for technicians to match mock ticket assignments
+        if (email.includes('tech1')) userId = 'tech_001';
+        else if (email.includes('tech2')) userId = 'tech_002';
+        else if (email.includes('tech3')) userId = 'tech_003';
+        else if (email.includes('tech') && email.match(/tech(\d+)/)) {
+          const techNum = email.match(/tech(\d+)/)![1];
+          userId = `tech_${techNum.padStart(3, '0')}`;
+        }
+        
         const mockUser: User = {
-          id: 'mock-user-id-' + Date.now(),
+          id: userId,
           email: email,
           firstName: email.includes('floormanager') ? 'Floor' : 
                     email.includes('manager') ? 'Front Desk' : 
@@ -44,6 +55,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
                 email.includes('manager') ? 'front_desk_manager' : 
                 email.includes('tech') ? 'technician' : 'admin',
           createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         };
         
         set({ user: mockUser, loading: false });
@@ -60,7 +72,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       }
 
       if (data.user) {
-        // Try to fetch user profile and role from profiles and app_roles tables
+        // Fetch user profile and role from profiles and app_roles tables (two-step approach)
         const [profileResult, roleResult] = await Promise.all([
           supabase
             .from('profiles')
@@ -114,8 +126,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         const userWithRole: User = {
           id: data.user.id,
           email: data.user.email!,
-          firstName: profile.username || profile.email?.split('@')[0] || 'User',
-          lastName: '',
+          firstName: profile.first_name || profile.username || profile.email?.split('@')[0] || 'User',
+          lastName: profile.last_name || '',
           role: roleData.role as UserRole,
           createdAt: data.user.created_at!,
           updatedAt: profile.updated_at || new Date().toISOString(),
@@ -169,7 +181,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       }
 
       if (session?.user) {
-        // Try to fetch user profile and role from profiles and app_roles tables
+        // Fetch user profile and role from profiles and app_roles tables (two-step approach)
         const [profileResult, roleResult] = await Promise.all([
           supabase
             .from('profiles')
@@ -223,8 +235,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         const userWithRole: User = {
           id: session.user.id,
           email: session.user.email!,
-          firstName: profile.username || profile.email?.split('@')[0] || 'User',
-          lastName: '',
+          firstName: profile.first_name || profile.username || profile.email?.split('@')[0] || 'User',
+          lastName: profile.last_name || '',
           role: roleData.role as UserRole,
           createdAt: session.user.created_at!,
           updatedAt: profile.updated_at || new Date().toISOString(),

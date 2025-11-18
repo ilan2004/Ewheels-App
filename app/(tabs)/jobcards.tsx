@@ -8,6 +8,8 @@ import {
   TextInput,
   RefreshControl,
   Modal,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -20,7 +22,7 @@ import { ServiceTicket, TicketFilters } from '@/types';
 import { useAuthStore } from '@/stores/authStore';
 import { EmptySearchResults, StatusIcon } from '@/components/empty-states';
 import { HeroImageCard } from '@/components/image-card';
-import { Colors, Typography, Spacing, BorderRadius, ComponentStyles } from '@/constants/design-system';
+import { BrandColors, Colors, Typography, Spacing, BorderRadius, ComponentStyles, StatusColors, PriorityColors, Shadows } from '@/constants/design-system';
 
 interface FilterModalProps {
   visible: boolean;
@@ -168,9 +170,19 @@ interface JobCardItemProps {
   ticket: ServiceTicket;
   onPress: () => void;
   onAssignPress: (ticketId: string) => void;
+  bulkMode?: boolean;
+  isSelected?: boolean;
+  onSelect?: (ticketId: string) => void;
 }
 
-const JobCardItem: React.FC<JobCardItemProps> = ({ ticket, onPress, onAssignPress }) => {
+const JobCardItem: React.FC<JobCardItemProps> = ({ 
+  ticket, 
+  onPress, 
+  onAssignPress,
+  bulkMode = false,
+  isSelected = false,
+  onSelect
+}) => {
   const dueDate = ticket.due_date || ticket.dueDate;
   const isOverdue = dueDate && new Date(dueDate) < new Date();
   const isDueToday = dueDate && 
@@ -178,38 +190,66 @@ const JobCardItem: React.FC<JobCardItemProps> = ({ ticket, onPress, onAssignPres
 
   const getStatusColor = () => {
     switch (ticket.status) {
-      case 'reported': return '#EF4444';
-      case 'assigned': return '#3B82F6';
-      case 'in_progress': return '#8B5CF6';
-      case 'completed': return '#10B981';
-      default: return '#6B7280';
+      case 'reported':
+        return StatusColors.reported;
+      case 'assigned':
+        return StatusColors.assigned;
+      case 'in_progress':
+        return StatusColors.in_progress;
+      case 'completed':
+        return StatusColors.completed;
+      case 'delivered':
+        return StatusColors.completed;
+      case 'on_hold':
+        return Colors.warning[500];
+      case 'waiting_approval':
+        return Colors.warning[600];
+      case 'cancelled':
+      case 'closed':
+        return Colors.neutral[600];
+      default:
+        return Colors.neutral[600];
     }
   };
 
   const getPriorityColor = () => {
-    switch (ticket.priority) {
-      case 1: return '#EF4444';
-      case 2: return '#F59E0B';
-      case 3: return '#6B7280';
-      default: return '#6B7280';
-    }
+    if (!ticket.priority) return Colors.neutral[500];
+    return PriorityColors[ticket.priority as 1 | 2 | 3] ?? Colors.neutral[500];
   };
 
   return (
-    <TouchableOpacity style={styles.jobCardItem} onPress={onPress}>
+    <TouchableOpacity 
+      style={[styles.jobCardItem, isSelected && styles.jobCardItemSelected]} 
+      onPress={() => {
+        if (bulkMode && onSelect) {
+          onSelect(ticket.id);
+        } else {
+          onPress();
+        }
+      }}
+    >
       <View style={styles.jobCardHeader}>
         <View style={styles.jobCardTitleRow}>
+          {bulkMode && (
+            <View style={styles.selectionCheckbox}>
+              <IconSymbol 
+                name={isSelected ? "checkmark.circle.fill" : "circle"} 
+                size={20} 
+                color={isSelected ? Colors.primary[600] : Colors.neutral[400]} 
+              />
+            </View>
+          )}
           <Text style={styles.jobCardNumber}>{ticket.ticket_number || ticket.ticketNumber}</Text>
         </View>
         <View style={styles.jobCardBadges}>
           {isOverdue && (
             <View style={[styles.badge, styles.overdueBadge]}>
-              <Text style={[styles.badgeText, { color: '#DC2626' }]}>Overdue</Text>
+              <Text style={[styles.badgeText, { color: BrandColors.primary }]}>Overdue</Text>
             </View>
           )}
           {isDueToday && !isOverdue && (
             <View style={[styles.badge, styles.dueTodayBadge]}>
-              <Text style={[styles.badgeText, { color: '#D97706' }]}>Due Today</Text>
+              <Text style={[styles.badgeText, { color: BrandColors.title }]}>Due Today</Text>
             </View>
           )}
           {ticket.priority && (
@@ -274,7 +314,7 @@ const JobCardItem: React.FC<JobCardItemProps> = ({ ticket, onPress, onAssignPres
               onAssignPress(ticket.id);
             }}
           >
-            <IconSymbol name="person.badge.plus" size={16} color="#3B82F6" />
+            <IconSymbol name="person.badge.plus" size={16} color={Colors.primary[500]} />
             <Text style={styles.assignButtonText}>
               Assign
             </Text>
@@ -296,6 +336,8 @@ export default function JobCardsScreen() {
   });
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [selectedTickets, setSelectedTickets] = useState<string[]>([]);
 
   // Handle URL parameters for filtering
   useEffect(() => {
@@ -374,10 +416,21 @@ export default function JobCardsScreen() {
     router.push(`/jobcards/assign-technician?ticketId=${ticketId}`);
   };
 
+  const handleBulkSelect = (ticketId: string) => {
+    setSelectedTickets(prev => {
+      if (prev.includes(ticketId)) {
+        return prev.filter(id => id !== ticketId);
+      } else {
+        return [...prev, ticketId];
+      }
+    });
+  };
+
   const activeFiltersCount = Object.values(filters).filter(value => value !== 'all').length;
 
   return (
     <ThemedView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={BrandColors.surface} />
       {/* Active Filter Indicator */}
       {params.filter && (
         <View style={styles.activeFilterIndicator}>
@@ -396,36 +449,49 @@ export default function JobCardsScreen() {
               }}
               style={styles.clearFilterButton}
             >
-              <IconSymbol name="xmark" size={16} color="#6B7280" />
+              <IconSymbol name="xmark" size={16} color={Colors.neutral[500]} />
             </TouchableOpacity>
           </View>
         </View>
       )}
 
       {/* Search Bar with Filter Button */}
-      <View style={styles.searchContainer}>
+      <View style={[styles.searchContainer, params.filter && styles.searchContainerWithFilter]}>
         <View style={styles.searchBar}>
-          <IconSymbol name="magnifyingglass" size={20} color="#6B7280" />
+          <IconSymbol name="magnifyingglass" size={20} color={Colors.neutral[500]} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search job cards, customers, vehicles..."
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={Colors.neutral[400]}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <IconSymbol name="xmark.circle.fill" size={20} color="#6B7280" />
+              <IconSymbol name="xmark.circle.fill" size={20} color={Colors.neutral[500]} />
             </TouchableOpacity>
           )}
         </View>
+        
+        {/* Admin Bulk Actions */}
+        {user?.role === 'admin' && (
+          <TouchableOpacity
+            style={[styles.searchFilterButton, bulkMode && styles.bulkModeActive]}
+            onPress={() => {
+              setBulkMode(!bulkMode);
+              setSelectedTickets([]);
+            }}
+          >
+            <IconSymbol name="checkmark.circle" size={20} color={bulkMode ? Colors.white : Colors.neutral[500]} />
+          </TouchableOpacity>
+        )}
         
         {/* Filter Button */}
         <TouchableOpacity
           style={styles.searchFilterButton}
           onPress={() => setShowFilters(true)}
         >
-          <IconSymbol name="line.3.horizontal.decrease" size={20} color="#6B7280" />
+          <IconSymbol name="line.3.horizontal.decrease" size={20} color={Colors.neutral[500]} />
           {(activeFiltersCount > 0 || params.filter) && (
             <View style={styles.filterBadge}>
               <Text style={styles.filterBadgeText}>
@@ -436,11 +502,26 @@ export default function JobCardsScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Stats */}
+      {/* Stats and Bulk Actions Bar */}
       <View style={styles.stats}>
         <Text style={styles.statsText}>
           {ticketsData?.count || 0} total cards • {ticketsData?.data.length || 0} shown
+          {bulkMode && selectedTickets.length > 0 && (
+            <Text style={styles.selectedText}> • {selectedTickets.length} selected</Text>
+          )}
         </Text>
+        {bulkMode && selectedTickets.length > 0 && user?.role === 'admin' && (
+          <View style={styles.bulkActions}>
+            <TouchableOpacity style={styles.bulkActionButton}>
+              <IconSymbol name="person.badge.plus" size={14} color={Colors.primary[600]} />
+              <Text style={styles.bulkActionText}>Assign</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.bulkActionButton}>
+              <IconSymbol name="arrow.2.squarepath" size={14} color={Colors.warning[600]} />
+              <Text style={styles.bulkActionText}>Update Status</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {/* Job Cards List */}
@@ -466,6 +547,9 @@ export default function JobCardsScreen() {
                 ticket={ticket}
                 onPress={() => handleJobCardPress(ticket.id)}
                 onAssignPress={handleAssignPress}
+                bulkMode={bulkMode}
+                isSelected={selectedTickets.includes(ticket.id)}
+                onSelect={handleBulkSelect}
               />
             ))}
             {!isLoading && ticketsData?.data.length === 0 && (
@@ -491,219 +575,262 @@ export default function JobCardsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: BrandColors.surface,
   },
   activeFilterIndicator: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    backgroundColor: BrandColors.surface,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40, // Account for status bar
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: BrandColors.ink + '10',
   },
   activeFilterContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    backgroundColor: BrandColors.primary + '10',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
     borderLeftWidth: 3,
-    borderLeftColor: '#3B82F6',
+    borderLeftColor: BrandColors.primary,
   },
   activeFilterText: {
-    fontSize: 14,
-    color: '#1E40AF',
-    fontWeight: '600',
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.title,
     flex: 1,
   },
   clearFilterButton: {
-    padding: 4,
+    padding: Spacing.xs,
   },
   filterBadge: {
     position: 'absolute',
     top: 2,
     right: 2,
-    backgroundColor: '#EF4444',
-    borderRadius: 8,
+    backgroundColor: BrandColors.primary,
+    borderRadius: BorderRadius.full,
     width: 16,
     height: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
   filterBadgeText: {
-    color: '#FFFFFF',
+    color: BrandColors.surface,
     fontSize: 10,
-    fontWeight: '600',
+    fontFamily: Typography.fontFamily.semibold,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
-    paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
-    gap: 12,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40, // Account for status bar and some extra space
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
+    backgroundColor: BrandColors.surface,
+    gap: Spacing.md,
+  },
+  searchContainerWithFilter: {
+    paddingTop: Spacing.md, // Reduce top padding when filter indicator is present
   },
   searchBar: {
+    ...ComponentStyles.input,
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
+    gap: Spacing.md,
+    paddingVertical: Spacing.base,
   },
   searchFilterButton: {
-    padding: 12,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
+    padding: Spacing.md,
+    backgroundColor: BrandColors.ink + '10',
+    borderRadius: BorderRadius.md,
     position: 'relative',
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
-    color: '#111827',
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink,
   },
   stats: {
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
+    backgroundColor: BrandColors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: BrandColors.ink + '10',
   },
   statsText: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '60',
+  },
+  selectedText: {
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.primary,
+  },
+  bulkActions: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  bulkActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: BrandColors.ink + '20',
+  },
+  bulkActionText: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.ink + '80',
+  },
+  bulkModeActive: {
+    backgroundColor: BrandColors.primary,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
-    gap: 16,
+    padding: Spacing.lg,
+    gap: Spacing.base,
   },
   jobCardsList: {
-    gap: 16,
+    gap: Spacing.base,
   },
   jobCardItem: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    ...ComponentStyles.card,
+    padding: Spacing.base,
+  },
+  jobCardItemSelected: {
+    borderColor: BrandColors.primary,
+    backgroundColor: BrandColors.primary + '05',
+  },
+  selectionCheckbox: {
+    marginRight: Spacing.sm,
   },
   jobCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: Spacing.md,
+  },
+  jobCardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
   },
   jobCardNumber: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.title,
   },
   jobCardBadges: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: Spacing.sm,
   },
   badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.md,
   },
   overdueBadge: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: BrandColors.primary + '15',
   },
   dueTodayBadge: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: BrandColors.title + '15',
   },
   badgeText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.semibold,
   },
   priorityDot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: BorderRadius.sm,
   },
   jobCardSymptom: {
-    fontSize: 14,
-    color: '#374151',
-    marginBottom: 12,
-    lineHeight: 20,
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '80',
+    marginBottom: Spacing.md,
+    lineHeight: Typography.lineHeight.sm,
   },
   jobCardMeta: {
-    gap: 6,
-    marginBottom: 12,
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
   },
   jobCardMetaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   jobCardMetaLabel: {
-    fontSize: 12,
-    color: '#6B7280',
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.medium,
+    color: BrandColors.ink + '60',
     flex: 1,
   },
   jobCardMetaValue: {
-    fontSize: 12,
-    color: '#111827',
-    fontWeight: '500',
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.ink,
     flex: 2,
     textAlign: 'right',
   },
   // Enhanced customer styles
   customerRow: {
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
   customerInfo: {
-    backgroundColor: '#EFF6FF',
-    padding: 10,
-    borderRadius: 8,
+    backgroundColor: BrandColors.primary + '08',
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.sm,
     borderLeftWidth: 3,
-    borderLeftColor: '#3B82F6',
+    borderLeftColor: BrandColors.primary,
   },
   customerLabel: {
-    fontSize: 10,
-    color: '#3B82F6',
-    fontWeight: '600',
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.primary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 2,
   },
   customerName: {
-    fontSize: 14,
-    color: '#1E40AF',
-    fontWeight: '700',
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.bold,
+    color: BrandColors.title,
   },
   // Enhanced assigned person styles
   assignedRow: {
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
   assignedInfo: {
-    backgroundColor: '#F0FDF4',
-    padding: 10,
-    borderRadius: 8,
+    backgroundColor: BrandColors.title + '08',
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.sm,
     borderLeftWidth: 3,
-    borderLeftColor: '#16A34A',
+    borderLeftColor: BrandColors.title,
   },
   assignedLabel: {
-    fontSize: 10,
-    color: '#16A34A',
-    fontWeight: '600',
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.title,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 2,
   },
   assignedName: {
-    fontSize: 14,
-    color: '#15803D',
-    fontWeight: '700',
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.bold,
+    color: BrandColors.title,
   },
   jobCardFooter: {
     flexDirection: 'row',
@@ -713,158 +840,159 @@ const styles = StyleSheet.create({
   jobCardFooterLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: Spacing.md,
     flex: 1,
   },
   assignButton: {
+    ...ComponentStyles.button.secondary,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#EFF6FF',
-    borderRadius: 8,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: '#3B82F6',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    gap: Spacing.xs,
   },
   assignButtonText: {
-    fontSize: 12,
-    color: '#3B82F6',
-    fontWeight: '600',
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.primary,
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 6,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    gap: Spacing.xs,
   },
   statusBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.semibold,
     textTransform: 'capitalize',
   },
   jobCardDate: {
-    fontSize: 12,
-    color: '#6B7280',
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '60',
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: Spacing.lg,
   },
   errorText: {
-    fontSize: 16,
-    color: '#EF4444',
-    marginBottom: 16,
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.medium,
+    color: BrandColors.primary,
+    marginBottom: Spacing.base,
     textAlign: 'center',
   },
   retryButton: {
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
+    ...ComponentStyles.button.primary,
   },
   retryText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.surface,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    padding: Spacing['3xl'],
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    marginTop: 16,
-    marginBottom: 8,
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.title,
+    marginTop: Spacing.base,
+    marginBottom: Spacing.sm,
   },
   emptySubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '60',
     textAlign: 'center',
   },
   // Modal styles
   modalContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: BrandColors.surface,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    paddingTop: 60,
+    padding: Spacing.lg,
+    paddingTop: Spacing['5xl'],
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: BrandColors.ink + '10',
   },
   modalCancel: {
-    fontSize: 16,
-    color: '#6B7280',
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.medium,
+    color: BrandColors.ink + '60',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.title,
   },
   modalClear: {
-    fontSize: 16,
-    color: '#EF4444',
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.medium,
+    color: BrandColors.primary,
   },
   modalContent: {
     flex: 1,
-    padding: 20,
+    padding: Spacing.lg,
   },
   filterSection: {
-    marginBottom: 32,
+    marginBottom: Spacing['2xl'],
   },
   filterTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 12,
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.title,
+    marginBottom: Spacing.md,
   },
   filterOptions: {
-    gap: 8,
+    gap: Spacing.sm,
   },
   filterOption: {
-    padding: 12,
-    borderRadius: 8,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: BrandColors.ink + '20',
+    backgroundColor: BrandColors.surface,
   },
   filterOptionSelected: {
-    borderColor: '#3B82F6',
-    backgroundColor: '#EFF6FF',
+    borderColor: BrandColors.primary,
+    backgroundColor: BrandColors.primary + '10',
   },
   filterOptionText: {
-    fontSize: 14,
-    color: '#374151',
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '80',
     textTransform: 'capitalize',
   },
   filterOptionTextSelected: {
-    color: '#3B82F6',
-    fontWeight: '600',
+    color: BrandColors.title,
+    fontFamily: Typography.fontFamily.semibold,
   },
   modalFooter: {
-    padding: 20,
+    padding: Spacing.lg,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: BrandColors.ink + '10',
   },
   applyButton: {
-    backgroundColor: '#3B82F6',
-    borderRadius: 8,
-    paddingVertical: 16,
+    ...ComponentStyles.button.primary,
+    paddingVertical: Spacing.base,
     alignItems: 'center',
   },
   applyButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.surface,
   },
 });

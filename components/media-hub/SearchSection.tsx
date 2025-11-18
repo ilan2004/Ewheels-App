@@ -11,7 +11,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors, Typography, Spacing } from '@/constants/design-system';
+import { Colors, Typography, Spacing, BrandColors } from '@/constants/design-system';
 import { useMediaHubStore } from '@/stores/mediaHubStore';
 import JobCardSelector from './JobCardSelector';
 import MediaItem from './MediaItem';
@@ -320,12 +320,12 @@ export default function SearchSection() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.neutral[50],
+    backgroundColor: BrandColors.surface,
   },
   
   // Search header
   searchHeader: {
-    backgroundColor: Colors.white,
+    backgroundColor: BrandColors.surface,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.base,
     borderBottomWidth: 1,
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
 
   // Filters
   filtersSection: {
-    backgroundColor: Colors.white,
+    backgroundColor: BrandColors.surface,
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.base,
     borderBottomWidth: 1,
@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
   statsToggle: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: BrandColors.surface,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
     gap: Spacing.sm,
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.white,
+    backgroundColor: BrandColors.surface,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
     borderBottomWidth: 1,

@@ -247,6 +247,6 @@ const styles = StyleSheet.create({
   // Content
   contentArea: {
     flex: 1,
-    backgroundColor: Colors.neutral[50],
+    backgroundColor: BrandColors.surface,
   },
 });

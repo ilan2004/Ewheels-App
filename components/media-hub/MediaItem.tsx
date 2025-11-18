@@ -108,6 +108,20 @@ export default function MediaItem({
   const itemSize = getItemSize();
   const isCompact = size === 'small';
 
+  // Prefer local URI when available (captured on device),
+  // otherwise fall back to remoteUrl from Supabase Storage (media-items bucket)
+  const imageUri = item.localUri || item.remoteUrl;
+
+  // Safely derive a display name from fileName or metadata, avoid .replace on undefined
+  const rawFileName =
+    (typeof item.fileName === 'string' && item.fileName.trim().length > 0)
+      ? item.fileName
+      : (typeof item.metadata?.originalName === 'string' && item.metadata.originalName.trim().length > 0)
+        ? item.metadata.originalName
+        : 'Untitled';
+
+  const displayName = rawFileName.replace(/\.(jpg|jpeg|png|mp4|m4a)$/i, '');
+
   return (
     <TouchableOpacity
       style={[
@@ -121,9 +135,9 @@ export default function MediaItem({
     >
       {/* Media Preview */}
       <View style={[styles.mediaPreview, { width: itemSize, height: itemSize }]}>
-        {item.mediaType === 'image' && item.localUri ? (
+        {item.mediaType === 'image' && imageUri ? (
           <Image
-            source={{ uri: item.localUri }}
+            source={{ uri: imageUri }}
             style={styles.mediaImage}
             contentFit="cover"
           />
@@ -167,7 +181,7 @@ export default function MediaItem({
           styles.mediaTitle,
           isCompact && styles.mediaTitleCompact
         ]} numberOfLines={1}>
-          {item.fileName.replace(/\.(jpg|jpeg|png|mp4|m4a)$/i, '')}
+          {displayName}
         </Text>
         
         {!isCompact && (

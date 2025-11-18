@@ -260,7 +260,7 @@ export const Shadows = {
 export const ComponentStyles = {
   // Card Styles
   card: {
-    backgroundColor: Colors.white,
+    backgroundColor: BrandColors.surface,
     borderRadius: BorderRadius.md,
     padding: Spacing.base,
     ...Shadows.base,
@@ -269,16 +269,16 @@ export const ComponentStyles = {
   // Button Styles
   button: {
     primary: {
-      backgroundColor: Colors.primary[600],
+      backgroundColor: BrandColors.primary,
       paddingVertical: Spacing.md,
       paddingHorizontal: Spacing.lg,
       borderRadius: BorderRadius.base,
       ...Shadows.sm,
     },
     secondary: {
-      backgroundColor: Colors.white,
+      backgroundColor: BrandColors.surface,
       borderWidth: 1,
-      borderColor: Colors.primary[600],
+      borderColor: BrandColors.primary,
       paddingVertical: Spacing.md,
       paddingHorizontal: Spacing.lg,
       borderRadius: BorderRadius.base,
@@ -287,21 +287,20 @@ export const ComponentStyles = {
   
   // Input Styles
   input: {
-    backgroundColor: Colors.white,
+    backgroundColor: BrandColors.surface,
     borderWidth: 1,
-    borderColor: Colors.neutral[300],
+    borderColor: BrandColors.ink + '30', // 30% opacity
     borderRadius: BorderRadius.base,
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.base,
     fontSize: Typography.fontSize.base,
-    color: Colors.neutral[900],
+    color: BrandColors.ink,
   },
   
   // Tab Bar Styles
   tabBar: {
-    backgroundColor: Colors.white,
-    borderTopWidth: 1,
-    borderTopColor: Colors.neutral[200],
+    backgroundColor: BrandColors.shellDark,
+    borderTopWidth: 0,
     paddingBottom: Platform.OS === 'ios' ? 8 : 8,
     paddingTop: 8,
     height: Platform.OS === 'ios' ? 84 : 68,
@@ -310,21 +309,44 @@ export const ComponentStyles = {
   
   // Header Styles
   header: {
-    backgroundColor: Colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.neutral[200],
+    backgroundColor: BrandColors.surface,
+    borderBottomWidth: 0,
     ...Shadows.sm,
   },
 };
 
 // STATUS COLORS
 export const StatusColors = {
-  reported: Colors.error[500],
-  assigned: Colors.primary[500], 
-  in_progress: Colors.warning[500],
-  completed: Colors.success[500],
-  overdue: Colors.error[600],
-  due_today: Colors.warning[600],
+  reported: {
+    primary: BrandColors.primary,
+    background: BrandColors.primary + '15',
+    text: BrandColors.primary,
+  },
+  triaged: {
+    primary: BrandColors.title,
+    background: BrandColors.title + '15',
+    text: BrandColors.title,
+  },
+  in_progress: {
+    primary: '#499588', // From AssignmentOverviewColors
+    background: '#499588' + '15',
+    text: '#499588',
+  },
+  completed: {
+    primary: BrandColors.title,
+    background: BrandColors.title + '15', 
+    text: BrandColors.title,
+  },
+  overdue: {
+    primary: Colors.error[600],
+    background: Colors.error[100],
+    text: Colors.error[600],
+  },
+  due_today: {
+    primary: Colors.warning[600],
+    background: Colors.warning[100],
+    text: Colors.warning[600],
+  },
 };
 
 // PRIORITY COLORS  
@@ -333,6 +355,119 @@ export const PriorityColors = {
   2: Colors.warning[500], // Medium
   3: Colors.neutral[500], // Low
 };
+
+// FLOOR MANAGER ASSIGNMENT OVERVIEW COLORS
+// Gradients and text colors for the floor manager home "Assignment Overview" cards
+export const AssignmentOverviewColors = {
+  unassigned: {
+    text: '#101113',
+    gradient: ['#ffffff', '#fbdfdc'],
+  },
+  in_progress: {
+    text: BrandColors.surface, // #f4f3ef
+    gradient: ['#499588', '#387868'],
+  },
+  due_today: {
+    text: BrandColors.surface, // #f4f3ef
+    gradient: [BrandColors.primary, '#eea8a0'], // #ff795b -> #eea8a0
+  },
+  overdue: {
+    text: Colors.error[600], // #DC2626
+    gradient: ['#faf3e9', '#f9e9d2'],
+  },
+} as const;
+
+// ADMIN PANEL OVERVIEW COLORS
+// Using the same design as floor manager assignment overview cards for consistency
+export const AdminPanelOverviewColors = {
+  // Reuse assignment overview colors for admin panel cards
+  unassigned: {
+    text: AssignmentOverviewColors.unassigned.text, // #101113
+    gradient: AssignmentOverviewColors.unassigned.gradient, // ['#ffffff', '#fbdfdc']
+  },
+  in_progress: {
+    text: AssignmentOverviewColors.in_progress.text, // #f4f3ef
+    gradient: AssignmentOverviewColors.in_progress.gradient, // ['#499588', '#387868']
+  },
+  due_today: {
+    text: AssignmentOverviewColors.due_today.text, // #f4f3ef
+    gradient: AssignmentOverviewColors.due_today.gradient, // ['#ff795b', '#eea8a0']
+  },
+  overdue: {
+    text: AssignmentOverviewColors.overdue.text, // #DC2626
+    gradient: AssignmentOverviewColors.overdue.gradient, // ['#faf3e9', '#f9e9d2']
+  },
+  // Additional admin-specific card types using similar styling
+  users: {
+    text: BrandColors.surface, // #f4f3ef
+    gradient: [Colors.info[500], Colors.info[600]], // Blue gradient for user management
+  },
+  locations: {
+    text: BrandColors.surface, // #f4f3ef
+    gradient: [Colors.success[500], Colors.success[600]], // Green gradient for locations
+  },
+  financials: {
+    text: BrandColors.surface, // #f4f3ef
+    gradient: [BrandColors.primary, '#e86b4f'], // Brand gradient for financial overview
+  },
+  system: {
+    text: AssignmentOverviewColors.unassigned.text, // #101113
+    gradient: [Colors.neutral[100], Colors.neutral[200]], // Light gradient for system stats
+  },
+} as const;
+
+// FINANCIAL COLORS
+// Colors for financial management interface
+export const FinancialColors = {
+  income: {
+    primary: Colors.success[600], // #059669
+    background: Colors.success[50], // #ECFDF5
+    text: Colors.success[700], // #047857
+    gradient: ['#10B981', '#059669'],
+  },
+  expense: {
+    primary: Colors.error[500], // #EF4444
+    background: Colors.error[50], // #FEF2F2
+    text: Colors.error[700], // #B91C1C
+    gradient: ['#F87171', '#EF4444'],
+  },
+  profit: {
+    primary: BrandColors.primary, // #ff795b
+    background: BrandColors.primary + '15', // 15% opacity
+    text: BrandColors.primary,
+    gradient: [BrandColors.primary, '#e86b4f'],
+  },
+  pending: {
+    primary: Colors.warning[500], // #F59E0B
+    background: Colors.warning[50], // #FFFBEB
+    text: Colors.warning[700], // #B45309
+  },
+  completed: {
+    primary: Colors.success[500], // #10B981
+    background: Colors.success[50], // #ECFDF5
+    text: Colors.success[700], // #047857
+  },
+  cancelled: {
+    primary: Colors.neutral[500], // #6B7280
+    background: Colors.neutral[50], // #F9FAFB
+    text: Colors.neutral[700], // #374151
+  },
+  chart: {
+    sales: '#10B981',
+    expenses: '#EF4444', 
+    profit: BrandColors.primary,
+    categories: [
+      '#3B82F6', // Blue
+      '#10B981', // Green
+      '#F59E0B', // Yellow
+      '#EF4444', // Red
+      '#8B5CF6', // Purple
+      '#06B6D4', // Cyan
+      '#84CC16', // Lime
+      '#F97316', // Orange
+    ]
+  }
+} as const;
 
 export default {
   Colors,
@@ -343,4 +478,7 @@ export default {
   ComponentStyles,
   StatusColors,
   PriorityColors,
+  AssignmentOverviewColors,
+  AdminPanelOverviewColors,
+  FinancialColors,
 };

@@ -1,0 +1,1 @@
+export { TriageManagement } from './TriageManagement';

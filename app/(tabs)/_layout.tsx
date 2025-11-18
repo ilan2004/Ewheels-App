@@ -15,7 +15,7 @@ import { canAccessNavigation, isManagerLevel, isFloorManager, isFrontDeskManager
 // Uses BrandColors for app-wide chrome
 const getCommonScreenOptions = (colorScheme: any, accentColor: string) => ({
   tabBarActiveTintColor: BrandColors.primary,
-  tabBarInactiveTintColor: BrandColors.surface,
+  tabBarInactiveTintColor: BrandColors.surface + '80', // 50% opacity for inactive
   headerShown: true,
   headerStyle: {
     ...ComponentStyles.header,
@@ -72,12 +72,15 @@ const getAllHiddenScreens = () => [
   'technician',
   'technician-jobcards',
   'technician-profile',
+  // technician-vehicles and technician-batteries are now available for technicians
   'camera', // Legacy - replaced by media-hub
   'media-library', // Legacy - replaced by media-hub
   'record-audio', // Legacy - replaced by media-hub
   'recording-player',
   'front-desk-profile',
-  'media-hub', // Only shown for front desk managers
+  // 'media-hub' removed from hidden list - now available to both front desk and floor managers
+  'invoices', // Only shown for front desk managers
+  'financial', // Only shown for admin
 ];
 
 export default function TabLayout() {
@@ -95,18 +98,42 @@ export default function TabLayout() {
   const role = user.role;
   const allScreens = getAllHiddenScreens();
 
-  // TECHNICIAN: Simple 2-tab interface
+  // TECHNICIAN: 5-tab interface with Vehicles, Batteries, and Media Hub
   if (role === 'technician') {
-    const visibleScreens = ['technician-jobcards', 'technician-profile'];
+    const visibleScreens = ['technician-jobcards', 'technician-vehicles', 'media-hub', 'technician-batteries', 'technician-profile'];
     const hiddenScreens = allScreens.filter(screen => !visibleScreens.includes(screen));
 
     return (
-      <Tabs screenOptions={getCommonScreenOptions(colorScheme, Colors.success[600])}>
+      <Tabs screenOptions={getCommonScreenOptions(colorScheme, BrandColors.primary)}>
         <Tabs.Screen
           name="technician-jobcards"
           options={{
             title: 'My Work',
             tabBarIcon: ({ color }) => <IconSymbol size={22} name="doc.text.fill" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="technician-vehicles"
+          options={{
+            title: 'Vehicles',
+            headerShown: false,
+            tabBarIcon: ({ color }) => <IconSymbol size={22} name="car.fill" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="media-hub"
+          options={{
+            title: 'Media',
+            headerShown: false,
+            tabBarIcon: ({ color }) => <IconSymbol size={22} name="camera.viewfinder" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="technician-batteries"
+          options={{
+            title: 'Batteries',
+            headerShown: false,
+            tabBarIcon: ({ color }) => <IconSymbol size={22} name="battery.100" color={color} />,
           }}
         />
         <Tabs.Screen
@@ -123,13 +150,13 @@ export default function TabLayout() {
     );
   }
 
-  // FLOOR MANAGER: Assignment-focused 4-tab interface
+  // FLOOR MANAGER: Assignment-focused 5-tab interface
   if (role === 'floor_manager') {
-    const visibleScreens = ['dashboard', 'jobcards', 'team', 'profile'];
+    const visibleScreens = ['dashboard', 'jobcards', 'team', 'media-hub', 'profile'];
     const hiddenScreens = allScreens.filter(screen => !visibleScreens.includes(screen));
 
     return (
-      <Tabs screenOptions={getCommonScreenOptions(colorScheme, Colors.primary[600])}>
+      <Tabs screenOptions={getCommonScreenOptions(colorScheme, BrandColors.primary)}>
         <Tabs.Screen
           name="dashboard"
           options={{
@@ -141,7 +168,16 @@ export default function TabLayout() {
           name="jobcards"
           options={{
             title: 'Job Cards',
+            headerShown: false,
             tabBarIcon: ({ color }) => <IconSymbol size={22} name="doc.text.fill" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="media-hub"
+          options={{
+            title: 'Media',
+            headerShown: false,
+            tabBarIcon: ({ color }) => <IconSymbol size={22} name="camera.viewfinder" color={color} />,
           }}
         />
         <Tabs.Screen
@@ -165,18 +201,26 @@ export default function TabLayout() {
     );
   }
 
-  // FRONT DESK MANAGER: Media-focused 3-tab interface with unified Media Hub
+  // FRONT DESK MANAGER: Media and billing-focused 4-tab interface
   if (role === 'front_desk_manager' || role === 'manager') {
-    const visibleScreens = ['front-desk-dashboard', 'media-hub', 'front-desk-profile'];
+    const visibleScreens = ['front-desk-dashboard', 'invoices', 'media-hub', 'front-desk-profile'];
     const hiddenScreens = allScreens.filter(screen => !visibleScreens.includes(screen));
 
     return (
-      <Tabs screenOptions={getCommonScreenOptions(colorScheme, Colors.primary[600])}>
+      <Tabs screenOptions={getCommonScreenOptions(colorScheme, BrandColors.primary)}>
         <Tabs.Screen
           name="front-desk-dashboard"
           options={{
             title: 'Dashboard',
             tabBarIcon: ({ color }) => <IconSymbol size={22} name="chart.bar.fill" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="invoices"
+          options={{
+            title: 'Invoices',
+            headerShown: false,
+            tabBarIcon: ({ color }) => <IconSymbol size={22} name="doc.text" color={color} />,
           }}
         />
         <Tabs.Screen
@@ -203,11 +247,11 @@ export default function TabLayout() {
 
   // ADMIN: Full access with all management features
   if (role === 'admin') {
-    const visibleScreens = ['dashboard', 'jobcards', 'team', 'notifications', 'profile'];
+    const visibleScreens = ['dashboard', 'jobcards', 'media-hub', 'financial', 'profile'];
     const hiddenScreens = allScreens.filter(screen => !visibleScreens.includes(screen));
 
     return (
-      <Tabs screenOptions={getCommonScreenOptions(colorScheme, Colors.error[600])}>
+      <Tabs screenOptions={getCommonScreenOptions(colorScheme, BrandColors.primary)}>
         <Tabs.Screen
           name="dashboard"
           options={{
@@ -219,21 +263,24 @@ export default function TabLayout() {
           name="jobcards"
           options={{
             title: 'Job Cards',
+            headerShown: false,
             tabBarIcon: ({ color }) => <IconSymbol size={22} name="doc.text.fill" color={color} />,
           }}
         />
         <Tabs.Screen
-          name="team"
+          name="media-hub"
           options={{
-            title: 'Team',
-            tabBarIcon: ({ color }) => <IconSymbol size={22} name="person.3.fill" color={color} />,
+            title: 'Media',
+            headerShown: false,
+            tabBarIcon: ({ color }) => <IconSymbol size={22} name="camera.viewfinder" color={color} />,
           }}
         />
         <Tabs.Screen
-          name="notifications"
+          name="financial"
           options={{
-            title: 'Alerts',
-            tabBarIcon: ({ color }) => <IconSymbol size={22} name="bell.fill" color={color} />,
+            title: 'Finance',
+            headerShown: false,
+            tabBarIcon: ({ color }) => <IconSymbol size={22} name="dollarsign.circle.fill" color={color} />,
           }}
         />
         <Tabs.Screen
@@ -252,7 +299,7 @@ export default function TabLayout() {
 
   // FALLBACK: Basic navigation for unknown roles
   return (
-    <Tabs screenOptions={getCommonScreenOptions(colorScheme, Colors.neutral[600])}>
+    <Tabs screenOptions={getCommonScreenOptions(colorScheme, BrandColors.primary)}>
       <Tabs.Screen
         name="dashboard"
         options={{

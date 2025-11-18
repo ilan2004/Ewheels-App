@@ -17,6 +17,7 @@ import {
   StatusBar,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from 'expo-audio';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -25,10 +26,14 @@ import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { jobCardsService } from '@/services/jobCardsService';
 import { floorManagerService } from '@/services/floorManagerService';
+import { vehiclesService } from '@/services/vehiclesService';
+import { batteriesService } from '@/services/batteriesService';
 import { StatusIcon } from '@/components/empty-states';
-import { TriageManagement } from '@/components/triage/TriageManagement';
 import { StatusUpdatesTimeline } from '@/components/status/StatusUpdatesTimeline';
 import { StatusUpdateInput } from '@/components/status/StatusUpdateInput';
+import { HorizontalServiceProgress } from '@/components/progress/HorizontalServiceProgress';
+import { TriageManagement } from '@/components/triage/TriageManagement';
+import { BrandColors, Typography, Spacing, BorderRadius, ComponentStyles, StatusColors, PriorityColors } from '@/constants/design-system';
 
 interface TechnicianPickerModalProps {
   visible: boolean;
@@ -362,25 +367,18 @@ const AudioPlayerModal: React.FC<AudioPlayerModalProps> = ({
   onClose,
   audio,
 }) => {
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const audioPlayer = useAudioPlayer(audio?.url || null);
+  const playerStatus = useAudioPlayerStatus(audioPlayer);
   const [isLoading, setIsLoading] = useState(false);
-  const [position, setPosition] = useState(0);
-  const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Set audio mode for better iOS/Android compatibility
     const configureAudio = async () => {
       try {
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: false,
-          staysActiveInBackground: false,
-          interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DUCK_OTHERS,
-          playsInSilentModeIOS: true,
-          shouldDuckAndroid: true,
-          interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DUCK_OTHERS,
-          playThroughEarpieceAndroid: false,
+        await setAudioModeAsync({
+          playsInSilentMode: true,
+          allowsRecording: false,
         });
       } catch (e) {
         console.log('Failed to set audio mode:', e);
@@ -390,125 +388,27 @@ const AudioPlayerModal: React.FC<AudioPlayerModalProps> = ({
     configureAudio();
     
     return () => {
-      if (sound) {
-        sound.unloadAsync().catch(e => console.log('Error unloading sound:', e));
+      try {
+        audioPlayer.remove();
+      } catch (error) {
+        console.log('Audio player cleanup error:', error);
       }
     };
-  }, [sound]);
+  }, [audioPlayer]);
 
   useEffect(() => {
     if (!visible) {
-      if (sound) {
-        sound.unloadAsync().catch(e => console.log('Error unloading sound:', e));
-        setSound(null);
-      }
-      setIsPlaying(false);
-      setPosition(0);
-      setDuration(0);
+      audioPlayer.pause();
       setError(null);
     }
-  }, [visible, sound]);
-
-  const loadAudio = async () => {
-    if (!audio?.url) return;
-    
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      // Clean up existing sound
-      if (sound) {
-        await sound.unloadAsync();
-      }
-
-      console.log('Loading audio from URL:', audio.url);
-      
-      // Try to load with different configurations for better WAV compatibility
-      let audioSound;
-      
-      try {
-        // First try with basic configuration
-        const result = await Audio.Sound.createAsync(
-          { uri: audio.url },
-          {
-            shouldPlay: false,
-            isLooping: false,
-            volume: 1.0,
-            rate: 1.0,
-            shouldCorrectPitch: false,
-          },
-          onPlaybackStatusUpdate
-        );
-        audioSound = result.sound;
-      } catch (firstError) {
-        console.log('First load attempt failed, trying alternative method:', firstError);
-        
-        // Second attempt with minimal configuration
-        try {
-          const result = await Audio.Sound.createAsync(
-            { uri: audio.url },
-            { shouldPlay: false },
-            onPlaybackStatusUpdate
-          );
-          audioSound = result.sound;
-        } catch (secondError) {
-          console.log('Second load attempt failed:', secondError);
-          throw new Error('Audio format not compatible with this device');
-        }
-      }
-      
-      setSound(audioSound);
-      setIsLoading(false);
-    } catch (err: any) {
-      console.error('Error loading audio:', err);
-      let errorMessage = 'Failed to load audio file.';
-      
-      // Provide more specific error messages
-      if (err.message?.includes('11800')) {
-        errorMessage = 'WAV file format not compatible with this device. Try converting to MP3 or M4A format.';
-      } else if (err.message?.includes('not compatible')) {
-        errorMessage = 'Audio format not supported on this device.';
-      } else if (err.message?.includes('network')) {
-        errorMessage = 'Network error. Please check your connection.';
-      } else if (err.message?.includes('timeout')) {
-        errorMessage = 'Audio loading timed out. Please try again.';
-      } else if (audio.url.toLowerCase().includes('.wav')) {
-        errorMessage = 'WAV file playback issue. Some WAV formats are not supported on mobile devices.';
-      }
-      
-      setError(errorMessage);
-      setIsLoading(false);
-    }
-  };
-
-  const onPlaybackStatusUpdate = (status: any) => {
-    if (status.isLoaded) {
-      setPosition(status.positionMillis || 0);
-      setDuration(status.durationMillis || 0);
-      setIsPlaying(status.isPlaying || false);
-      
-      if (status.didJustFinish) {
-        setIsPlaying(false);
-        setPosition(0);
-      }
-    } else if (status.error) {
-      console.error('Playback status error:', status.error);
-      setError(`Playback error: ${status.error}`);
-      setIsPlaying(false);
-    }
-  };
+  }, [visible, audioPlayer]);
 
   const togglePlayback = async () => {
     try {
-      if (!sound) {
-        await loadAudio();
-        return;
-      }
-
-      if (isPlaying) {
-        await sound.pauseAsync();
+      if (playerStatus?.isPlaying) {
+        audioPlayer.pause();
       } else {
-        await sound.playAsync();
+        audioPlayer.play();
       }
     } catch (err) {
       console.error('Playback error:', err);
@@ -517,12 +417,10 @@ const AudioPlayerModal: React.FC<AudioPlayerModalProps> = ({
   };
 
   const seekTo = async (positionMs: number) => {
-    if (sound && duration > 0) {
-      try {
-        await sound.setPositionAsync(positionMs);
-      } catch (err) {
-        console.error('Seek error:', err);
-      }
+    try {
+      audioPlayer.seekTo(positionMs / 1000); // expo-audio uses seconds
+    } catch (err) {
+      console.error('Seek error:', err);
     }
   };
 
@@ -534,8 +432,10 @@ const AudioPlayerModal: React.FC<AudioPlayerModalProps> = ({
   };
 
   const handleClose = () => {
-    if (sound) {
-      sound.unloadAsync().catch(e => console.log('Error closing sound:', e));
+    try {
+      audioPlayer.pause();
+    } catch (error) {
+      console.log('Audio pause error:', error);
     }
     onClose();
   };
@@ -581,15 +481,6 @@ const AudioPlayerModal: React.FC<AudioPlayerModalProps> = ({
               <Text style={styles.audioErrorSubtext}>
                 Recommended formats: MP3, M4A, AAC. WAV files may have compatibility issues.
               </Text>
-              <TouchableOpacity 
-                style={styles.retryButton}
-                onPress={loadAudio}
-                disabled={isLoading}
-              >
-                <Text style={styles.retryButtonText}>
-                  {isLoading ? 'Loading...' : 'Retry'}
-                </Text>
-              </TouchableOpacity>
             </View>
           )}
 
@@ -597,15 +488,16 @@ const AudioPlayerModal: React.FC<AudioPlayerModalProps> = ({
           <View style={styles.audioControls}>
             {/* Progress Bar */}
             <View style={styles.progressContainer}>
-              <Text style={styles.timeText}>{formatTime(position)}</Text>
+              <Text style={styles.timeText}>{formatTime((playerStatus?.currentTime || 0) * 1000)}</Text>
               <View style={styles.progressBar}>
                 <TouchableOpacity
                   style={styles.progressTrack}
                   onPress={(e) => {
+                    const duration = playerStatus?.duration || 0;
                     if (duration > 0) {
                       const { locationX } = e.nativeEvent;
                       const progressBarWidth = 250; // Approximate width
-                      const newPosition = (locationX / progressBarWidth) * duration;
+                      const newPosition = (locationX / progressBarWidth) * duration * 1000;
                       seekTo(newPosition);
                     }
                   }}
@@ -614,12 +506,12 @@ const AudioPlayerModal: React.FC<AudioPlayerModalProps> = ({
                   <View 
                     style={[
                       styles.progressFill, 
-                      { width: duration > 0 ? `${(position / duration) * 100}%` : '0%' }
+                      { width: (playerStatus?.duration && playerStatus?.currentTime) ? `${((playerStatus.currentTime / playerStatus.duration) * 100)}%` : '0%' }
                     ]} 
                   />
                 </TouchableOpacity>
               </View>
-              <Text style={styles.timeText}>{formatTime(duration)}</Text>
+              <Text style={styles.timeText}>{formatTime((playerStatus?.duration || 0) * 1000)}</Text>
             </View>
 
             {/* Play/Pause Button */}
@@ -635,7 +527,7 @@ const AudioPlayerModal: React.FC<AudioPlayerModalProps> = ({
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <IconSymbol
-                  name={isPlaying ? 'pause.fill' : 'play.fill'}
+                  name={playerStatus?.isPlaying ? 'pause.fill' : 'play.fill'}
                   size={32}
                   color="#FFFFFF"
                 />
@@ -690,6 +582,34 @@ export default function JobCardDetailScreen() {
     queryFn: () => jobCardsService.getStatusUpdates(ticketId!),
     enabled: !!ticketId,
     refetchInterval: 30000, // Refresh every 30 seconds for real-time updates
+  });
+
+  // Fetch vehicle intake record if ticket has one
+  const { data: vehicleRecord } = useQuery({
+    queryKey: ['vehicle-record', ticket?.vehicle_record_id],
+    queryFn: () => vehiclesService.getVehicleRecordById(ticket!.vehicle_record_id!),
+    enabled: !!ticket?.vehicle_record_id,
+  });
+
+  // Fetch vehicle case details if ticket has a vehicle case
+  const { data: vehicleCase } = useQuery({
+    queryKey: ['vehicle-case', ticket?.vehicle_case_id],
+    queryFn: () => vehiclesService.getVehicleCaseById(ticket!.vehicle_case_id!),
+    enabled: !!ticket?.vehicle_case_id,
+  });
+
+  // Fetch battery intake records (array) by service_ticket_id
+  const { data: batteryRecords = [] } = useQuery({
+    queryKey: ['battery-records', ticketId],
+    queryFn: () => batteriesService.getBatteryRecordsByTicket(ticketId!),
+    enabled: !!ticketId,
+  });
+
+  // Fetch battery cases (array) by service_ticket_id
+  const { data: batteryCases = [] } = useQuery({
+    queryKey: ['battery-cases', ticketId],
+    queryFn: () => batteriesService.getBatteryCasesByTicket(ticketId!),
+    enabled: !!ticketId,
   });
 
   // Assignment mutation
@@ -825,22 +745,16 @@ export default function JobCardDetailScreen() {
   }, [attachments, imageUrls, audioUrls]);
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'reported': return '#EF4444';
-      case 'triaged': return '#F59E0B';
-      case 'in_progress': return '#8B5CF6';
-      case 'completed': return '#10B981';
-      default: return '#6B7280';
-    }
+    return StatusColors[status as keyof typeof StatusColors]?.primary || BrandColors.primary;
   };
 
   const getPriorityColor = (priority: number) => {
-    switch (priority) {
-      case 1: return '#EF4444';
-      case 2: return '#F59E0B';
-      case 3: return '#6B7280';
-      default: return '#6B7280';
-    }
+    const priorityMap = {
+      1: PriorityColors.high,
+      2: PriorityColors.medium,
+      3: PriorityColors.low,
+    };
+    return priorityMap[priority as keyof typeof priorityMap] || BrandColors.ink + '60';
   };
 
   const getPriorityText = (priority: number) => {
@@ -855,7 +769,8 @@ export default function JobCardDetailScreen() {
   const getNextStatusOptions = (currentStatus: string) => {
     switch (currentStatus) {
       case 'reported':
-        return ['triaged'];
+        // No direct status action; use Triage & Case Management instead
+        return [];
       case 'triaged':
         return ['in_progress'];
       case 'in_progress':
@@ -918,11 +833,11 @@ export default function JobCardDetailScreen() {
           title: 'Job Card Details',
           headerBackTitle: 'Back',
           headerStyle: {
-            backgroundColor: '#FFFFFF',
+            backgroundColor: BrandColors.surface,
           },
           headerTitleStyle: {
-            fontWeight: '600',
-            color: '#111827',
+            fontFamily: Typography.fontFamily.semibold,
+            color: BrandColors.title,
           },
           headerRight: () => (
             <TouchableOpacity
@@ -962,46 +877,9 @@ export default function JobCardDetailScreen() {
           <>
             {/* Status Progress */}
             <View style={styles.section}>
-              <View style={styles.progressCard}>
-                <Text style={styles.progressTitle}>Service Progress</Text>
-                <View style={styles.progressContainer}>
-                  {['reported', 'triaged', 'in_progress', 'completed'].map((status, index) => {
-                    const isActive = ['reported', 'triaged', 'in_progress', 'completed'].indexOf(ticket.status) >= index;
-                    const isCurrent = ticket.status === status;
-                    
-                    return (
-                      <View key={status} style={styles.progressStep}>
-                        <View style={[
-                          styles.progressDot, 
-                          isActive && styles.progressDotActive,
-                          isCurrent && styles.progressDotCurrent
-                        ]}>
-                          {isActive && (
-                            <IconSymbol 
-                              name={isCurrent ? "clock.fill" : "checkmark"} 
-                              size={12} 
-                              color={isCurrent ? "#3B82F6" : "#FFFFFF"} 
-                            />
-                          )}
-                        </View>
-                        <Text style={[
-                          styles.progressLabel,
-                          isActive && styles.progressLabelActive,
-                          isCurrent && styles.progressLabelCurrent
-                        ]}>
-                          {status.replace('_', ' ')}
-                        </Text>
-                        {index < 3 && (
-                          <View style={[
-                            styles.progressLine,
-                            isActive && styles.progressLineActive
-                          ]} />
-                        )}
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
+              <HorizontalServiceProgress 
+                currentStatus={ticket.status}
+              />
             </View>
 
             {/* Ticket Info */}
@@ -1034,7 +912,7 @@ export default function JobCardDetailScreen() {
             {/* Customer Info */}
             <View style={styles.section}>
               <ThemedText type="subtitle" style={styles.sectionTitle}>
-                <IconSymbol name="person.fill" size={18} color="#111827" /> Customer Information
+                <IconSymbol name="person.fill" size={18} color={BrandColors.title} /> Customer Information
               </ThemedText>
               <View style={styles.infoCard}>
                 <View style={styles.infoRow}>
@@ -1070,11 +948,317 @@ export default function JobCardDetailScreen() {
               </View>
             </View>
 
+            {/* Customer Bringing */}
+            {ticket.customer_bringing && (
+              <View style={styles.section}>
+                <ThemedText type="subtitle" style={styles.sectionTitle}>
+                  <IconSymbol name="shippingbox" size={18} color={BrandColors.title} /> What Customer Brought
+                </ThemedText>
+                <View style={styles.infoCard}>
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoLabelContainer}>
+                      <IconSymbol name="checkmark.circle.fill" size={16} color="#10B981" />
+                      <Text style={styles.infoLabel}>Service Type</Text>
+                    </View>
+                    <Text style={[styles.infoValue, { color: '#10B981', fontWeight: '600' }]}>
+                      {ticket.customer_bringing === 'both' ? 'Vehicle & Battery' : 
+                       ticket.customer_bringing === 'vehicle' ? 'Vehicle Only' : 'Battery Only'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* Triage Management - Show for all tickets, but only actionable for 'reported' */}
+            <View style={styles.section}>
+              <TriageManagement
+                ticket={ticket}
+                onTriageComplete={() => {
+                  refetch(); // Refresh ticket data
+                  refetchStatusUpdates(); // Refresh status updates
+                }}
+              />
+            </View>
+
+            {/* Vehicle Details */}
+            {(ticket.customer_bringing === 'vehicle' || ticket.customer_bringing === 'both') && vehicleRecord && (
+              <View style={styles.section}>
+                <ThemedText type="subtitle" style={styles.sectionTitle}>
+                  <IconSymbol name="car.fill" size={18} color={BrandColors.title} /> Vehicle Details
+                </ThemedText>
+                <View style={styles.infoCard}>
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoLabelContainer}>
+                      <IconSymbol name="number" size={16} color="#6B7280" />
+                      <Text style={styles.infoLabel}>Registration No.</Text>
+                    </View>
+                    <Text style={styles.infoValue}>{vehicleRecord.vehicle_reg_no}</Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoLabelContainer}>
+                      <IconSymbol name="flag.fill" size={16} color={getStatusColor(vehicleRecord.status)} />
+                      <Text style={styles.infoLabel}>Intake Status</Text>
+                    </View>
+                    <Text style={[styles.infoValue, { color: getStatusColor(vehicleRecord.status) }]}>
+                      {vehicleRecord.status.replace('_', ' ').toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoLabelContainer}>
+                      <IconSymbol name="building.2" size={16} color="#6B7280" />
+                      <Text style={styles.infoLabel}>Make</Text>
+                    </View>
+                    <Text style={styles.infoValue}>{vehicleRecord.vehicle_make}</Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoLabelContainer}>
+                      <IconSymbol name="car.rear.and.front.and.rear.waves" size={16} color="#6B7280" />
+                      <Text style={styles.infoLabel}>Model</Text>
+                    </View>
+                    <Text style={styles.infoValue}>{vehicleRecord.vehicle_model}</Text>
+                  </View>
+                  {vehicleRecord.vehicle_year && (
+                    <View style={styles.infoRow}>
+                      <View style={styles.infoLabelContainer}>
+                        <IconSymbol name="calendar" size={16} color="#6B7280" />
+                        <Text style={styles.infoLabel}>Year</Text>
+                      </View>
+                      <Text style={styles.infoValue}>{vehicleRecord.vehicle_year}</Text>
+                    </View>
+                  )}
+                  {vehicleRecord.vin_number && (
+                    <View style={styles.infoRow}>
+                      <View style={styles.infoLabelContainer}>
+                        <IconSymbol name="barcode" size={16} color="#6B7280" />
+                        <Text style={styles.infoLabel}>VIN Number</Text>
+                      </View>
+                      <Text style={styles.infoValue}>{vehicleRecord.vin_number}</Text>
+                    </View>
+                  )}
+                  {vehicleRecord.vehicle_type && (
+                    <View style={styles.infoRow}>
+                      <View style={styles.infoLabelContainer}>
+                        <IconSymbol name="car.2" size={16} color="#6B7280" />
+                        <Text style={styles.infoLabel}>Vehicle Type</Text>
+                      </View>
+                      <Text style={styles.infoValue}>{vehicleRecord.vehicle_type}</Text>
+                    </View>
+                  )}
+                  {vehicleRecord.condition_notes && (
+                    <View style={styles.infoRow}>
+                      <View style={styles.infoLabelContainer}>
+                        <IconSymbol name="doc.text" size={16} color="#6B7280" />
+                        <Text style={styles.infoLabel}>Intake Condition</Text>
+                      </View>
+                      <Text style={styles.infoValue}>{vehicleRecord.condition_notes}</Text>
+                    </View>
+                  )}
+                  {vehicleCase && vehicleCase.initial_diagnosis && (
+                    <View style={styles.infoRow}>
+                      <View style={styles.infoLabelContainer}>
+                        <IconSymbol name="stethoscope" size={16} color="#F59E0B" />
+                        <Text style={styles.infoLabel}>Initial Diagnosis</Text>
+                      </View>
+                      <Text style={styles.infoValue}>{vehicleCase.initial_diagnosis}</Text>
+                    </View>
+                  )}
+                  {vehicleCase && vehicleCase.diagnostic_notes && (
+                    <View style={styles.infoRow}>
+                      <View style={styles.infoLabelContainer}>
+                        <IconSymbol name="wrench.and.screwdriver" size={16} color="#10B981" />
+                        <Text style={styles.infoLabel}>Service Diagnostics</Text>
+                      </View>
+                      <Text style={styles.infoValue}>{vehicleCase.diagnostic_notes}</Text>
+                    </View>
+                  )}
+                  {vehicleCase && (
+                    <View style={styles.infoRow}>
+                      <View style={styles.infoLabelContainer}>
+                        <IconSymbol name="gear" size={16} color="#8B5CF6" />
+                        <Text style={styles.infoLabel}>Service Status</Text>
+                      </View>
+                      <Text style={[styles.infoValue, { color: getStatusColor(vehicleCase.status) }]}>
+                        {vehicleCase.status.replace('_', ' ').toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                  {vehicleRecord.received_date && (
+                    <View style={styles.infoRow}>
+                      <View style={styles.infoLabelContainer}>
+                        <IconSymbol name="calendar.badge.clock" size={16} color="#6B7280" />
+                        <Text style={styles.infoLabel}>Received</Text>
+                      </View>
+                      <Text style={styles.infoValue}>
+                        {new Date(vehicleRecord.received_date).toLocaleDateString('en-GB', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoLabelContainer}>
+                      <IconSymbol name="calendar.badge.plus" size={16} color="#6B7280" />
+                      <Text style={styles.infoLabel}>Intake Created</Text>
+                    </View>
+                    <Text style={styles.infoValue}>
+                      {new Date(vehicleRecord.created_at).toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* Battery Details */}
+            {(ticket.customer_bringing === 'battery' || ticket.customer_bringing === 'both') && batteryRecords.length > 0 && (
+              <View style={styles.section}>
+                <ThemedText type="subtitle" style={styles.sectionTitle}>
+                  <IconSymbol name="battery.100" size={18} color={BrandColors.title} /> Battery Details ({batteryRecords.length} {batteryRecords.length === 1 ? 'Battery' : 'Batteries'})
+                </ThemedText>
+                {batteryRecords.map((batteryRecord, index) => {
+                  // Find corresponding battery case
+                  const batteryCase = batteryCases.find(bc => bc.battery_record_id === batteryRecord.id);
+                  
+                  return (
+                    <View key={batteryRecord.id} style={[styles.infoCard, index > 0 && { marginTop: 12 }]}>
+                      {batteryRecords.length > 1 && (
+                        <Text style={styles.batteryCardHeader}>Battery {index + 1}</Text>
+                      )}
+                      <View style={styles.infoRow}>
+                        <View style={styles.infoLabelContainer}>
+                          <IconSymbol name="number" size={16} color="#6B7280" />
+                          <Text style={styles.infoLabel}>Serial Number</Text>
+                        </View>
+                        <Text style={styles.infoValue}>{batteryRecord.serial_number}</Text>
+                      </View>
+                      <View style={styles.infoRow}>
+                        <View style={styles.infoLabelContainer}>
+                          <IconSymbol name="flag.fill" size={16} color={getStatusColor(batteryRecord.status)} />
+                          <Text style={styles.infoLabel}>Intake Status</Text>
+                        </View>
+                        <Text style={[styles.infoValue, { color: getStatusColor(batteryRecord.status) }]}>
+                          {batteryRecord.status.replace('_', ' ').toUpperCase()}
+                        </Text>
+                      </View>
+                      <View style={styles.infoRow}>
+                        <View style={styles.infoLabelContainer}>
+                          <IconSymbol name="building.2" size={16} color="#6B7280" />
+                          <Text style={styles.infoLabel}>Brand</Text>
+                        </View>
+                        <Text style={styles.infoValue}>{batteryRecord.brand}</Text>
+                      </View>
+                      {batteryRecord.model && (
+                        <View style={styles.infoRow}>
+                          <View style={styles.infoLabelContainer}>
+                            <IconSymbol name="battery.50" size={16} color="#6B7280" />
+                            <Text style={styles.infoLabel}>Model</Text>
+                          </View>
+                          <Text style={styles.infoValue}>{batteryRecord.model}</Text>
+                        </View>
+                      )}
+                      <View style={styles.infoRow}>
+                        <View style={styles.infoLabelContainer}>
+                          <IconSymbol name="gear" size={16} color="#6B7280" />
+                          <Text style={styles.infoLabel}>Battery Type</Text>
+                        </View>
+                        <Text style={styles.infoValue}>{batteryRecord.battery_type.toUpperCase()}</Text>
+                      </View>
+                      <View style={styles.infoRow}>
+                        <View style={styles.infoLabelContainer}>
+                          <IconSymbol name="bolt.circle" size={16} color="#F59E0B" />
+                          <Text style={styles.infoLabel}>Voltage</Text>
+                        </View>
+                        <Text style={styles.infoValue}>{batteryRecord.voltage}V</Text>
+                      </View>
+                      <View style={styles.infoRow}>
+                        <View style={styles.infoLabelContainer}>
+                          <IconSymbol name="bolt.fill" size={16} color="#10B981" />
+                          <Text style={styles.infoLabel}>Capacity</Text>
+                        </View>
+                        <Text style={styles.infoValue}>{batteryRecord.capacity} Ah</Text>
+                      </View>
+                      {batteryRecord.cell_type && (
+                        <View style={styles.infoRow}>
+                          <View style={styles.infoLabelContainer}>
+                            <IconSymbol name="circle.grid.3x3" size={16} color="#6B7280" />
+                            <Text style={styles.infoLabel}>Cell Type</Text>
+                          </View>
+                          <Text style={styles.infoValue}>{batteryRecord.cell_type}</Text>
+                        </View>
+                      )}
+                      {batteryRecord.repair_notes && (
+                        <View style={styles.infoRow}>
+                          <View style={styles.infoLabelContainer}>
+                            <IconSymbol name="doc.text" size={16} color="#F59E0B" />
+                            <Text style={styles.infoLabel}>Intake Condition</Text>
+                          </View>
+                          <Text style={styles.infoValue}>{batteryRecord.repair_notes}</Text>
+                        </View>
+                      )}
+                      {batteryCase && batteryCase.initial_diagnosis && (
+                        <View style={styles.infoRow}>
+                          <View style={styles.infoLabelContainer}>
+                            <IconSymbol name="stethoscope" size={16} color="#F59E0B" />
+                            <Text style={styles.infoLabel}>Initial Diagnosis</Text>
+                          </View>
+                          <Text style={styles.infoValue}>{batteryCase.initial_diagnosis}</Text>
+                        </View>
+                      )}
+                      {batteryCase && batteryCase.repair_type && (
+                        <View style={styles.infoRow}>
+                          <View style={styles.infoLabelContainer}>
+                            <IconSymbol name="wrench.and.screwdriver" size={16} color="#10B981" />
+                            <Text style={styles.infoLabel}>Repair Type</Text>
+                          </View>
+                          <Text style={styles.infoValue}>{batteryCase.repair_type}</Text>
+                        </View>
+                      )}
+                      {batteryCase && (
+                        <View style={styles.infoRow}>
+                          <View style={styles.infoLabelContainer}>
+                            <IconSymbol name="gear" size={16} color="#8B5CF6" />
+                            <Text style={styles.infoLabel}>Service Status</Text>
+                          </View>
+                          <Text style={[styles.infoValue, { color: getStatusColor(batteryCase.status) }]}>
+                            {batteryCase.status.replace('_', ' ').toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
+                      <View style={styles.infoRow}>
+                        <View style={styles.infoLabelContainer}>
+                          <IconSymbol name="calendar.badge.plus" size={16} color="#6B7280" />
+                          <Text style={styles.infoLabel}>Intake Created</Text>
+                        </View>
+                        <Text style={styles.infoValue}>
+                          {new Date(batteryRecord.created_at).toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+
             {/* Description */}
             {ticket.description && (
               <View style={styles.section}>
                 <ThemedText type="subtitle" style={styles.sectionTitle}>
-                  <IconSymbol name="doc.text" size={18} color="#111827" /> Description
+                  <IconSymbol name="doc.text" size={18} color={BrandColors.title} /> Description
                 </ThemedText>
                 <View style={styles.infoCard}>
                   <Text style={styles.descriptionText}>{ticket.description || ticket.customer_complaint}</Text>
@@ -1086,7 +1270,7 @@ export default function JobCardDetailScreen() {
             {attachments.length > 0 && (
               <View style={styles.section}>
                 <ThemedText type="subtitle" style={styles.sectionTitle}>
-                  <IconSymbol name="camera" size={18} color="#111827" /> Intake Media
+                  <IconSymbol name="camera" size={18} color={BrandColors.title} /> Intake Media
                 </ThemedText>
                 <View style={styles.infoCard}>
                   <View style={styles.mediaStats}>
@@ -1180,18 +1364,11 @@ export default function JobCardDetailScreen() {
               </View>
             )}
 
-            {/* Triage Management - For Floor Managers */}
-            <View style={styles.section}>
-              <TriageManagement 
-                ticket={ticket} 
-                onRefresh={refetch}
-              />
-            </View>
 
             {/* Assignment Info */}
             <View style={styles.section}>
               <ThemedText type="subtitle" style={styles.sectionTitle}>
-                <IconSymbol name="person.badge.clock" size={18} color="#111827" /> Assignment Details
+                <IconSymbol name="person.badge.clock" size={18} color={BrandColors.title} /> Assignment Details
               </ThemedText>
               <View style={styles.infoCard}>
                 <View style={styles.infoRow}>
@@ -1266,7 +1443,7 @@ export default function JobCardDetailScreen() {
             {nextStatusOptions.length > 0 && (
               <View style={styles.section}>
                 <ThemedText type="subtitle" style={styles.sectionTitle}>
-                  <IconSymbol name="arrow.forward.circle" size={18} color="#111827" /> Status Actions
+                  <IconSymbol name="arrow.forward.circle" size={18} color={BrandColors.title} /> Status Actions
                 </ThemedText>
                 <View style={styles.statusActions}>
                   {nextStatusOptions.map((status) => {
@@ -1284,7 +1461,7 @@ export default function JobCardDetailScreen() {
                         key={status}
                         style={[
                           styles.statusActionButton,
-                          { backgroundColor: getStatusColor(status) + '20' },
+                          { backgroundColor: StatusColors[status as keyof typeof StatusColors]?.background || BrandColors.primary + '20' },
                         ]}
                         onPress={() => handleStatusUpdate(status)}
                         activeOpacity={0.8}
@@ -1293,9 +1470,9 @@ export default function JobCardDetailScreen() {
                           <IconSymbol 
                             name={getStatusIcon(status)} 
                             size={20} 
-                            color={getStatusColor(status)} 
+                            color={StatusColors[status as keyof typeof StatusColors]?.primary || BrandColors.primary} 
                           />
-                          <Text style={[styles.statusActionText, { color: getStatusColor(status) }]}>
+                          <Text style={[styles.statusActionText, { color: StatusColors[status as keyof typeof StatusColors]?.primary || BrandColors.primary }]}>
                             Mark as {status.replace('_', ' ')}
                           </Text>
                         </View>
@@ -1309,7 +1486,7 @@ export default function JobCardDetailScreen() {
             {/* Status Updates - Progress Timeline */}
             <View style={styles.section}>
               <ThemedText type="subtitle" style={styles.sectionTitle}>
-                <IconSymbol name="clock" size={18} color="#111827" /> Progress Updates
+                <IconSymbol name="clock" size={18} color={BrandColors.title} /> Progress Updates
               </ThemedText>
               
               <View style={styles.statusUpdatesCard}>
@@ -1372,166 +1549,89 @@ export default function JobCardDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: BrandColors.surface,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: Spacing['3xl'],
   },
   section: {
-    padding: 20,
-  },
-  progressCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  progressTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 16,
-  },
-  progressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  progressStep: {
-    alignItems: 'center',
-    flex: 1,
-    position: 'relative',
-  },
-  progressDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#E5E7EB',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  progressDotActive: {
-    backgroundColor: '#10B981',
-  },
-  progressDotCurrent: {
-    backgroundColor: '#3B82F6',
-  },
-  progressLabel: {
-    fontSize: 10,
-    color: '#6B7280',
-    textAlign: 'center',
-    textTransform: 'capitalize',
-  },
-  progressLabelActive: {
-    color: '#374151',
-    fontWeight: '500',
-  },
-  progressLabelCurrent: {
-    color: '#3B82F6',
-    fontWeight: '600',
-  },
-  progressLine: {
-    position: 'absolute',
-    top: 12,
-    left: '50%',
-    right: -50,
-    height: 2,
-    backgroundColor: '#E5E7EB',
-  },
-  progressLineActive: {
-    backgroundColor: '#10B981',
+    padding: Spacing.lg,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 16,
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.title,
+    marginBottom: Spacing.base,
   },
   ticketCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    ...ComponentStyles.card,
+    padding: Spacing.lg,
   },
   ticketHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 20,
+    marginBottom: Spacing.lg,
   },
   ticketHeaderLeft: {
     flex: 1,
-    marginRight: 16,
+    marginRight: Spacing.base,
   },
   ticketNumberContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-    gap: 8,
+    marginBottom: Spacing.md,
+    gap: Spacing.sm,
   },
   ticketNumber: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 8,
+    fontSize: Typography.fontSize.xl,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.title,
+    marginBottom: Spacing.sm,
   },
   ticketBadges: {
     flexDirection: 'row',
-    gap: 8,
+    gap: Spacing.sm,
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 6,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    gap: Spacing.xs,
   },
   statusText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.semibold,
     textTransform: 'capitalize',
   },
   reassignButton: {
-    borderColor: '#F59E0B',
-    backgroundColor: '#FEF3C7',
+    borderColor: BrandColors.primary,
+    backgroundColor: BrandColors.primary + '20',
   },
   reassignButtonText: {
-    color: '#F59E0B',
+    color: BrandColors.primary,
   },
   symptom: {
-    fontSize: 16,
-    color: '#111827',
-    fontWeight: '500',
-    marginBottom: 8,
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.medium,
+    color: BrandColors.title,
+    marginBottom: Spacing.sm,
   },
   description: {
-    fontSize: 14,
-    color: '#6B7280',
-    lineHeight: 20,
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '80',
+    lineHeight: Typography.lineHeight.sm,
   },
   infoCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-    gap: 12,
+    ...ComponentStyles.card,
+    padding: Spacing.base,
+    gap: Spacing.md,
   },
   infoRow: {
     flexDirection: 'row',
@@ -1541,101 +1641,97 @@ const styles = StyleSheet.create({
   infoLabelContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: Spacing.sm,
     flex: 1,
   },
   infoLabel: {
-    fontSize: 14,
-    color: '#6B7280',
-    fontWeight: '500',
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: BrandColors.ink + '60',
   },
   infoValue: {
-    fontSize: 14,
-    color: '#111827',
-    fontWeight: '500',
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: BrandColors.ink,
     flex: 2,
     textAlign: 'right',
   },
   statusActions: {
-    gap: 12,
+    gap: Spacing.md,
   },
   statusActionButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    paddingVertical: Spacing.base,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
     alignItems: 'center',
   },
   statusActionContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: Spacing.sm,
   },
   statusActionText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
     textTransform: 'capitalize',
   },
   statusUpdatesCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    ...ComponentStyles.card,
     overflow: 'hidden',
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: Spacing.lg,
   },
   errorText: {
-    fontSize: 16,
-    color: '#EF4444',
-    marginBottom: 16,
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.medium,
+    color: BrandColors.primary,
+    marginBottom: Spacing.base,
     textAlign: 'center',
   },
   retryButton: {
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
+    ...ComponentStyles.button.primary,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
   },
   retryText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.surface,
   },
   // Modal styles
   modalContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: BrandColors.surface,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    paddingTop: 60,
+    padding: Spacing.lg,
+    paddingTop: Spacing['5xl'],
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: BrandColors.ink + '20',
   },
   modalCancel: {
-    fontSize: 16,
-    color: '#6B7280',
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.medium,
+    color: BrandColors.ink + '60',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.title,
   },
   modalSpacer: {
     width: 60,
   },
   modalContent: {
     flex: 1,
-    padding: 20,
+    padding: Spacing.lg,
   },
   technicianOption: {
     flexDirection: 'row',
@@ -1678,45 +1774,46 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   loadingContainer: {
-    padding: 40,
+    padding: Spacing['3xl'],
     alignItems: 'center',
     justifyContent: 'center',
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#6B7280',
-    fontWeight: '500',
+    marginTop: Spacing.md,
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.medium,
+    color: BrandColors.ink + '60',
   },
   // Description styles
   descriptionText: {
-    fontSize: 14,
-    color: '#374151',
-    lineHeight: 20,
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '80',
+    lineHeight: Typography.lineHeight.sm,
   },
   // Media styles
   mediaStats: {
     flexDirection: 'row',
-    gap: 16,
-    marginBottom: 16,
-    paddingBottom: 12,
+    gap: Spacing.base,
+    marginBottom: Spacing.base,
+    paddingBottom: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: BrandColors.ink + '20',
   },
   mediaStatItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: Spacing.xs,
   },
   mediaStatText: {
-    fontSize: 14,
-    color: '#6B7280',
-    fontWeight: '500',
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: BrandColors.ink + '60',
   },
   mediaGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: Spacing.md,
   },
   mediaItem: {
     width: '48%',
@@ -1724,19 +1821,19 @@ const styles = StyleSheet.create({
   },
   photoItem: {
     alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#EFF6FF',
-    borderRadius: 8,
+    padding: Spacing.md,
+    backgroundColor: BrandColors.primary + '10',
+    borderRadius: BorderRadius.sm,
     borderWidth: 1,
-    borderColor: '#DBEAFE',
+    borderColor: BrandColors.primary + '30',
   },
   audioItem: {
     alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#F0FDF4',
-    borderRadius: 8,
+    padding: Spacing.md,
+    backgroundColor: BrandColors.title + '10',
+    borderRadius: BorderRadius.sm,
     borderWidth: 1,
-    borderColor: '#DCFCE7',
+    borderColor: BrandColors.title + '30',
   },
   imageOverlay: {
     position: 'absolute',
@@ -2136,5 +2233,15 @@ const styles = StyleSheet.create({
   playButtonDisabled: {
     backgroundColor: '#9CA3AF',
     shadowOpacity: 0.1,
+  },
+  batteryCardHeader: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#8B5CF6',
+    marginBottom: 12,
+    textAlign: 'center',
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
 });

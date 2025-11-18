@@ -4,25 +4,27 @@
  */
 
 import { Platform } from 'react-native';
+import { BrandColors } from './design-system';
 
-const tintColorLight = '#0a7ea4';
+// Use BrandColors for consistent theming
+const tintColorLight = BrandColors.primary;
 const tintColorDark = '#fff';
 
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
+    text: BrandColors.ink,
+    background: BrandColors.surface,
     tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
+    icon: BrandColors.ink,
+    tabIconDefault: BrandColors.ink + '80', // 50% opacity
     tabIconSelected: tintColorLight,
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
+    text: BrandColors.surface,
+    background: BrandColors.shellDark,
     tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
+    icon: BrandColors.surface,
+    tabIconDefault: BrandColors.surface + '80', // 50% opacity
     tabIconSelected: tintColorDark,
   },
 };

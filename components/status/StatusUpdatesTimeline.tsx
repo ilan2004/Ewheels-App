@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ThemedText } from '@/components/themed-text';
+import { BrandColors, Typography, Spacing, BorderRadius, ComponentStyles, StatusColors, Colors } from '@/constants/design-system';
 
 interface StatusUpdate {
   id: string;
@@ -36,14 +37,7 @@ export function StatusUpdatesTimeline({
 }: StatusUpdatesTimelineProps) {
   
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'reported': return '#EF4444';
-      case 'triaged': return '#F59E0B';
-      case 'in_progress': return '#8B5CF6';
-      case 'completed': return '#10B981';
-      case 'delivered': return '#06B6D4';
-      default: return '#6B7280';
-    }
+    return StatusColors[status as keyof typeof StatusColors]?.primary || BrandColors.primary;
   };
 
   const getStatusIcon = (status: string) => {
@@ -96,7 +90,7 @@ export function StatusUpdatesTimeline({
   if (updates.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <IconSymbol name="clock" size={24} color="#9CA3AF" />
+        <IconSymbol name="clock" size={24} color={Colors.neutral[400]} />
         <Text style={styles.emptyText}>No status updates yet</Text>
         <Text style={styles.emptySubtext}>
           Updates will appear here as work progresses
@@ -161,7 +155,7 @@ export function StatusUpdatesTimeline({
                   <View style={styles.updateTimeline}>
                     <View style={[
                       styles.timelineDot,
-                      { backgroundColor: update.is_system_update ? '#9CA3AF' : getStatusColor(status) }
+                      { backgroundColor: update.is_system_update ? Colors.neutral[400] : getStatusColor(status) }
                     ]} />
                     {index < statusUpdates.length - 1 && (
                       <View style={styles.timelineLine} />
@@ -184,7 +178,7 @@ export function StatusUpdatesTimeline({
                           style={styles.deleteButton}
                           onPress={() => handleDeleteUpdate(update.id, update.update_text)}
                         >
-                          <IconSymbol name="trash" size={14} color="#EF4444" />
+                          <IconSymbol name="trash" size={14} color={Colors.error[500]} />
                         </TouchableOpacity>
                       )}
                     </View>
@@ -210,35 +204,36 @@ const styles = StyleSheet.create({
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 40,
+    padding: Spacing['3xl'],
   },
   emptyText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#6B7280',
-    marginTop: 12,
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.ink + '60',
+    marginTop: Spacing.md,
   },
   emptySubtext: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    marginTop: 4,
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '40',
+    marginTop: Spacing.xs,
     textAlign: 'center',
   },
   statusSection: {
-    marginBottom: 24,
+    marginBottom: Spacing['2xl'],
   },
   statusHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: Spacing.md,
   },
   statusIconContainer: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: BorderRadius.lg,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: Spacing.md,
   },
   statusHeaderText: {
     flex: 1,
@@ -247,77 +242,86 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   statusTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
   },
   currentBadge: {
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    backgroundColor: BrandColors.primary,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.md,
   },
   currentBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.bold,
+    color: BrandColors.surface,
   },
   updatesContainer: {
-    paddingLeft: 16,
+    paddingLeft: Spacing.base,
   },
   updateItem: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: Spacing.base,
   },
   updateTimeline: {
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: Spacing.md,
     width: 20,
   },
   timelineDot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
-    marginTop: 4,
+    borderRadius: BorderRadius.xs,
+    marginTop: Spacing.xs,
   },
   timelineLine: {
     flex: 1,
     width: 2,
-    backgroundColor: '#E5E7EB',
-    marginTop: 4,
+    backgroundColor: BrandColors.ink + '20',
+    marginTop: Spacing.xs,
   },
   updateContent: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.sm,
+    padding: Spacing.md,
     borderLeftWidth: 3,
-    borderLeftColor: '#E5E7EB',
+    borderLeftColor: BrandColors.primary + '40',
+    borderWidth: 1,
+    borderColor: BrandColors.ink + '10',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   updateHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
   updateMeta: {
     flex: 1,
   },
   updateUser: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#374151',
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.title,
     marginBottom: 2,
   },
   updateTime: {
-    fontSize: 11,
-    color: '#9CA3AF',
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '80',
   },
   deleteButton: {
-    padding: 4,
+    padding: Spacing.xs,
   },
   updateText: {
-    fontSize: 14,
-    color: '#374151',
-    lineHeight: 20,
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink,
+    lineHeight: Typography.lineHeight.sm,
   },
 });

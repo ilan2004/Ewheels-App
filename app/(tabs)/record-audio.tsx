@@ -22,7 +22,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors, Typography, Spacing } from '@/constants/design-system';
+import { Colors, Typography, Spacing, BrandColors } from '@/constants/design-system';
 import { useAuthStore } from '@/stores/authStore';
 import { supabase } from '@/lib/supabase';
 
@@ -539,13 +539,13 @@ export default function RecordAudio() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.neutral[50],
+    backgroundColor: BrandColors.surface,
   },
   permissionContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.neutral[50],
+    backgroundColor: BrandColors.surface,
     paddingHorizontal: Spacing.xl,
   },
   permissionIcon: {
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.semibold,
   },
   recordingSection: {
-    backgroundColor: Colors.white,
+    backgroundColor: BrandColors.surface,
     padding: Spacing.xl,
     alignItems: 'center',
     borderBottomWidth: 1,
@@ -592,10 +592,12 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: Colors.neutral[100],
+    backgroundColor: BrandColors.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.base,
+    borderWidth: 2,
+    borderColor: Colors.neutral[200],
   },
   microphoneRecording: {
     backgroundColor: Colors.danger[500],
@@ -697,10 +699,12 @@ const styles = StyleSheet.create({
   recordingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: BrandColors.surface,
     padding: Spacing.base,
     borderRadius: 12,
     marginBottom: Spacing.base,
+    borderWidth: 1,
+    borderColor: Colors.neutral[200],
     shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

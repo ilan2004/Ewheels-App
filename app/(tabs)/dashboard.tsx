@@ -16,13 +16,14 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuthStore } from '@/stores/authStore';
 import { useLocationStore } from '@/stores/locationStore';
 import { dataService } from '@/services/dataService';
-import { DashboardKPIs, ServiceTicket, TechnicianWorkload } from '@/types';
+import { DashboardKPIs, ServiceTicket } from '@/types';
 import { LocationSelector } from '@/components/location-selector';
 import { getFeatureAccess, isFloorManager } from '@/lib/permissions';
-import { Colors, Typography, Spacing, BorderRadius, ComponentStyles, Shadows, StatusColors } from '@/constants/design-system';
+import { Colors, Typography, Spacing, BorderRadius, ComponentStyles, Shadows, StatusColors, BrandColors, FinancialColors, AdminPanelOverviewColors } from '@/constants/design-system';
+import { LinearGradient } from 'expo-linear-gradient';
 import { EmptyJobCards, StatusIcon } from '@/components/empty-states';
-import { HeroImageCard } from '@/components/image-card';
 import FloorManagerDashboard from './floor-manager-dashboard';
+import { useFinancialKPIs } from '@/hooks/useFinancial';
 
 interface KPICardProps {
   title: string;
@@ -68,6 +69,47 @@ const KPICard: React.FC<KPICardProps> = ({
         </Text>
       )}
     </View>
+  </TouchableOpacity>
+);
+
+interface AdminOverviewCardProps {
+  title: string;
+  value: number | string;
+  color: string;
+  gradientColors: string[];
+  icon: string;
+  onPress?: () => void;
+  subtitle?: string;
+}
+
+const AdminOverviewCard: React.FC<AdminOverviewCardProps> = ({
+  title,
+  value,
+  color,
+  gradientColors,
+  icon,
+  onPress,
+  subtitle,
+}) => (
+  <TouchableOpacity
+    onPress={onPress}
+    disabled={!onPress}
+  >
+    <LinearGradient
+      colors={gradientColors}
+      style={styles.adminOverviewCard}
+    >
+      <View style={styles.adminCardContent}>
+        <View style={styles.adminCardHeader}>
+          <IconSymbol name={icon} size={20} color={color} />
+          <Text style={[styles.adminCardTitle, { color }]}>{title}</Text>
+        </View>
+        <Text style={[styles.adminCardValue, { color }]}>{value}</Text>
+        {subtitle && (
+          <Text style={[styles.adminCardSubtitle, { color }]}>{subtitle}</Text>
+        )}
+      </View>
+    </LinearGradient>
   </TouchableOpacity>
 );
 
@@ -135,7 +177,7 @@ export default function DashboardScreen() {
     return <FloorManagerDashboard />;
   }
 
-  // Fetch dashboard KPIs
+  // Fetch essential dashboard KPIs (overdue job cards)
   const {
     data: kpis,
     isLoading: kpisLoading,
@@ -148,37 +190,20 @@ export default function DashboardScreen() {
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
-  // Fetch recent tickets
+  // Fetch today's financial data (sales and expenses)
   const {
-    data: recentTickets,
-    isLoading: ticketsLoading,
-    refetch: refetchTickets,
-  } = useQuery<ServiceTicket[]>({
-    queryKey: ['recent-tickets', user?.role, user?.id, activeLocation?.id],
-    queryFn: () => dataService.getRecentTickets(user!.role, user!.id, activeLocation?.id, 5),
-    enabled: !!user,
-    refetchInterval: 30000,
-  });
+    kpis: financialKpis,
+    loading: financialLoading,
+    error: financialError,
+    refreshKPIs: refreshFinancialKpis,
+  } = useFinancialKPIs();
 
-  // Fetch team workload
-  const {
-    data: teamWorkload,
-    isLoading: workloadLoading,
-    refetch: refetchWorkload,
-  } = useQuery<TechnicianWorkload[]>({
-    queryKey: ['team-workload', user?.role, activeLocation?.id],
-    queryFn: () => dataService.getTeamWorkload(user!.role, activeLocation?.id),
-    enabled: !!user && featureAccess?.canViewAnalytics,
-    refetchInterval: 30000,
-  });
-
-  const refreshing = kpisLoading || ticketsLoading || workloadLoading;
+  const refreshing = kpisLoading || financialLoading;
 
   const handleRefresh = async () => {
     await Promise.all([
       refetchKpis(),
-      refetchTickets(),
-      refetchWorkload(),
+      refreshFinancialKpis(),
     ]);
   };
 
@@ -187,28 +212,15 @@ export default function DashboardScreen() {
       case 'overdue':
         router.push('/(tabs)/jobcards?filter=overdue');
         break;
-      case 'dueToday':
-        router.push('/(tabs)/jobcards?filter=today');
+      case 'sales':
+        router.push('/(tabs)/financial?tab=sales');
         break;
-      case 'unassigned':
-        router.push('/(tabs)/jobcards?filter=unassigned');
-        break;
-      case 'inProgress':
-        router.push('/(tabs)/jobcards?filter=in_progress');
-        break;
-      case 'weeklyCompleted':
-        router.push('/(tabs)/jobcards?filter=completed');
-        break;
-      case 'openTickets':
-        router.push('/(tabs)/jobcards');
+      case 'expenses':
+        router.push('/(tabs)/financial?tab=expenses');
         break;
       default:
         router.push('/(tabs)/jobcards');
     }
-  };
-
-  const handleTicketPress = (ticketId: string) => {
-    router.push(`/jobcards/${ticketId}`);
   };
 
   const getGreeting = () => {
@@ -220,9 +232,9 @@ export default function DashboardScreen() {
 
   const userName = user?.firstName
     ? `${user.firstName} ${user.lastName || ''}`.trim()
-    : 'Manager';
+    : user?.role === 'admin' ? 'Administrator' : 'Manager';
 
-  if (kpisError) {
+  if (kpisError || financialError) {
     return (
       <ThemedView style={styles.errorContainer}>
         <Text style={styles.errorText}>Failed to load dashboard</Text>
@@ -257,6 +269,12 @@ export default function DashboardScreen() {
                   day: 'numeric',
                 })}
               </ThemedText>
+              {user?.role === 'admin' && (
+                <View style={styles.adminBadge}>
+                  <IconSymbol name="crown.fill" size={14} color={BrandColors.primary} />
+                  <Text style={styles.adminBadgeText}>System Administrator</Text>
+                </View>
+              )}
             </View>
             <View style={styles.headerActions}>
               <LocationSelector compact style={styles.locationSelector} />
@@ -264,168 +282,97 @@ export default function DashboardScreen() {
                 style={styles.notificationButton}
                 onPress={() => router.push('/notifications')}
               >
-                <IconSymbol name="bell" size={24} color="#6B7280" />
+                <IconSymbol name="bell" size={24} color={BrandColors.ink + '80'} />
               </TouchableOpacity>
             </View>
           </View>
-          <View style={styles.heroImageContainer}>
-            <HeroImageCard
-              source={require('@/assets/images/custom/main-dashboard-hero.png')}
-              style={styles.heroImage}
-              borderRadius="lg"
-            />
-          </View>
         </View>
 
-        {/* KPI Cards */}
-        <View style={styles.section}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>
-            Today's Overview
-          </ThemedText>
-          <View style={styles.kpiGrid}>
-            <KPICard
-              title="Overdue"
-              value={kpis?.overdue || 0}
-              color="#EF4444"
-              backgroundColor="#FEF2F2"
-              icon="exclamationmark.triangle"
-              onPress={() => handleKPIPress('overdue')}
-              trend={{ value: '↑ 2 from yesterday', isPositive: false }}
-            />
-            <KPICard
-              title="Due Today"
-              value={kpis?.dueToday || 0}
-              color="#F59E0B"
-              backgroundColor="#FFFBEB"
-              icon="clock"
-              onPress={() => handleKPIPress('dueToday')}
-            />
-            <KPICard
-              title="In Progress"
-              value={kpis?.inProgressBatteries || 0}
-              color="#8B5CF6"
-              backgroundColor="#F5F3FF"
-              icon="gearshape"
-              onPress={() => handleKPIPress('inProgress')}
-              trend={{ value: '↑ 15%', isPositive: true }}
-            />
-            <KPICard
-              title="Unassigned"
-              value={kpis?.unassigned || 0}
-              color="#6B7280"
-              backgroundColor="#F9FAFB"
-              icon="person.badge.plus"
-              onPress={() => handleKPIPress('unassigned')}
-            />
-          </View>
-        </View>
-
-        {/* Weekly Performance */}
-        <View style={styles.section}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>
-            Weekly Performance
-          </ThemedText>
-          <View style={styles.performanceCard}>
-            <View style={styles.performanceRow}>
-              <TouchableOpacity 
-                style={styles.performanceStat}
-                onPress={() => handleKPIPress('weeklyCompleted')}
-              >
-                <Text style={styles.performanceValue}>
-                  {kpis?.weeklyCompleted || 0}
-                </Text>
-                <Text style={styles.performanceLabel}>Completed</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.performanceStat}
-                onPress={() => handleKPIPress('openTickets')}
-              >
-                <Text style={styles.performanceValue}>
-                  {kpis?.openTickets || 0}
-                </Text>
-                <Text style={styles.performanceLabel}>Total Open</Text>
-              </TouchableOpacity>
-              <View style={styles.performanceStat}>
-                <Text style={styles.performanceValue}>
-                  {kpis?.avgTatDays || 0}d
-                </Text>
-                <Text style={styles.performanceLabel}>Avg TAT</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Recent Activity */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <ThemedText type="subtitle" style={styles.sectionTitle}>
-              Recent Job Cards
-            </ThemedText>
-            <TouchableOpacity onPress={() => router.push('/jobcards')}>
-              <Text style={styles.viewAllText}>View All</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.ticketsList}>
-            {recentTickets?.map((ticket) => (
-              <RecentTicketItem
-                key={ticket.id}
-                ticket={ticket}
-                onPress={() => handleTicketPress(ticket.id)}
-              />
-            ))}
-            {!ticketsLoading && !recentTickets?.length && (
-              <View style={styles.emptyStateContainer}>
-                <EmptyJobCards />
-              </View>
-            )}
-          </View>
-        </View>
-
-        {/* Team Capacity */}
-        {featureAccess?.canViewAnalytics && (
+        {/* Admin Overview or Essential Metrics */}
+        {user?.role === 'admin' ? (
+          // Assignment Overview for Admins
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <ThemedText type="subtitle" style={styles.sectionTitle}>
-                Team Capacity
+                Assignment Overview
               </ThemedText>
-              <TouchableOpacity onPress={() => router.push('/team')}>
-                <Text style={styles.viewAllText}>View Team</Text>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/jobcards')}>
+                <Text style={styles.viewAllText}>View All</Text>
               </TouchableOpacity>
             </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.teamRow}>
-              {teamWorkload?.map((technician) => (
-                <View
-                  key={technician.assignee || 'unassigned'}
-                  style={styles.teamCard}
-                >
-                  <Text style={styles.teamName}>
-                    {technician.name || technician.assignee || 'Unassigned'}
-                  </Text>
-                  <Text style={styles.teamWorkload}>
-                    {technician.count}/{technician.capacity}
-                  </Text>
-                  <View style={styles.capacityBar}>
-                    <View
-                      style={[
-                        styles.capacityFill,
-                        {
-                          width: `${Math.min((technician.count / technician.capacity) * 100, 100)}%`,
-                          backgroundColor:
-                            technician.count >= technician.capacity
-                              ? '#EF4444'
-                              : technician.count / technician.capacity > 0.8
-                              ? '#F59E0B'
-                              : '#10B981',
-                        },
-                      ]}
-                    />
-                  </View>
-                </View>
-              ))}
+            <View style={styles.adminOverviewGrid}>
+              <AdminOverviewCard
+                title="Unassigned"
+                value={kpis?.unassigned || 0}
+                color={AdminPanelOverviewColors.unassigned.text}
+                gradientColors={AdminPanelOverviewColors.unassigned.gradient}
+                icon="exclamationmark.triangle"
+                onPress={() => router.push('/(tabs)/jobcards?filter=unassigned')}
+              />
+              <AdminOverviewCard
+                title="Today's Sales"
+                value={`₹${financialKpis?.today?.sales || 0}`}
+                color={AdminPanelOverviewColors.in_progress.text}
+                gradientColors={AdminPanelOverviewColors.in_progress.gradient}
+                icon="arrow.up.circle.fill"
+                onPress={() => handleKPIPress('sales')}
+              />
+              <AdminOverviewCard
+                title="Today's Expenses"
+                value={`₹${financialKpis?.today?.expenses || 0}`}
+                color={AdminPanelOverviewColors.due_today.text}
+                gradientColors={AdminPanelOverviewColors.due_today.gradient}
+                icon="arrow.down.circle.fill"
+                onPress={() => handleKPIPress('expenses')}
+              />
+              <AdminOverviewCard
+                title="Overdue"
+                value={kpis?.overdue || 0}
+                color={AdminPanelOverviewColors.overdue.text}
+                gradientColors={AdminPanelOverviewColors.overdue.gradient}
+                icon="clock.badge.exclamationmark"
+                onPress={() => handleKPIPress('overdue')}
+              />
             </View>
-          </ScrollView>
-        </View>
+          </View>
+        ) : (
+          // Regular Essential Metrics for non-admin users
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <ThemedText type="subtitle" style={styles.sectionTitle}>
+                Today's Essentials
+              </ThemedText>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/financial')}>
+                <Text style={styles.viewAllText}>View Financials</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.essentialGrid}>
+              <KPICard
+                title="Today's Sales"
+                value={financialKpis?.today?.sales || 0}
+                color={FinancialColors.income.primary}
+                backgroundColor={FinancialColors.income.background}
+                icon="arrow.up.circle.fill"
+                onPress={() => handleKPIPress('sales')}
+              />
+              <KPICard
+                title="Today's Expenses"
+                value={financialKpis?.today?.expenses || 0}
+                color={FinancialColors.expense.primary}
+                backgroundColor={FinancialColors.expense.background}
+                icon="arrow.down.circle.fill"
+                onPress={() => handleKPIPress('expenses')}
+              />
+              <KPICard
+                title="Overdue Job Cards"
+                value={kpis?.overdue || 0}
+                color={Colors.error[500]}
+                backgroundColor={Colors.error[50]}
+                icon="exclamationmark.triangle.fill"
+                onPress={() => handleKPIPress('overdue')}
+              />
+            </View>
+          </View>
         )}
       </ScrollView>
 
@@ -445,7 +392,7 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.neutral[50],
+    backgroundColor: BrandColors.surface, // #f4f3ef
   },
   scrollView: {
     flex: 1,
@@ -454,7 +401,7 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   header: {
-    backgroundColor: Colors.white,
+    backgroundColor: BrandColors.surface, // #f4f3ef
     ...ComponentStyles.header,
     paddingBottom: Spacing.lg,
   },
@@ -466,25 +413,50 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.base,
   },
-  heroImageContainer: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.base,
-    alignItems: 'center',
-  },
-  heroImage: {
-    width: '100%',
-    maxWidth: 300,
-  },
   greeting: {
     fontSize: Typography.fontSize['2xl'],
     fontFamily: Typography.fontFamily.bold,
-    color: Colors.neutral[900],
+    color: BrandColors.title, // #387868
   },
   subtitle: {
     fontSize: Typography.fontSize.sm,
     fontFamily: Typography.fontFamily.regular,
-    color: Colors.neutral[600],
+    color: BrandColors.ink + '80', // #1e1d19 with 80% opacity
     marginTop: Spacing.xs,
+  },
+  adminBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: BrandColors.primary + '15',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+    marginTop: Spacing.sm,
+    gap: Spacing.xs,
+    alignSelf: 'flex-start',
+  },
+  adminBadgeText: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  systemHealthButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.success[50],
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    gap: Spacing.xs,
+    borderWidth: 1,
+    borderColor: Colors.success[200],
+  },
+  systemHealthText: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.semibold,
+    color: Colors.success[700],
   },
   headerActions: {
     flexDirection: 'row',
@@ -510,16 +482,48 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: Typography.fontSize.lg,
     fontFamily: Typography.fontFamily.semibold,
-    color: Colors.neutral[900],
+    color: BrandColors.title, // #387868
     marginBottom: Spacing.base,
   },
   viewAllText: {
     fontSize: Typography.fontSize.sm,
     fontFamily: Typography.fontFamily.medium,
-    color: Colors.primary[600],
+    color: BrandColors.primary, // #ff795b
   },
   kpiGrid: {
     gap: Spacing.md,
+  },
+  essentialGrid: {
+    gap: Spacing.md,
+  },
+  adminOverviewGrid: {
+    gap: Spacing.md,
+  },
+  adminOverviewCard: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.base,
+    ...Shadows.base,
+  },
+  adminCardContent: {
+    gap: Spacing.sm,
+  },
+  adminCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  adminCardTitle: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+  },
+  adminCardValue: {
+    fontSize: Typography.fontSize['2xl'],
+    fontFamily: Typography.fontFamily.bold,
+  },
+  adminCardSubtitle: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.regular,
+    opacity: 0.8,
   },
   kpiCard: {
     ...ComponentStyles.card,
@@ -539,7 +543,7 @@ const styles = StyleSheet.create({
   kpiTitle: {
     fontSize: Typography.fontSize.sm,
     fontFamily: Typography.fontFamily.medium,
-    color: Colors.neutral[600],
+    color: BrandColors.ink + '80', // #1e1d19 with 80% opacity
   },
   kpiValue: {
     fontSize: Typography.fontSize['3xl'],
@@ -548,28 +552,6 @@ const styles = StyleSheet.create({
   kpiTrend: {
     fontSize: Typography.fontSize.xs,
     fontFamily: Typography.fontFamily.medium,
-  },
-  performanceCard: {
-    ...ComponentStyles.card,
-    padding: Spacing.lg,
-  },
-  performanceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  performanceStat: {
-    alignItems: 'center',
-  },
-  performanceValue: {
-    fontSize: Typography.fontSize['2xl'],
-    fontFamily: Typography.fontFamily.bold,
-    color: Colors.neutral[900],
-  },
-  performanceLabel: {
-    fontSize: Typography.fontSize.xs,
-    fontFamily: Typography.fontFamily.regular,
-    color: Colors.neutral[600],
-    marginTop: Spacing.xs,
   },
   ticketsList: {
     gap: Spacing.md,

@@ -4,6 +4,17 @@ import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 
 // Types
+export interface MediaFilters {
+  mediaType?: 'image' | 'video' | 'audio';
+  ticketId?: string;
+  syncStatus?: 'pending' | 'synced' | 'failed';
+  dateRange?: {
+    from: string;
+    to: string;
+  };
+  searchQuery?: string;
+}
+
 export interface MediaItem {
   id: string;
   ticketId?: string;
@@ -39,16 +50,21 @@ export interface ServiceTicket {
 export interface MediaHubState {
   // Data
   mediaItems: MediaItem[];
+  filteredItems: MediaItem[];
   serviceTickets: ServiceTicket[];
   
   // UI State
   activeTab: 'capture' | 'audio' | 'library' | 'search';
   loading: boolean;
   error: string | null;
+  viewMode: 'grid' | 'list';
   
-  // Filters
+  // Comprehensive Filters
+  filters: MediaFilters;
+  
+  // Legacy filters for backward compatibility
   mediaTypeFilter: 'all' | 'image' | 'video' | 'audio';
-  ticketFilter: string | null; // ticket ID or null for all
+  ticketFilter: string | null;
   dateRangeFilter: {
     start?: string;
     end?: string;
@@ -60,10 +76,18 @@ export interface MediaHubState {
   
   // Actions
   setActiveTab: (tab: 'capture' | 'audio' | 'library' | 'search') => void;
+  setViewMode: (mode: 'grid' | 'list') => void;
+  setFilters: (filters: Partial<MediaFilters>) => void;
+  applyFilters: () => void;
+  resetFilters: () => void;
+  
+  // Legacy filter actions (for backward compatibility)
   setMediaTypeFilter: (filter: 'all' | 'image' | 'video' | 'audio') => void;
   setTicketFilter: (ticketId: string | null) => void;
   setDateRangeFilter: (range: { start?: string; end?: string }) => void;
   setSearchQuery: (query: string) => void;
+  
+  // Selection actions
   toggleItemSelection: (itemId: string) => void;
   clearSelection: () => void;
   selectAll: () => void;
@@ -74,6 +98,7 @@ export interface MediaHubState {
   createMediaItem: (data: Partial<MediaItem>) => Promise<MediaItem>;
   updateMediaItem: (id: string, updates: Partial<MediaItem>) => Promise<void>;
   deleteMediaItem: (id: string) => Promise<void>;
+  assignMediaToTicket: (mediaIds: string[], ticketId: string) => Promise<void>;
   assignToTicket: (itemIds: string[], ticketId: string | null) => Promise<void>;
   uploadToSupabase: (item: MediaItem) => Promise<void>;
   
@@ -85,13 +110,22 @@ export interface MediaHubState {
 
 const SUPABASE_BUCKET = 'media-items';
 
+let searchTimeout: NodeJS.Timeout | null = null;
+
 export const useMediaHubStore = create<MediaHubState>((set, get) => ({
   // Initial state
   mediaItems: [],
+  filteredItems: [],
   serviceTickets: [],
   activeTab: 'capture',
   loading: false,
   error: null,
+  viewMode: 'grid',
+  
+  // Comprehensive filters
+  filters: {},
+  
+  // Legacy filters
   mediaTypeFilter: 'all',
   ticketFilter: null,
   dateRangeFilter: {},
@@ -100,6 +134,83 @@ export const useMediaHubStore = create<MediaHubState>((set, get) => ({
 
   // Actions
   setActiveTab: (tab) => set({ activeTab: tab }),
+  
+  setViewMode: (mode) => set({ viewMode: mode }),
+  
+  setFilters: (newFilters) => {
+    set((state) => ({ 
+      filters: { ...state.filters, ...newFilters },
+      selectedItems: []
+    }));
+    
+    // Debounced filter application for search
+    if (newFilters.searchQuery !== undefined) {
+      if (searchTimeout) clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        get().applyFilters();
+      }, 300);
+    } else {
+      get().applyFilters();
+    }
+  },
+  
+  applyFilters: () => {
+    const { mediaItems, filters } = get();
+    let filtered = [...mediaItems];
+
+    // Filter by media type
+    if (filters.mediaType) {
+      filtered = filtered.filter(item => item.mediaType === filters.mediaType);
+    }
+
+    // Filter by ticket
+    if (filters.ticketId) {
+      if (filters.ticketId === 'unassigned') {
+        filtered = filtered.filter(item => !item.ticketId);
+      } else {
+        filtered = filtered.filter(item => item.ticketId === filters.ticketId);
+      }
+    }
+
+    // Filter by sync status
+    if (filters.syncStatus) {
+      filtered = filtered.filter(item => item.syncStatus === filters.syncStatus);
+    }
+
+    // Filter by date range
+    if (filters.dateRange) {
+      const { from, to } = filters.dateRange;
+      filtered = filtered.filter(item => {
+        const itemDate = new Date(item.createdAt);
+        const fromDate = from ? new Date(from) : null;
+        const toDate = to ? new Date(to) : null;
+        
+        if (fromDate && itemDate < fromDate) return false;
+        if (toDate && itemDate > toDate) return false;
+        return true;
+      });
+    }
+
+    // Filter by search query (filename and metadata)
+    if (filters.searchQuery) {
+      const query = filters.searchQuery.toLowerCase();
+      filtered = filtered.filter(item => 
+        item.fileName.toLowerCase().includes(query) ||
+        item.metadata?.originalName?.toLowerCase().includes(query) ||
+        item.metadata?.description?.toLowerCase()?.includes(query)
+      );
+    }
+
+    set({ filteredItems: filtered });
+  },
+  
+  resetFilters: () => {
+    set({ 
+      filters: {},
+      filteredItems: get().mediaItems,
+      selectedItems: []
+    });
+  },
   
   setMediaTypeFilter: (filter) => set({ 
     mediaTypeFilter: filter,
@@ -146,8 +257,33 @@ export const useMediaHubStore = create<MediaHubState>((set, get) => ({
 
       if (error) throw error;
 
+      const rows = data || [];
+
+      // Normalize DB rows (snake_case) into our MediaItem shape (camelCase)
+      const mediaItems: MediaItem[] = rows.map((row: any) => ({
+        id: row.id,
+        ticketId: row.ticket_id,
+        userId: row.user_id,
+        mediaType: row.media_type,
+        fileName: row.file_name,
+        localUri: row.local_uri,
+        remoteUrl: row.remote_url,
+        supabasePath: row.supabase_path,
+        fileSize: row.file_size,
+        durationSeconds: row.duration_seconds,
+        width: row.width,
+        height: row.height,
+        metadata: row.metadata || {},
+        assignedAt: row.assigned_at,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        // If sync_status column exists, use it; otherwise infer from remote_url
+        syncStatus: (row.sync_status as MediaItem['syncStatus']) || (row.remote_url ? 'synced' : 'pending'),
+      }));
+
       set({ 
-        mediaItems: data || [],
+        mediaItems,
+        filteredItems: mediaItems, // Initialize filtered items
         loading: false 
       });
     } catch (error) {
@@ -304,6 +440,44 @@ export const useMediaHubStore = create<MediaHubState>((set, get) => ({
     }
   },
 
+  assignMediaToTicket: async (mediaIds: string[], ticketId: string) => {
+    try {
+      const assignedAt = new Date().toISOString();
+      
+      const { error } = await supabase
+        .from('media_items')
+        .update({
+          ticket_id: ticketId,
+          assigned_at: assignedAt,
+          updated_at: assignedAt
+        })
+        .in('id', mediaIds);
+
+      if (error) throw error;
+
+      // Update local state
+      set((state) => {
+        const updatedItems = state.mediaItems.map(item =>
+          mediaIds.includes(item.id)
+            ? { ...item, ticketId, assignedAt, updatedAt: assignedAt }
+            : item
+        );
+        
+        return {
+          mediaItems: updatedItems,
+          filteredItems: state.filteredItems.map(item =>
+            mediaIds.includes(item.id)
+              ? { ...item, ticketId, assignedAt, updatedAt: assignedAt }
+              : item
+          ),
+          selectedItems: []
+        };
+      });
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to assign media to ticket');
+    }
+  },
+
   assignToTicket: async (itemIds, ticketId) => {
     try {
       const assignedAt = ticketId ? new Date().toISOString() : null;
@@ -318,14 +492,23 @@ export const useMediaHubStore = create<MediaHubState>((set, get) => ({
 
       if (error) throw error;
 
-      set((state) => ({
-        mediaItems: state.mediaItems.map(item =>
+      set((state) => {
+        const updatedItems = state.mediaItems.map(item =>
           itemIds.includes(item.id)
             ? { ...item, ticketId, assignedAt, updatedAt: new Date().toISOString() }
             : item
-        ),
-        selectedItems: []
-      }));
+        );
+        
+        return {
+          mediaItems: updatedItems,
+          filteredItems: state.filteredItems.map(item =>
+            itemIds.includes(item.id)
+              ? { ...item, ticketId, assignedAt, updatedAt: new Date().toISOString() }
+              : item
+          ),
+          selectedItems: []
+        };
+      });
     } catch (error) {
       throw new Error(error instanceof Error ? error.message : 'Failed to assign media items');
     }
@@ -400,6 +583,13 @@ export const useMediaHubStore = create<MediaHubState>((set, get) => ({
   // Computed getters
   getFilteredItems: () => {
     const state = get();
+    
+    // Return already filtered items if using new filter system
+    if (Object.keys(state.filters).length > 0) {
+      return state.filteredItems;
+    }
+    
+    // Legacy filtering for backward compatibility
     let items = state.mediaItems;
 
     // Filter by media type

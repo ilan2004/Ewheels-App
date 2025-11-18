@@ -40,6 +40,8 @@ export interface Customer {
   updated_at: string;
 }
 
+export type CustomerBringingType = 'vehicle' | 'battery' | 'both';
+
 export interface ServiceTicket {
   id: string;
   ticket_number: string;
@@ -49,6 +51,9 @@ export interface ServiceTicket {
   // Problem description
   customer_complaint: string;
   description?: string | null;
+  
+  // What customer is bringing for service
+  customer_bringing?: CustomerBringingType | null;
   
   // Vehicle information
   vehicle_make?: string | null;
@@ -75,9 +80,15 @@ export interface ServiceTicket {
   created_by: string;
   updated_by: string;
   
-  // Linked cases
-  battery_case_id?: string | null;
-  vehicle_case_id?: string | null;
+  // Linked records (INTAKE LAYER)
+  vehicle_record_id?: string | null;  // Links to vehicle_records
+  
+  // Linked cases (SERVICE LAYER) 
+  vehicle_case_id?: string | null;    // Links to vehicle_cases
+  battery_case_id?: string | null;    // Links to battery_cases
+  
+  // Note: battery_records[] are fetched via service_ticket_id
+  // Note: battery_cases[] are fetched via service_ticket_id
   
   // Location context
   location_id?: string | null;
@@ -277,6 +288,176 @@ export const STATUS_COLORS: Record<ServiceTicketStatus, string> = {
   on_hold: '#F59E0B',
   waiting_approval: '#F59E0B',
 };
+
+// Vehicle and Battery Case Types
+export type CaseStatus = 'received' | 'diagnosed' | 'in_progress' | 'completed' | 'delivered';
+
+// INTAKE LAYER - What customer brings
+export interface VehicleRecord {
+  id: string;
+  service_ticket_id: string;
+  vehicle_make: string;
+  vehicle_model: string;
+  vehicle_reg_no: string;
+  vehicle_year?: number | null;
+  vin_number?: string | null;
+  vehicle_type?: string | null;
+  customer_id?: string | null;
+  condition_notes?: string | null;  // Notes during intake
+  status: 'received' | 'processed';
+  received_date?: string | null;
+  delivered_date?: string | null;
+  location_id?: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by?: string | null;
+  updated_by?: string | null;
+}
+
+// SERVICE LAYER - Detailed service tracking
+export interface VehicleCase {
+  id: string;
+  service_ticket_id: string;
+  vehicle_record_id?: string | null;  // Links to intake record
+  initial_diagnosis?: string | null;   // Notes during diagnosis
+  diagnostic_notes?: string | null;    // Detailed diagnostic notes
+  repair_notes?: string | null;       // Notes during repair
+  technician_notes?: string | null;   // General technician notes
+  assigned_technician?: string | null;
+  estimated_cost?: number | null;
+  parts_required?: string[] | null;
+  status: CaseStatus;
+  created_at: string;
+  updated_at: string;
+  created_by?: string | null;
+  updated_by?: string | null;
+  // Linked service ticket info (populated via join)
+  service_ticket?: {
+    id: string;
+    assigned_to: string | null;
+    ticket_number: string;
+    customer_complaint: string;
+  };
+  // Linked intake record (populated via join)
+  vehicle_record?: VehicleRecord;
+}
+
+// INTAKE LAYER - What customer brings
+export interface BatteryRecord {
+  id: string;
+  service_ticket_id: string;
+  serial_number: string;
+  brand: string;
+  model?: string | null;
+  battery_type: 'li-ion' | 'lfp' | 'nmc' | 'other';
+  voltage: number;
+  capacity: number;
+  cell_type?: string | null; // 18650, etc.
+  customer_id?: string | null;
+  repair_notes?: string | null; // Notes during intake
+  status: 'received' | 'processed';
+  created_at: string;
+  updated_at: string;
+  created_by?: string | null;
+  updated_by?: string | null;
+}
+
+// SERVICE LAYER - Detailed service tracking
+export interface BatteryCase {
+  id: string;
+  service_ticket_id: string;
+  battery_record_id: string;           // Links to intake record
+  initial_diagnosis?: string | null;   // Notes during diagnosis
+  diagnostic_notes?: string | null;    // Detailed diagnostic notes
+  repair_notes?: string | null;       // Notes during repair
+  technician_notes?: string | null;   // General technician notes
+  repair_type?: string | null;
+  cells_replaced?: number | null;
+  assigned_technician?: string | null;
+  estimated_cost?: number | null;
+  status: CaseStatus;
+  // Diagnostic fields (for technician workflow)
+  initial_voltage?: number | null;
+  final_voltage?: number | null;
+  load_test_result?: number | null;
+  ir_values?: number[] | null;
+  cell_voltages?: number[] | null;
+  bms_status?: 'ok' | 'faulty' | 'replaced' | 'unknown' | null;
+  final_cost?: number | null;
+  received_at?: string | null;
+  diagnosed_at?: string | null;
+  completed_at?: string | null;
+  delivered_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by?: string | null;
+  updated_by?: string | null;
+  // Linked service ticket info (populated via join)
+  service_ticket?: {
+    id: string;
+    assigned_to: string | null;
+    ticket_number: string;
+    customer_complaint: string;
+  };
+  // Linked intake record (populated via join)
+  battery_record?: BatteryRecord;
+}
+
+// PROGRESS UPDATES - Multiple updates within same status
+export interface VehicleProgressUpdate {
+  id: string;
+  vehicle_case_id: string;
+  update_type: 'diagnostic' | 'repair' | 'parts' | 'general';
+  notes: string;
+  created_by: string;
+  created_at: string;
+}
+
+export interface BatteryProgressUpdate {
+  id: string;
+  battery_case_id: string;
+  update_type: 'diagnostic' | 'repair' | 'parts' | 'general';
+  notes: string;
+  created_by: string;
+  created_at: string;
+}
+
+// STATUS HISTORY - Notes with each status change
+export interface VehicleStatusHistory {
+  id: string;
+  vehicle_case_id: string;
+  previous_status?: CaseStatus | null;
+  new_status: CaseStatus;
+  notes?: string | null;  // Notes added during status change
+  changed_by: string;
+  changed_at: string;
+}
+
+export interface BatteryStatusHistory {
+  id: string;
+  battery_case_id: string;
+  previous_status?: CaseStatus | null;
+  new_status: CaseStatus;
+  notes?: string | null;  // Notes added during status change
+  changed_by: string;
+  changed_at: string;
+}
+
+export interface ServiceTicketHistory {
+  id: string;
+  ticket_id: string;
+  action: string;
+  notes?: string | null;  // Notes added with each action
+  changed_by: string;
+  changed_at: string;
+}
+
+// Case filter types
+export interface CaseFilters {
+  status?: CaseStatus | 'all';
+  assignedTo?: string | 'all' | 'unassigned';
+  search?: string;
+}
 
 // Role permissions (matching web implementation)
 export const ROLE_PERMISSIONS = {

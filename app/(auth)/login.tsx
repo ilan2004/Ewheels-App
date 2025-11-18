@@ -23,7 +23,7 @@ import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { supabase } from '@/lib/supabase';
 import { canBypassLocationFilter } from '@/lib/permissions';
-import { Colors, Typography, Spacing, BorderRadius, ComponentStyles, Shadows } from '@/constants/design-system';
+import { Typography, Spacing, BorderRadius, ComponentStyles, Colors, Shadows, BrandColors } from '@/constants/design-system';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -263,7 +263,7 @@ export default function LoginScreen() {
                     <IconSymbol 
                       name="location.fill" 
                       size={20} 
-                      color={selectedLocation ? "#3B82F6" : "#9CA3AF"} 
+                      color={selectedLocation ? BrandColors.primary : BrandColors.ink + '60'}
                     />
                     <Text style={[
                       styles.locationSelectorText,
@@ -293,24 +293,6 @@ export default function LoginScreen() {
               </Text>
             </TouchableOpacity>
 
-            {/* Demo Credentials */}
-            <View style={styles.demoContainer}>
-              <ThemedText type="defaultSemiBold" style={styles.demoTitle}>
-                Demo Credentials:
-              </ThemedText>
-              <ThemedText style={styles.demoText}>
-                Floor Manager: floormanager@evwheels.com / password123
-              </ThemedText>
-              <ThemedText style={styles.demoText}>
-                Front Desk: manager@evwheels.com / password123
-              </ThemedText>
-              <ThemedText style={styles.demoText}>
-                Technician: tech@evwheels.com / password123
-              </ThemedText>
-              <ThemedText style={styles.demoText}>
-                Admin: admin@evwheels.com / password123
-              </ThemedText>
-            </View>
           </View>
         </ThemedView>
       </ScrollView>
@@ -355,7 +337,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.neutral[50],
+    backgroundColor: BrandColors.surface,
   },
   scrollContainer: {
     flexGrow: 1,
@@ -380,7 +362,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: BorderRadius['2xl'],
-    backgroundColor: Colors.primary[600],
+    backgroundColor: BrandColors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     ...Shadows.md,
@@ -393,13 +375,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: Typography.fontSize['3xl'],
     fontFamily: Typography.fontFamily.bold,
-    color: Colors.neutral[900],
+    color: BrandColors.title,
     marginBottom: Spacing.sm,
   },
   subtitle: {
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.regular,
-    color: Colors.neutral[600],
+    color: BrandColors.ink,
     textAlign: 'center',
     lineHeight: Typography.lineHeight.base,
   },
@@ -412,7 +394,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.medium,
-    color: Colors.neutral[700],
+    color: BrandColors.ink,
   },
   input: {
     ...ComponentStyles.input,
@@ -444,7 +426,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xs,
   },
   showPasswordText: {
-    color: Colors.primary[600],
+    color: BrandColors.primary,
     fontSize: Typography.fontSize.sm,
     fontFamily: Typography.fontFamily.medium,
   },
@@ -459,32 +441,13 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
   },
   loginButtonDisabled: {
-    backgroundColor: Colors.neutral[400],
+    backgroundColor: BrandColors.ink + '40', // 25% opacity
     opacity: 0.6,
   },
   loginButtonText: {
     color: Colors.white,
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.semibold,
-  },
-  demoContainer: {
-    marginTop: Spacing['2xl'],
-    padding: Spacing.base,
-    backgroundColor: Colors.neutral[100],
-    borderRadius: BorderRadius.md,
-    gap: Spacing.xs,
-  },
-  demoTitle: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.semibold,
-    color: Colors.neutral[700],
-    marginBottom: Spacing.sm,
-  },
-  demoText: {
-    fontSize: Typography.fontSize.xs,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    color: Colors.neutral[600],
-    lineHeight: Typography.lineHeight.xs,
   },
   // Location Selector Styles
   locationSelector: {

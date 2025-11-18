@@ -14,6 +14,9 @@ import { useAuthStore } from '@/stores/authStore';
 import { useLocationStore } from '@/stores/locationStore';
 import { LocationSelector } from '@/components/location-selector';
 import { getFeatureAccess, canBypassLocationFilter } from '@/lib/permissions';
+import { BrandColors, Colors, Typography, Spacing, BorderRadius, Shadows } from '@/constants/design-system';
+import { useQuery } from '@tanstack/react-query';
+import { dataService } from '@/services/dataService';
 
 interface ProfileItemProps {
   icon: string;
@@ -36,14 +39,14 @@ const ProfileItem: React.FC<ProfileItemProps> = ({
     disabled={!onPress}
   >
     <View style={styles.profileItemContent}>
-      <IconSymbol name={icon} size={20} color="#6B7280" />
+      <IconSymbol name={icon} size={20} color={BrandColors.ink + '80'} />
       <View style={styles.profileItemText}>
         <Text style={styles.profileItemTitle}>{title}</Text>
         {value && <Text style={styles.profileItemValue}>{value}</Text>}
       </View>
     </View>
     {showChevron && (
-      <IconSymbol name="chevron.right" size={16} color="#9CA3AF" />
+      <IconSymbol name="chevron.right" size={16} color={BrandColors.ink + '60'} />
     )}
   </TouchableOpacity>
 );
@@ -54,6 +57,13 @@ export default function ProfileScreen() {
   
   const featureAccess = user ? getFeatureAccess(user.role) : null;
   const canAccessAllLocations = user ? canBypassLocationFilter(user.role) : false;
+
+  // Fetch quick stats for floor managers
+  const { data: quickStats } = useQuery({
+    queryKey: ['profile-quick-stats', user?.role, activeLocation?.id],
+    queryFn: () => dataService.getDashboardKPIs(user!.role, activeLocation?.id),
+    enabled: !!user && user.role === 'floor_manager',
+  });
 
   const handleSignOut = () => {
     Alert.alert(
@@ -113,6 +123,52 @@ export default function ProfileScreen() {
           <Text style={styles.userEmail}>{user?.email}</Text>
         </View>
 
+        {/* Floor Manager Quick Stats */}
+        {user?.role === 'floor_manager' && quickStats && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Today's Overview</Text>
+            <View style={styles.statsContainer}>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{quickStats.totalTickets || 0}</Text>
+                <Text style={styles.statLabel}>Active Tickets</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{quickStats.unassignedTickets || 0}</Text>
+                <Text style={styles.statLabel}>Unassigned</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{quickStats.overdue || 0}</Text>
+                <Text style={styles.statLabel}>Overdue</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Admin Quick Actions */}
+        {user?.role === 'admin' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Admin Actions</Text>
+            <View style={styles.quickActionsGrid}>
+              <TouchableOpacity style={styles.quickActionCard}>
+                <IconSymbol name="person.3.fill" size={20} color={BrandColors.primary} />
+                <Text style={styles.quickActionText}>User Management</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.quickActionCard}>
+                <IconSymbol name="gear" size={20} color={Colors.warning[600]} />
+                <Text style={styles.quickActionText}>System Settings</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.quickActionCard}>
+                <IconSymbol name="chart.bar.fill" size={20} color={Colors.success[600]} />
+                <Text style={styles.quickActionText}>Analytics</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.quickActionCard}>
+                <IconSymbol name="server.rack" size={20} color={Colors.info[600]} />
+                <Text style={styles.quickActionText}>System Health</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         {/* Profile Information */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Profile Information</Text>
@@ -137,6 +193,13 @@ export default function ProfileScreen() {
                 icon="number"
                 title="User ID"
                 value={user.id}
+              />
+            )}
+            {user?.role === 'admin' && (
+              <ProfileItem
+                icon="checkmark.shield.fill"
+                title="Admin Level"
+                value="System Administrator"
               />
             )}
           </View>
@@ -169,6 +232,13 @@ export default function ProfileScreen() {
               title="Permissions"
               value={getPermissionSummary()}
             />
+            {user?.role === 'admin' && (
+              <ProfileItem
+                icon="crown.fill"
+                title="Admin Privileges"
+                value="Full system access"
+              />
+            )}
           </View>
           {!canAccessAllLocations && availableLocations.length > 1 && (
             <LocationSelector style={styles.locationSelectorCard} />
@@ -246,77 +316,82 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: BrandColors.surface,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: Spacing['3xl'],
   },
   header: {
     alignItems: 'center',
-    padding: 32,
+    padding: Spacing['2xl'],
     paddingTop: 80,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: BrandColors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: BrandColors.ink + '20',
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#3B82F6',
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: BrandColors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: Spacing.lg,
+    ...Shadows.md,
   },
   avatarText: {
-    color: '#FFFFFF',
-    fontSize: 28,
-    fontWeight: 'bold',
+    color: BrandColors.surface,
+    fontSize: Typography.fontSize['2xl'],
+    fontFamily: Typography.fontFamily.bold,
   },
   userName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 4,
+    fontSize: Typography.fontSize['2xl'],
+    fontFamily: Typography.fontFamily.bold,
+    color: BrandColors.title,
+    marginBottom: Spacing.xs,
   },
   userRole: {
-    fontSize: 16,
-    color: '#6B7280',
-    marginBottom: 8,
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.primary,
+    marginBottom: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    backgroundColor: BrandColors.primary + '20',
+    borderRadius: BorderRadius.full,
   },
   userEmail: {
-    fontSize: 14,
-    color: '#9CA3AF',
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '80',
   },
   section: {
-    padding: 20,
-    paddingBottom: 8,
+    padding: Spacing.lg,
+    paddingBottom: Spacing.sm,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 12,
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+    color: BrandColors.title,
+    marginBottom: Spacing.base,
   },
   profileCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: BrandColors.ink + '10',
+    ...Shadows.base,
   },
   profileItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    padding: Spacing.base,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: BrandColors.ink + '10',
   },
   profileItemContent: {
     flexDirection: 'row',
@@ -324,46 +399,101 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileItemText: {
-    marginLeft: 12,
+    marginLeft: Spacing.md,
     flex: 1,
   },
   profileItemTitle: {
-    fontSize: 16,
-    color: '#111827',
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.ink,
     marginBottom: 2,
   },
   profileItemValue: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '80',
   },
   signOutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 2,
+    borderColor: '#EF4444' + '30',
+    padding: Spacing.base,
+    gap: Spacing.sm,
+    ...Shadows.sm,
   },
   signOutText: {
-    fontSize: 16,
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
     color: '#EF4444',
-    fontWeight: '600',
   },
   footer: {
     alignItems: 'center',
-    padding: 20,
+    padding: Spacing.lg,
   },
   versionText: {
-    fontSize: 12,
-    color: '#9CA3AF',
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '60',
   },
   locationSelectorCard: {
-    marginTop: 12,
+    marginTop: Spacing.md,
+  },
+  // Admin Quick Actions
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.md,
+    justifyContent: 'space-between',
+  },
+  quickActionCard: {
+    width: '48%',
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.base,
+    alignItems: 'center',
+    gap: Spacing.sm,
+    borderWidth: 1,
+    borderColor: BrandColors.ink + '10',
+    ...Shadows.sm,
+  },
+  quickActionText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.title,
+    textAlign: 'center',
+  },
+  // Floor Manager Stats
+  statsContainer: {
+    flexDirection: 'row',
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.base,
+    gap: Spacing.base,
+    borderWidth: 1,
+    borderColor: BrandColors.ink + '10',
+    ...Shadows.base,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+    padding: Spacing.sm,
+    backgroundColor: BrandColors.primary + '10',
+    borderRadius: BorderRadius.md,
+  },
+  statValue: {
+    fontSize: Typography.fontSize['2xl'],
+    fontFamily: Typography.fontFamily.bold,
+    color: BrandColors.primary,
+    marginBottom: 2,
+  },
+  statLabel: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.ink + '80',
+    textAlign: 'center',
   },
 });

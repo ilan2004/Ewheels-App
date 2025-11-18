@@ -12,14 +12,9 @@ import {
 } from '@/types';
 
 export class JobCardsService {
-  // Check if we're in mock mode
+  // Check if we're in mock mode - only use mock when explicitly enabled
   private isMockMode(): boolean {
-    const flag = (process.env.EXPO_PUBLIC_USE_MOCK_API === 'true') || (process.env.USE_MOCK_API === 'true');
-    const hasSupabase = (
-      (!!process.env.EXPO_PUBLIC_SUPABASE_URL || !!process.env.NEXT_PUBLIC_SUPABASE_URL || !!process.env.SUPABASE_URL) &&
-      (!!process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || !!process.env.SUPABASE_ANON_KEY)
-    );
-    return flag || !hasSupabase;
+    return (process.env.EXPO_PUBLIC_USE_MOCK_API === 'true') || (process.env.USE_MOCK_API === 'true');
   }
 
   // Mock data for development
@@ -122,24 +117,24 @@ export class JobCardsService {
   private generateMockTickets(limit: number = 10): ServiceTicket[] {
     const ticketTemplates = [
       { complaint: 'Battery not charging properly', priority: 1, status: 'reported' },
-      { complaint: 'Motor making grinding noise', priority: 1, status: 'triaged' },
+      { complaint: 'Motor making grinding noise', priority: 1, status: 'assigned' },
       { complaint: 'Brake system malfunction', priority: 1, status: 'in_progress' },
-      { complaint: 'Display screen flickering', priority: 2, status: 'reported' },
+      { complaint: 'Display screen flickering', priority: 2, status: 'assigned' },
       { complaint: 'Throttle response delayed', priority: 2, status: 'in_progress' },
       { complaint: 'Headlight not working', priority: 3, status: 'triaged' },
-      { complaint: 'Horn not functioning', priority: 3, status: 'in_progress' },
+      { complaint: 'Horn not functioning', priority: 3, status: 'assigned' },
       { complaint: 'Seat adjustment broken', priority: 3, status: 'reported' },
       { complaint: 'Mirror loose and vibrating', priority: 3, status: 'in_progress' },
-      { complaint: 'USB charging port dead', priority: 3, status: 'triaged' },
+      { complaint: 'USB charging port dead', priority: 3, status: 'assigned' },
       { complaint: 'Side stand not locking', priority: 2, status: 'in_progress' },
       { complaint: 'Speedometer showing wrong reading', priority: 2, status: 'reported' },
-      { complaint: 'Turn indicators not blinking', priority: 2, status: 'in_progress' },
+      { complaint: 'Turn indicators not blinking', priority: 2, status: 'assigned' },
       { complaint: 'Suspension making noise', priority: 2, status: 'triaged' },
       { complaint: 'Chain needs lubrication', priority: 3, status: 'reported' },
       { complaint: 'Battery level indicator stuck', priority: 3, status: 'in_progress' },
-      { complaint: 'Footrest adjustment issue', priority: 3, status: 'in_progress' },
+      { complaint: 'Footrest adjustment issue', priority: 3, status: 'assigned' },
       { complaint: 'Storage compartment lock broken', priority: 3, status: 'triaged' },
-      { complaint: 'Wheel alignment needed', priority: 2, status: 'reported' },
+      { complaint: 'Wheel alignment needed', priority: 2, status: 'assigned' },
       { complaint: 'Key remote not working', priority: 3, status: 'in_progress' },
     ];
 
@@ -163,7 +158,8 @@ export class JobCardsService {
       'AS16FG1234', 'SK17HI5678', 'NL18JK9012', 'TR19LM3456', 'AR20NO7890',
     ];
 
-    const technicians = ['tech_001', 'tech_002', 'tech_003', 'tech_004', 'tech_005', 'tech_006'];
+      const technicians = ['tech_001', 'tech_002', 'tech_003', 'tech_004', 'tech_005', 'tech_006'];
+      const customerBringingOptions = ['vehicle', 'battery', 'both'] as const;
 
     return Array.from({ length: limit }, (_, index) => {
       const template = ticketTemplates[index % ticketTemplates.length];
@@ -178,14 +174,17 @@ export class JobCardsService {
                       5 + Math.random() * 9;
       const dueDate = new Date(createdDate.getTime() + dueDays * 24 * 60 * 60 * 1000);
       
-      // Determine if assigned
-      const isAssigned = ['in_progress'].includes(template.status);
+      // Determine if assigned - assign tickets with status 'assigned', 'in_progress' 
+      const isAssigned = ['assigned', 'in_progress'].includes(template.status);
       const assignedTechnician = isAssigned ? technicians[Math.floor(Math.random() * technicians.length)] : undefined;
       const assignedDate = isAssigned ? new Date(createdDate.getTime() + Math.random() * 24 * 60 * 60 * 1000) : undefined;
       
       const ticketId = `ticket_${String(index + 1).padStart(3, '0')}`;
       const customerId = `customer_${String((index % customers.length) + 1).padStart(3, '0')}`;
       const ticketNumber = `EV-${new Date().getFullYear()}-${String(Date.now() + index).slice(-6)}`;
+      
+      // Randomly assign what customer is bringing
+      const customerBringing = customerBringingOptions[Math.floor(Math.random() * customerBringingOptions.length)];
 
       return {
         id: ticketId,
@@ -198,6 +197,10 @@ export class JobCardsService {
         symptom: template.complaint,
         customer_complaint: template.complaint, // Legacy field
         description: `Customer reports: ${template.complaint}. Initial assessment required.`,
+        customer_bringing: customerBringing,
+        // Add case IDs based on what customer is bringing
+        vehicle_case_id: (customerBringing === 'vehicle' || customerBringing === 'both') ? `vehicle_case_${String(index + 1).padStart(3, '0')}` : null,
+        battery_case_id: (customerBringing === 'battery' || customerBringing === 'both') ? `battery_case_${String(index + 1).padStart(3, '0')}` : null,
         status: template.status as any,
         priority: template.priority,
         dueDate: dueDate.toISOString(),
@@ -235,11 +238,16 @@ export class JobCardsService {
   }
 
   private getMockTickets(limit: number = 10): ServiceTicket[] {
-    // Cache generated tickets for consistency
+    // Cache generated tickets for consistency (but refresh every app restart)
     if (!this.cachedMockTickets) {
       this.cachedMockTickets = this.generateMockTickets(50);
     }
     return this.cachedMockTickets.slice(0, limit);
+  }
+  
+  // Clear cached mock tickets (for debugging)
+  clearMockTicketsCache(): void {
+    this.cachedMockTickets = null;
   }
 
   private cachedMockTickets: ServiceTicket[] | null = null;
@@ -279,9 +287,28 @@ export class JobCardsService {
       const mockTickets = this.getMockTickets(50); // Get more tickets for filtering
       let filteredTickets = mockTickets;
       
-      // Apply basic filtering for demo
+      // Apply status filtering
       if (filters.status && filters.status !== 'all') {
         filteredTickets = filteredTickets.filter(t => t.status === filters.status);
+      }
+      
+      // Apply assignedTo filtering
+      if (filters.assignedTo) {
+        if (filters.assignedTo === 'unassigned') {
+          filteredTickets = filteredTickets.filter(t => !t.assigned_to);
+        } else if (filters.assignedTo !== 'all') {
+          filteredTickets = filteredTickets.filter(t => t.assigned_to === filters.assignedTo);
+        }
+      }
+      
+      // Apply search filtering
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        filteredTickets = filteredTickets.filter(t => 
+          t.ticket_number.toLowerCase().includes(searchLower) ||
+          t.symptom.toLowerCase().includes(searchLower) ||
+          t.customer_complaint.toLowerCase().includes(searchLower)
+        );
       }
       
       // Apply pagination
@@ -705,11 +732,11 @@ export class JobCardsService {
     }
   }
 
-  // Get tickets by technician
+  // Get tickets by technician - improved version
   async getTicketsByTechnician(technicianId: string): Promise<ServiceTicket[]> {
     if (this.isMockMode()) {
       const tickets = this.getMockTickets(50);
-      return tickets.filter(t => t.assignedToId === technicianId);
+      return tickets.filter(t => t.assigned_to === technicianId);
     }
     
     try {
@@ -720,7 +747,7 @@ export class JobCardsService {
           customer:customers(*)
         `)
         .eq('assigned_to', technicianId)
-        .eq('status', 'in_progress')
+        .in('status', ['assigned', 'in_progress'])
         .order('assigned_at', { ascending: true });
 
       if (error) throw error;
@@ -994,7 +1021,7 @@ export class JobCardsService {
     }
   }
 
-  // Triage ticket - create cases and route ticket
+  // Triage ticket - create cases and route ticket (manual implementation)
   async triageTicket(params: {
     ticketId: string;
     routeTo: 'vehicle' | 'battery' | 'both';
@@ -1018,19 +1045,212 @@ export class JobCardsService {
     }
     
     try {
-      // Call the triage function (this should be implemented in Supabase as an RPC function)
-      const { data, error } = await supabase.rpc('triage_service_ticket', {
-        p_ticket_id: params.ticketId,
-        p_route_to: params.routeTo,
-        p_note: params.note || ''
-      });
-
-      if (error) throw error;
-
-      // Update ticket status to 'triaged'
-      await this.updateTicketStatus(params.ticketId, 'triaged');
-
-      return data || {};
+      const result: { vehicle_case_id?: string; battery_case_id?: string } = {};
+      
+      // Get the original ticket to extract information for cases
+      const { data: ticket, error: ticketError } = await supabase
+        .from('service_tickets')
+        .select('*')
+        .eq('id', params.ticketId)
+        .single();
+        
+      if (ticketError) throw ticketError;
+      if (!ticket) throw new Error('Ticket not found');
+      
+      // Create vehicle case if needed
+      if (params.routeTo === 'vehicle' || params.routeTo === 'both') {
+        // Check if vehicle record exists for this ticket
+        const { data: existingVehicleRecord, error: vehicleRecordError } = await supabase
+          .from('vehicle_records')
+          .select('id')
+          .eq('service_ticket_id', params.ticketId)
+          .maybeSingle(); // Use maybeSingle to handle case where no record exists
+          
+        if (vehicleRecordError) throw vehicleRecordError;
+        
+        let vehicleRecordId: string;
+        
+        if (!existingVehicleRecord) {
+          // Try to find existing vehicle record by registration number first
+          let existingByRegNo = null;
+          if (ticket.vehicle_reg_no) {
+            const { data: regNoRecord } = await supabase
+              .from('vehicle_records')
+              .select('id')
+              .eq('vehicle_reg_no', ticket.vehicle_reg_no)
+              .maybeSingle();
+            existingByRegNo = regNoRecord;
+          }
+          
+          if (existingByRegNo) {
+            // Use existing vehicle record if found by registration number
+            vehicleRecordId = existingByRegNo.id;
+            
+            // Update the existing record to link to this ticket
+            await supabase
+              .from('vehicle_records')
+              .update({
+                service_ticket_id: params.ticketId,
+                updated_at: new Date().toISOString(),
+                updated_by: ticket.updated_by || ticket.created_by,
+              })
+              .eq('id', vehicleRecordId);
+          } else {
+            // Create a new vehicle record with unique registration number
+            const uniqueRegNo = ticket.vehicle_reg_no || `TRG-${params.ticketId.slice(-8)}-${Date.now().toString().slice(-4)}`;
+            
+            const { data: newVehicleRecord, error: createVehicleError } = await supabase
+              .from('vehicle_records')
+              .insert({
+                service_ticket_id: params.ticketId,
+                vehicle_make: ticket.vehicle_make || 'Unknown',
+                vehicle_model: ticket.vehicle_model || 'Unknown', 
+                vehicle_reg_no: uniqueRegNo,
+                vehicle_year: ticket.vehicle_year,
+                condition_notes: 'Created during triage process',
+                status: 'received',
+                customer_id: ticket.customer_id,
+                created_by: ticket.created_by || ticket.updated_by,
+                updated_by: ticket.updated_by || ticket.created_by,
+              })
+              .select('id')
+              .single();
+              
+            if (createVehicleError) throw createVehicleError;
+            vehicleRecordId = newVehicleRecord.id;
+          }
+        } else {
+          vehicleRecordId = existingVehicleRecord.id;
+        }
+        
+        // Create vehicle service case
+        const { data: vehicleCase, error: vehicleCaseError } = await supabase
+          .from('vehicle_cases')
+          .insert({
+            service_ticket_id: params.ticketId,
+            vehicle_record_id: vehicleRecordId,
+            customer_id: ticket.customer_id, // Add customer_id for consistency
+            initial_diagnosis: params.note || 'Pending initial diagnosis',
+            status: 'received',
+            created_by: ticket.created_by || ticket.updated_by,
+            updated_by: ticket.updated_by || ticket.created_by,
+          })
+          .select('id')
+          .single();
+          
+        if (vehicleCaseError) throw vehicleCaseError;
+        result.vehicle_case_id = vehicleCase.id;
+        
+        // Update ticket to link to vehicle case and record
+        const vehicleUpdateData: any = {
+          vehicle_case_id: vehicleCase.id,
+          customer_bringing: params.routeTo === 'both' ? 'both' : 'vehicle'
+        };
+        
+        // If we created a new vehicle record, link it to the ticket
+        if (!existingVehicleRecord) {
+          vehicleUpdateData.vehicle_record_id = vehicleRecordId;
+        }
+        
+        await supabase
+          .from('service_tickets')
+          .update(vehicleUpdateData)
+          .eq('id', params.ticketId);
+      }
+      
+      // Create battery cases if needed
+      if (params.routeTo === 'battery' || params.routeTo === 'both') {
+        // Get existing battery records for this ticket (there can be multiple)
+        const { data: existingBatteryRecords, error: batteryRecordError } = await supabase
+          .from('battery_records')
+          .select('id')
+          .eq('service_ticket_id', params.ticketId);
+          
+        if (batteryRecordError) throw batteryRecordError;
+        
+        let batteryRecords = existingBatteryRecords || [];
+        
+        if (batteryRecords.length === 0) {
+          // Create a basic battery record if none exists
+          // Generate a unique serial number to avoid conflicts
+          const uniqueSerialNo = `TRG-BAT-${params.ticketId.slice(-8)}-${Date.now().toString().slice(-4)}`;
+          
+          const { data: newBatteryRecord, error: createBatteryError } = await supabase
+            .from('battery_records')
+            .insert({
+              service_ticket_id: params.ticketId,
+              serial_number: uniqueSerialNo,
+              brand: 'Unknown',
+              battery_type: 'li-ion',
+              voltage: 0,
+              capacity: 0,
+              repair_notes: 'Created during triage process',
+              status: 'received',
+              customer_id: ticket.customer_id,
+              created_by: ticket.created_by || ticket.updated_by,
+              updated_by: ticket.updated_by || ticket.created_by,
+            })
+            .select('id')
+            .single();
+            
+          if (createBatteryError) throw createBatteryError;
+          batteryRecords = [newBatteryRecord];
+        }
+        
+        // Create battery service cases for each battery record
+        const batteryCasePromises = batteryRecords.map(async (batteryRecord) => {
+          const { data: batteryCase, error: batteryCaseError } = await supabase
+            .from('battery_cases')
+            .insert({
+              service_ticket_id: params.ticketId,
+              battery_record_id: batteryRecord.id,
+              customer_id: ticket.customer_id, // Add required customer_id field
+              initial_diagnosis: params.note || 'Pending initial diagnosis',
+              status: 'received',
+              created_by: ticket.created_by || ticket.updated_by,
+              updated_by: ticket.updated_by || ticket.created_by,
+            })
+            .select('id')
+            .single();
+            
+          if (batteryCaseError) throw batteryCaseError;
+          return batteryCase;
+        });
+        
+        const batteryCases = await Promise.all(batteryCasePromises);
+        // Use the first battery case as the primary one for the ticket link
+        result.battery_case_id = batteryCases[0].id;
+        
+        // Update ticket to link to primary battery case
+        const updateData: any = { 
+          battery_case_id: batteryCases[0].id 
+        };
+        
+        // Set customer_bringing based on route type
+        if (params.routeTo === 'battery') {
+          updateData.customer_bringing = 'battery';
+        } else if (params.routeTo === 'both') {
+          updateData.customer_bringing = 'both';
+        }
+        
+        await supabase
+          .from('service_tickets')
+          .update(updateData)
+          .eq('id', params.ticketId);
+      }
+      
+      // Update ticket status to 'triaged' with triage info
+      await supabase
+        .from('service_tickets')
+        .update({
+          status: 'triaged',
+          triaged_at: new Date().toISOString(),
+          triage_notes: params.note || `Triaged to: ${params.routeTo}`,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', params.ticketId);
+      
+      return result;
     } catch (error) {
       console.error('Error triaging ticket:', error);
       throw error;

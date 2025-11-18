@@ -1,7 +1,7 @@
 import { StyleSheet, Text, type TextProps } from 'react-native';
 
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { Typography, Colors } from '@/constants/design-system';
+import { Typography, BrandColors } from '@/constants/design-system';
 
 export type ThemedTextProps = TextProps & {
   lightColor?: string;
@@ -59,6 +59,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.medium,
     lineHeight: Typography.lineHeight.base,
-    color: Colors.primary[600],
+    color: BrandColors.primary,
   },
 });

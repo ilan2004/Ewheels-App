@@ -7,6 +7,7 @@ import {
   Animated,
 } from 'react-native';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Colors, Typography, Spacing, BorderRadius, Shadows, BrandColors } from '@/constants/design-system';
 
 interface StatusUpdateNotificationProps {
   hasNewUpdates: boolean;
@@ -77,7 +78,7 @@ export function StatusUpdateNotification({
         activeOpacity={0.8}
       >
         <View style={styles.notificationIcon}>
-          <IconSymbol name="bell.fill" size={16} color="#3B82F6" />
+          <IconSymbol name="bell.fill" size={16} color={Colors.primary[600]} />
           {updateCount > 0 && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>
@@ -103,7 +104,7 @@ export function StatusUpdateNotification({
             onDismiss?.();
           }}
         >
-          <IconSymbol name="xmark" size={14} color="#6B7280" />
+          <IconSymbol name="xmark" size={14} color={Colors.neutral[500]} />
         </TouchableOpacity>
       </TouchableOpacity>
     </Animated.View>
@@ -122,16 +123,12 @@ const styles = StyleSheet.create({
   notificationContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 8,
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.base,
+    ...Shadows.lg,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: Colors.neutral[200],
   },
   notificationIcon: {
     position: 'relative',
@@ -141,36 +138,36 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -8,
     right: -8,
-    backgroundColor: '#EF4444',
-    borderRadius: 10,
+    backgroundColor: Colors.error[500],
+    borderRadius: BorderRadius.sm + 2,
     minWidth: 20,
     height: 20,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: Colors.white,
   },
   badgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: Typography.fontSize.xs - 2,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.white,
   },
   notificationText: {
     flex: 1,
   },
   notificationTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.neutral[900],
     marginBottom: 2,
   },
   notificationSubtitle: {
-    fontSize: 12,
-    color: '#6B7280',
+    fontSize: Typography.fontSize.xs,
+    color: Colors.neutral[500],
   },
   dismissButton: {
-    padding: 8,
-    marginLeft: 8,
+    padding: Spacing.sm,
+    marginLeft: Spacing.sm,
   },
 });
 
@@ -200,19 +197,19 @@ const badgeStyles = StyleSheet.create({
     position: 'absolute',
     top: -6,
     right: -6,
-    backgroundColor: '#EF4444',
-    borderRadius: 10,
+    backgroundColor: Colors.error[500],
+    borderRadius: BorderRadius.sm + 2,
     minWidth: 20,
     height: 20,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: Colors.white,
   },
   badgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: Typography.fontSize.xs - 2,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.white,
     lineHeight: 12,
   },
 });

@@ -603,29 +603,37 @@ export class DataService {
     }
 
     try {
-      // Fetch users from profiles and app_roles tables
-      const { data: profiles, error } = await supabase
+      // Step 1: Get all user roles
+      const { data: userRoles, error: roleError } = await supabase
+        .from('app_roles')
+        .select('user_id, role');
+
+      if (roleError) throw roleError;
+      if (!userRoles?.length) return [];
+
+      const userIds = userRoles.map(r => r.user_id);
+
+      // Step 2: Get profiles for those users
+      const { data: profiles, error: profileError } = await supabase
         .from('profiles')
-        .select(`
-          user_id,
-          username,
-          email,
-          created_at,
-          updated_at,
-          app_roles!inner(role)
-        `);
+        .select('user_id, username, first_name, last_name, email, created_at, updated_at')
+        .in('user_id', userIds);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
 
-      return profiles?.map(profile => ({
-        id: profile.user_id,
-        email: profile.email,
-        firstName: profile.username || 'User',
-        lastName: '',
-        role: (profile.app_roles as any).role,
-        createdAt: profile.created_at,
-        updatedAt: profile.updated_at,
-      })) || [];
+      // Step 3: Manually merge profiles with roles
+      return profiles?.map(profile => {
+        const userRole = userRoles.find(r => r.user_id === profile.user_id);
+        return {
+          id: profile.user_id,
+          email: profile.email,
+          firstName: profile.first_name || profile.username || 'User',
+          lastName: profile.last_name || '',
+          role: userRole?.role || 'technician',
+          createdAt: profile.created_at,
+          updatedAt: profile.updated_at,
+        };
+      }) || [];
     } catch (error) {
       console.error('Error fetching users:', error);
       throw error;

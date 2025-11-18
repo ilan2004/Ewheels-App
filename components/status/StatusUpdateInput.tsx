@@ -15,6 +15,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { jobCardsService } from '@/services/jobCardsService';
+import { BrandColors, Typography, Spacing, BorderRadius, ComponentStyles, StatusColors } from '@/constants/design-system';
 
 interface StatusUpdateInputProps {
   ticketId: string;
@@ -112,14 +113,7 @@ export function StatusUpdateInput({
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'reported': return '#EF4444';
-      case 'triaged': return '#F59E0B';
-      case 'in_progress': return '#8B5CF6';
-      case 'completed': return '#10B981';
-      case 'delivered': return '#06B6D4';
-      default: return '#6B7280';
-    }
+    return StatusColors[status as keyof typeof StatusColors]?.primary || BrandColors.primary;
   };
 
   return (
@@ -128,18 +122,18 @@ export function StatusUpdateInput({
       <TouchableOpacity
         style={[
           styles.addButton,
-          { backgroundColor: getStatusColor(currentStatus) + '20' }
+          { backgroundColor: StatusColors[currentStatus as keyof typeof StatusColors]?.background || BrandColors.primary + '20' }
         ]}
         onPress={() => setShowModal(true)}
       >
         <IconSymbol 
           name="plus.circle" 
           size={20} 
-          color={getStatusColor(currentStatus)} 
+          color={StatusColors[currentStatus as keyof typeof StatusColors]?.primary || BrandColors.primary} 
         />
         <Text style={[
           styles.addButtonText,
-          { color: getStatusColor(currentStatus) }
+          { color: StatusColors[currentStatus as keyof typeof StatusColors]?.primary || BrandColors.primary }
         ]}>
           Add Progress Update
         </Text>
@@ -164,7 +158,7 @@ export function StatusUpdateInput({
               disabled={addUpdateMutation.isPending || !updateText.trim()}
             >
               {addUpdateMutation.isPending ? (
-                <ActivityIndicator size="small" color="#3B82F6" />
+                <ActivityIndicator size="small" color={Colors.primary[600]} />
               ) : (
                 <Text style={[
                   styles.modalDone,
@@ -181,11 +175,11 @@ export function StatusUpdateInput({
             <View style={styles.statusContext}>
               <View style={[
                 styles.statusBadge,
-                { backgroundColor: getStatusColor(currentStatus) + '20' }
+                { backgroundColor: StatusColors[currentStatus as keyof typeof StatusColors]?.background || BrandColors.primary + '20' }
               ]}>
                 <Text style={[
                   styles.statusBadgeText,
-                  { color: getStatusColor(currentStatus) }
+                  { color: StatusColors[currentStatus as keyof typeof StatusColors]?.primary || BrandColors.primary }
                 ]}>
                   {currentStatus.replace('_', ' ').toUpperCase()}
                 </Text>
@@ -279,124 +273,126 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginVertical: 16,
-    gap: 8,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.base,
+    borderRadius: BorderRadius.md,
+    marginVertical: Spacing.base,
+    gap: Spacing.sm,
   },
   addButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
   },
 
   // Modal styles
   modalContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: BrandColors.surface,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    paddingTop: 60,
+    padding: Spacing.lg,
+    paddingTop: Spacing['5xl'],
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: BrandColors.ink + '20',
   },
   modalCancel: {
-    fontSize: 16,
-    color: '#6B7280',
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.medium,
+    color: BrandColors.ink + '60',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.title,
   },
   modalDone: {
-    fontSize: 16,
-    color: '#3B82F6',
-    fontWeight: '600',
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.primary,
   },
   modalDoneDisabled: {
-    color: '#9CA3AF',
+    color: BrandColors.ink + '40',
   },
   modalContent: {
     flex: 1,
-    padding: 20,
+    padding: Spacing.lg,
   },
 
   statusContext: {
     alignItems: 'center',
-    marginBottom: 24,
-    paddingBottom: 20,
+    marginBottom: Spacing['2xl'],
+    paddingBottom: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: BrandColors.ink + '10',
   },
   statusBadge: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginBottom: 8,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.xl,
+    marginBottom: Spacing.sm,
   },
   statusBadgeText: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.bold,
   },
   statusDescription: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '60',
     textAlign: 'center',
   },
 
   section: {
-    marginBottom: 24,
+    marginBottom: Spacing['2xl'],
   },
   sectionHeader: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 8,
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.title,
+    marginBottom: Spacing.sm,
   },
   sectionDescription: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 16,
-    lineHeight: 20,
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '60',
+    marginBottom: Spacing.base,
+    lineHeight: Typography.lineHeight.sm,
   },
 
   templatesGrid: {
-    gap: 8,
+    gap: Spacing.sm,
   },
   templateChip: {
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
+    backgroundColor: BrandColors.ink + '10',
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: BrandColors.ink + '20',
   },
   templateChipSelected: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#3B82F6',
+    backgroundColor: BrandColors.primary + '10',
+    borderColor: BrandColors.primary,
   },
   templateText: {
-    fontSize: 14,
-    color: '#374151',
-    fontWeight: '500',
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: BrandColors.ink + '80',
   },
   templateTextSelected: {
-    color: '#1D4ED8',
-    fontWeight: '600',
+    color: BrandColors.primary,
+    fontFamily: Typography.fontFamily.semibold,
   },
 
   textInput: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    padding: 16,
-    fontSize: 16,
-    color: '#111827',
+    ...ComponentStyles.input,
+    padding: Spacing.base,
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink,
     minHeight: 100,
     textAlignVertical: 'top',
   },
@@ -404,34 +400,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: Spacing.sm,
   },
   characterCount: {
-    fontSize: 12,
-    color: '#9CA3AF',
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '40',
   },
   characterCountError: {
-    fontSize: 12,
-    color: '#EF4444',
-    fontWeight: '600',
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.primary,
   },
 
   guidelines: {
-    backgroundColor: '#FFFBEB',
-    borderRadius: 8,
-    padding: 16,
+    backgroundColor: BrandColors.primary + '05',
+    borderRadius: BorderRadius.md,
+    padding: Spacing.base,
     borderWidth: 1,
-    borderColor: '#FDE68A',
+    borderColor: BrandColors.primary + '20',
   },
   guidelinesTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#92400E',
-    marginBottom: 8,
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.primary,
+    marginBottom: Spacing.sm,
   },
   guidelinesText: {
-    fontSize: 14,
-    color: '#B45309',
-    lineHeight: 20,
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '80',
+    lineHeight: Typography.lineHeight.sm,
   },
 });

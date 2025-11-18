@@ -262,19 +262,31 @@ export class FloorManagerService {
     }
 
     try {
-      // Get all technicians
-      const { data: technicians, error: techError } = await supabase
-        .from('profiles')
-        .select(`
-          user_id,
-          username,
-          email,
-          app_roles!inner(role)
-        `)
-        .eq('app_roles.role', 'technician');
+      // Step 1: Get users with technician role
+      const { data: technicianRoles, error: roleError } = await supabase
+        .from('app_roles')
+        .select('user_id')
+        .eq('role', 'technician');
 
-      if (techError) {
-        console.warn('Error fetching technicians:', techError);
+      if (roleError) {
+        console.warn('Error fetching technician roles:', roleError);
+        return this.getMockTechnicians();
+      }
+
+      if (!technicianRoles?.length) {
+        return [];
+      }
+
+      const userIds = technicianRoles.map(r => r.user_id);
+
+      // Step 2: Get profiles for those users
+      const { data: technicians, error: profileError } = await supabase
+        .from('profiles')
+        .select('user_id, username, email')
+        .in('user_id', userIds);
+
+      if (profileError) {
+        console.warn('Error fetching technician profiles:', profileError);
         return this.getMockTechnicians();
       }
 
@@ -351,18 +363,31 @@ export class FloorManagerService {
     }
 
     try {
-      const { data: technicians, error } = await supabase
-        .from('profiles')
-        .select(`
-          user_id,
-          username,
-          email,
-          app_roles!inner(role)
-        `)
-        .eq('app_roles.role', 'technician');
+      // Step 1: Get users with technician role
+      const { data: technicianRoles, error: roleError } = await supabase
+        .from('app_roles')
+        .select('user_id')
+        .eq('role', 'technician');
 
-      if (error) {
-        console.error('Error fetching available technicians:', error);
+      if (roleError) {
+        console.error('Error fetching technician roles:', roleError);
+        return [];
+      }
+
+      if (!technicianRoles?.length) {
+        return [];
+      }
+
+      const userIds = technicianRoles.map(r => r.user_id);
+
+      // Step 2: Get profiles for those users
+      const { data: technicians, error: profileError } = await supabase
+        .from('profiles')
+        .select('user_id, username, email')
+        .in('user_id', userIds);
+
+      if (profileError) {
+        console.error('Error fetching technician profiles:', profileError);
         return [];
       }
 
@@ -464,21 +489,28 @@ export class FloorManagerService {
     }
 
     try {
-      // Get technician info
-      const { data: technician, error: techError } = await supabase
-        .from('profiles')
-        .select(`
-          user_id,
-          username,
-          email,
-          app_roles!inner(role)
-        `)
+      // Step 1: Verify user has technician role
+      const { data: technicianRole, error: roleError } = await supabase
+        .from('app_roles')
+        .select('user_id')
         .eq('user_id', technicianId)
-        .eq('app_roles.role', 'technician')
+        .eq('role', 'technician')
         .single();
 
-      if (techError || !technician) {
-        console.error('Error fetching technician details:', techError);
+      if (roleError || !technicianRole) {
+        console.error('Error verifying technician role:', roleError);
+        return null;
+      }
+
+      // Step 2: Get technician profile
+      const { data: technician, error: profileError } = await supabase
+        .from('profiles')
+        .select('user_id, username, email')
+        .eq('user_id', technicianId)
+        .single();
+
+      if (profileError || !technician) {
+        console.error('Error fetching technician profile:', profileError);
         return null;
       }
 
