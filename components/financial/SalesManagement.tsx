@@ -1,42 +1,41 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  TextInput,
-  FlatList,
-  Modal,
-  Alert,
-  RefreshControl,
-} from 'react-native';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import {
+  BorderRadius,
+  BrandColors,
+  Colors,
+  FinancialColors,
+  Shadows,
+  Spacing,
+  Typography,
+} from '@/constants/design-system';
 import { useSales } from '@/hooks/useFinancial';
 import {
-  Colors,
-  Typography,
-  Spacing,
-  BorderRadius,
-  Shadows,
-  BrandColors,
-  FinancialColors,
-} from '@/constants/design-system';
-import {
+  PaymentMethodLabels,
+  PaymentStatus,
+  PaymentStatusLabels,
   Sale,
   SaleForm,
   SalesFilters,
   SaleType,
-  PaymentStatus,
-  PaymentMethod,
-  SaleTypeLabels,
-  PaymentStatusLabels,
-  PaymentMethodLabels,
+  SaleTypeLabels
 } from '@/types/financial.types';
+import React, { useEffect, useState } from 'react';
+import {
+  Alert,
+  FlatList,
+  Modal,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 export default function SalesManagement() {
   const { sales, loading, error, pagination, fetchSales, createSale, updateSale, deleteSale } = useSales();
-  
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -89,9 +88,17 @@ export default function SalesManagement() {
       case 'paid': return FinancialColors.completed;
       case 'partial': return FinancialColors.pending;
       case 'pending': return FinancialColors.pending;
-      case 'overdue': return Colors.error;
+      case 'overdue': return {
+        primary: Colors.error[500],
+        background: Colors.error[50],
+        text: Colors.error[700]
+      };
       case 'cancelled': return FinancialColors.cancelled;
-      default: return Colors.neutral;
+      default: return {
+        primary: Colors.neutral[500],
+        background: Colors.neutral[50],
+        text: Colors.neutral[700]
+      };
     }
   };
 
@@ -205,7 +212,7 @@ export default function SalesManagement() {
 
   const renderSaleItem = ({ item }: { item: Sale }) => {
     const statusColor = getStatusColor(item.payment_status);
-    
+
     return (
       <View style={styles.saleCard}>
         <View style={styles.saleHeader}>
@@ -221,30 +228,30 @@ export default function SalesManagement() {
             </View>
           </View>
         </View>
-        
+
         <View style={styles.saleBody}>
           <Text style={styles.saleDescription} numberOfLines={2}>
             {item.description}
           </Text>
-          
+
           <View style={styles.saleDetails}>
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Date:</Text>
               <Text style={styles.detailValue}>{new Date(item.sale_date).toLocaleDateString()}</Text>
             </View>
-            
+
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Type:</Text>
               <Text style={styles.detailValue}>{SaleTypeLabels[item.sale_type as SaleType] || item.sale_type}</Text>
             </View>
-            
+
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Payment:</Text>
               <Text style={styles.detailValue}>{PaymentMethodLabels[item.payment_method] || item.payment_method}</Text>
             </View>
           </View>
         </View>
-        
+
         <View style={styles.saleFooter}>
           <View style={styles.amountContainer}>
             <Text style={styles.totalAmount}>{formatCurrency(item.total_amount)}</Text>
@@ -252,7 +259,7 @@ export default function SalesManagement() {
               Paid: {formatCurrency(item.paid_amount)}
             </Text>
           </View>
-          
+
           <View style={styles.actionButtons}>
             <TouchableOpacity
               style={styles.editButton}
@@ -260,7 +267,7 @@ export default function SalesManagement() {
             >
               <IconSymbol size={16} name="pencil" color={BrandColors.primary} />
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={styles.deleteButton}
               onPress={() => handleDeleteSale(item)}
@@ -287,7 +294,7 @@ export default function SalesManagement() {
             onSubmitEditing={handleSearch}
           />
         </View>
-        
+
         <TouchableOpacity style={styles.addButton} onPress={handleAddSale}>
           <IconSymbol size={20} name="plus" color={Colors.white} />
         </TouchableOpacity>
@@ -328,12 +335,12 @@ export default function SalesManagement() {
               <Text style={styles.saveButton}>Save</Text>
             </TouchableOpacity>
           </View>
-          
+
           <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
             {/* Customer Information */}
             <View style={styles.formSection}>
               <Text style={styles.sectionTitle}>Customer Information</Text>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Customer Name *</Text>
                 <TextInput
@@ -348,7 +355,7 @@ export default function SalesManagement() {
             {/* Sale Details */}
             <View style={styles.formSection}>
               <Text style={styles.sectionTitle}>Sale Details</Text>
-              
+
               <View style={styles.inputRow}>
                 <View style={[styles.inputGroup, { flex: 1, marginRight: Spacing.sm }]}>
                   <Text style={styles.inputLabel}>Sale Number</Text>
@@ -359,7 +366,7 @@ export default function SalesManagement() {
                     placeholder="SALE-001"
                   />
                 </View>
-                
+
                 <View style={[styles.inputGroup, { flex: 1, marginLeft: Spacing.sm }]}>
                   <Text style={styles.inputLabel}>Date</Text>
                   <TextInput
@@ -370,7 +377,7 @@ export default function SalesManagement() {
                   />
                 </View>
               </View>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Description *</Text>
                 <TextInput
@@ -387,7 +394,7 @@ export default function SalesManagement() {
             {/* Financial Details */}
             <View style={styles.formSection}>
               <Text style={styles.sectionTitle}>Financial Details</Text>
-              
+
               <View style={styles.inputRow}>
                 <View style={[styles.inputGroup, { flex: 1, marginRight: Spacing.sm }]}>
                   <Text style={styles.inputLabel}>Subtotal</Text>
@@ -399,7 +406,7 @@ export default function SalesManagement() {
                     placeholder="0"
                   />
                 </View>
-                
+
                 <View style={[styles.inputGroup, { flex: 1, marginLeft: Spacing.sm }]}>
                   <Text style={styles.inputLabel}>Tax Amount</Text>
                   <TextInput
@@ -411,7 +418,7 @@ export default function SalesManagement() {
                   />
                 </View>
               </View>
-              
+
               <View style={styles.inputRow}>
                 <View style={[styles.inputGroup, { flex: 1, marginRight: Spacing.sm }]}>
                   <Text style={styles.inputLabel}>Discount</Text>
@@ -423,7 +430,7 @@ export default function SalesManagement() {
                     placeholder="0"
                   />
                 </View>
-                
+
                 <View style={[styles.inputGroup, { flex: 1, marginLeft: Spacing.sm }]}>
                   <Text style={styles.inputLabel}>Total Amount</Text>
                   <TextInput
@@ -438,7 +445,7 @@ export default function SalesManagement() {
             {/* Payment Information */}
             <View style={styles.formSection}>
               <Text style={styles.sectionTitle}>Payment Information</Text>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Paid Amount</Text>
                 <TextInput
@@ -449,7 +456,7 @@ export default function SalesManagement() {
                   placeholder="0"
                 />
               </View>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Notes</Text>
                 <TextInput
@@ -478,7 +485,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: Spacing.base,
-    backgroundColor: Colors.white,
+    backgroundColor: BrandColors.surface,
     borderBottomWidth: 1,
     borderBottomColor: Colors.neutral[200],
     ...Shadows.sm,
@@ -487,7 +494,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.neutral[100],
+    backgroundColor: Colors.white,
     borderRadius: BorderRadius.lg,
     paddingHorizontal: Spacing.md,
     marginRight: Spacing.md,
@@ -511,8 +518,8 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing['2xl'],
   },
   saleCard: {
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.md,
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.lg,
     padding: Spacing.base,
     marginBottom: Spacing.md,
     ...Shadows.base,
@@ -641,7 +648,7 @@ const styles = StyleSheet.create({
   // Modal Styles
   modalContainer: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: BrandColors.surface,
   },
   modalHeader: {
     flexDirection: 'row',

@@ -69,13 +69,7 @@ export interface InvoiceCustomerData {
   name: string;
   email?: string;
   phone?: string;
-  address?: {
-    street?: string;
-    city?: string;
-    state?: string;
-    zip?: string;
-    country?: string;
-  };
+  address?: string;
 }
 
 export interface CustomerMappingResult {
@@ -173,7 +167,7 @@ export interface UseCustomerSelectionReturn {
   customerFormData: CustomerFormData;
   showPicker: boolean;
   showQuickAdd: boolean;
-  
+
   // Actions
   selectCustomer: (customer: Customer) => void;
   clearCustomerLink: () => void;
@@ -182,7 +176,7 @@ export interface UseCustomerSelectionReturn {
   closePicker: () => void;
   openQuickAdd: () => void;
   closeQuickAdd: () => void;
-  
+
   // Computed
   hasLinkedCustomer: boolean;
 }

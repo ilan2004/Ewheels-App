@@ -1,24 +1,22 @@
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'void';
 
 export interface InvoiceCustomer {
-  id?: string;
   name: string;
   email?: string;
   phone?: string;
-  address?: {
-    street?: string;
-    city?: string;
-    state?: string;
-    zip?: string;
-    country?: string;
-  };
+  address?: string;
+  gstNumber?: string;
+  id?: string; // Linked customer ID
 }
 
 export interface InvoiceTotals {
   subtotal: number;
-  total_discount: number;
-  total_tax: number;
-  total: number;
+  discount_total: number;
+  sgst_total: number;
+  cgst_total: number;
+  shipping_amount: number;
+  adjustment_amount: number;
+  grand_total: number;
 }
 
 export interface Invoice {
@@ -42,27 +40,37 @@ export interface Invoice {
 
 export interface InvoiceItem {
   id?: string;
-  invoice_id?: string;
-  line_id: string;
   description: string;
   quantity: number;
   unit_price: number;
-  discount: number;
-  tax_rate: number;
+  discount: number; // Percentage
+  sgst_rate: number; // Percentage
+  cgst_rate: number; // Percentage
+
+  // Calculated fields
   subtotal: number;
   discount_amount: number;
-  tax_amount: number;
+  sgst_amount: number;
+  cgst_amount: number;
   total: number;
+  // Inventory links
+  inventory_item_id?: string;
+  inventory_item_sku?: string;
+  inventory_item_name?: string;
+  inventory_item_type?: 'product' | 'service';
+  inventory_item_category?: string;
 }
 
 export interface CreateInvoiceRequest {
   customer: InvoiceCustomer;
-  items: Omit<InvoiceItem, 'id' | 'invoice_id'>[];
-  currency?: string;
+  items: InvoiceItem[];
   due_date: string;
   notes?: string;
   terms?: string;
-  location_id: string;
+  shipping_amount?: number;
+  adjustment_amount?: number;
+  currency: string;
+  location_id?: string;
 }
 
 export interface CreateInvoiceResponse {
@@ -137,7 +145,7 @@ export interface InvoiceWithPayments extends Invoice {
 // Status color mapping
 export const InvoiceStatusColors = {
   draft: '#6B7280',
-  sent: '#3B82F6', 
+  sent: '#3B82F6',
   paid: '#10B981',
   void: '#EF4444',
 } as const;

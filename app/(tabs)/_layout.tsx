@@ -202,7 +202,7 @@ export default function TabLayout() {
 
   // FRONT DESK MANAGER: Media and billing-focused 4-tab interface
   if (role === 'front_desk_manager' || role === 'manager') {
-    const visibleScreens = ['front-desk-dashboard', 'invoices', 'media-hub', 'front-desk-profile'];
+    const visibleScreens = ['front-desk-dashboard', 'jobcards', 'media-hub', 'financial', /* 'invoices', */ 'front-desk-profile'];
     const hiddenScreens = allScreens.filter(screen => !visibleScreens.includes(screen));
 
     return (
@@ -215,19 +215,35 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="jobcards"
+          options={{
+            title: 'Job Cards',
+            headerShown: false,
+            tabBarIcon: ({ color }) => <IconSymbol size={22} name="doc.text.fill" color={color} />,
+          }}
+        />
+        {/* <Tabs.Screen
           name="invoices"
           options={{
             title: 'Invoices',
             headerShown: false,
             tabBarIcon: ({ color }) => <IconSymbol size={22} name="doc.text" color={color} />,
           }}
-        />
+        /> */}
         <Tabs.Screen
           name="media-hub"
           options={{
             title: 'Media',
             headerShown: false,
             tabBarIcon: ({ color }) => <IconSymbol size={22} name="camera.viewfinder" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="financial"
+          options={{
+            title: 'Finance',
+            headerShown: false,
+            tabBarIcon: ({ color }) => <IconSymbol size={22} name="dollarsign.circle.fill" color={color} />,
           }}
         />
         <Tabs.Screen

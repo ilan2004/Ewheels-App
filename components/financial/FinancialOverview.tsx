@@ -1,25 +1,25 @@
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import {
+  BorderRadius,
+  BrandColors,
+  Colors,
+  FinancialColors,
+  Shadows,
+  Spacing,
+  Typography,
+} from '@/constants/design-system';
+import { useFinancialKPIs } from '@/hooks/useFinancial';
+import { RecentTransaction } from '@/types/financial.types';
 import React from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  RefreshControl,
   Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { useFinancialKPIs } from '@/hooks/useFinancial';
-import {
-  Colors,
-  Typography,
-  Spacing,
-  BorderRadius,
-  Shadows,
-  BrandColors,
-  FinancialColors,
-} from '@/constants/design-system';
-import { FinancialKPIs, RecentTransaction } from '@/types/financial.types';
 
 interface FinancialOverviewProps {
   onRefresh: () => void;
@@ -78,19 +78,19 @@ export default function FinancialOverview({ onRefresh }: FinancialOverviewProps)
             <Text style={styles.kpiValue}>{formatCurrency(kpis?.today.sales || 0)}</Text>
             <Text style={styles.kpiLabel}>Sales</Text>
           </View>
-          
+
           <View style={[styles.kpiCard, { borderLeftColor: FinancialColors.expense.primary }]}>
             <IconSymbol size={24} name="arrow.down.circle.fill" color={FinancialColors.expense.primary} />
             <Text style={styles.kpiValue}>{formatCurrency(kpis?.today.expenses || 0)}</Text>
             <Text style={styles.kpiLabel}>Expenses</Text>
           </View>
-          
+
           <View style={[styles.kpiCard, { borderLeftColor: FinancialColors.profit.primary }]}>
             <IconSymbol size={24} name="chart.line.uptrend.xyaxis" color={FinancialColors.profit.primary} />
             <Text style={styles.kpiValue}>{formatCurrency(kpis?.today.profit || 0)}</Text>
             <Text style={styles.kpiLabel}>Profit</Text>
           </View>
-          
+
           <View style={[styles.kpiCard, { borderLeftColor: Colors.info[500] }]}>
             <IconSymbol size={24} name="banknote" color={Colors.info[500]} />
             <Text style={styles.kpiValue}>{formatCurrency(kpis?.today.cash_balance || 0)}</Text>
@@ -113,7 +113,7 @@ export default function FinancialOverview({ onRefresh }: FinancialOverviewProps)
               <Text style={styles.monthlyLabel}>Expenses</Text>
             </View>
           </View>
-          
+
           <View style={styles.monthlyRow}>
             <View style={styles.monthlyItem}>
               <Text style={[styles.monthlyValue, { color: FinancialColors.profit.primary }]}>
@@ -144,7 +144,7 @@ export default function FinancialOverview({ onRefresh }: FinancialOverviewProps)
               </View>
             </View>
           </View>
-          
+
           <View style={styles.yearlyRow}>
             <View style={styles.yearlyItem}>
               <IconSymbol size={20} name="arrow.down" color={FinancialColors.expense.primary} />
@@ -154,7 +154,7 @@ export default function FinancialOverview({ onRefresh }: FinancialOverviewProps)
               </View>
             </View>
           </View>
-          
+
           <View style={styles.yearlyRow}>
             <View style={styles.yearlyItem}>
               <IconSymbol size={20} name="chart.bar.fill" color={FinancialColors.profit.primary} />
@@ -198,8 +198,8 @@ export default function FinancialOverview({ onRefresh }: FinancialOverviewProps)
                     <IconSymbol
                       size={16}
                       name={transaction.type === 'sale' ? 'arrow.up' : 'arrow.down'}
-                      color={transaction.type === 'sale' 
-                        ? FinancialColors.income.primary 
+                      color={transaction.type === 'sale'
+                        ? FinancialColors.income.primary
                         : FinancialColors.expense.primary}
                     />
                   </View>
@@ -256,9 +256,9 @@ const styles = StyleSheet.create({
   kpiCard: {
     flex: 1,
     minWidth: '47%',
-    backgroundColor: Colors.white,
+    backgroundColor: BrandColors.surface,
     padding: Spacing.base,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
     borderLeftWidth: 4,
     alignItems: 'center',
     ...Shadows.sm,
@@ -276,10 +276,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   monthlyCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: BrandColors.surface,
     marginHorizontal: Spacing.base,
     padding: Spacing.lg,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
     ...Shadows.sm,
   },
   monthlyRow: {
@@ -302,10 +302,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   yearlyCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: BrandColors.surface,
     marginHorizontal: Spacing.base,
     padding: Spacing.base,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
     ...Shadows.sm,
   },
   yearlyRow: {
@@ -333,9 +333,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   transactionsContainer: {
-    backgroundColor: Colors.white,
+    backgroundColor: BrandColors.surface,
     marginHorizontal: Spacing.base,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
     ...Shadows.sm,
   },
   transactionItem: {

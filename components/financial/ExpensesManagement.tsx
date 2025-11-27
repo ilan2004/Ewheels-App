@@ -1,42 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  TextInput,
-  FlatList,
-  Modal,
-  Alert,
-  RefreshControl,
-} from 'react-native';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import {
+  BorderRadius,
+  BrandColors,
+  Colors,
+  FinancialColors,
+  Shadows,
+  Spacing,
+  Typography,
+} from '@/constants/design-system';
 import { useExpenses } from '@/hooks/useFinancial';
 import {
-  Colors,
-  Typography,
-  Spacing,
-  BorderRadius,
-  Shadows,
-  BrandColors,
-  FinancialColors,
-} from '@/constants/design-system';
-import {
+  ApprovalStatus,
+  ApprovalStatusLabels,
   Expense,
+  ExpenseCategoryLabels,
   ExpenseForm,
   ExpensesFilters,
-  ExpenseCategory,
-  ApprovalStatus,
-  PaymentMethod,
-  ExpenseCategoryLabels,
-  ApprovalStatusLabels,
-  PaymentMethodLabels,
+  PaymentMethodLabels
 } from '@/types/financial.types';
+import React, { useEffect, useState } from 'react';
+import {
+  Alert,
+  FlatList,
+  Modal,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 export default function ExpensesManagement() {
   const { expenses, loading, error, pagination, fetchExpenses, createExpense, updateExpense, deleteExpense } = useExpenses();
-  
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -90,8 +88,16 @@ export default function ExpensesManagement() {
     switch (status) {
       case 'approved': return FinancialColors.completed;
       case 'pending': return FinancialColors.pending;
-      case 'rejected': return Colors.error;
-      default: return Colors.neutral;
+      case 'rejected': return {
+        primary: Colors.error[500],
+        background: Colors.error[50],
+        text: Colors.error[700]
+      };
+      default: return {
+        primary: Colors.neutral[500],
+        background: Colors.neutral[50],
+        text: Colors.neutral[700]
+      };
     }
   };
 
@@ -217,8 +223,8 @@ export default function ExpensesManagement() {
         {
           text: actionText.charAt(0).toUpperCase() + actionText.slice(1),
           onPress: async () => {
-            const result = await updateExpense(expense.id, { 
-              approval_status: action === 'approve' ? 'approved' : 'rejected' 
+            const result = await updateExpense(expense.id, {
+              approval_status: action === 'approve' ? 'approved' : 'rejected'
             });
             if (result.success) {
               Alert.alert('Success', `Expense ${actionText}d successfully`);
@@ -234,7 +240,7 @@ export default function ExpensesManagement() {
 
   const renderExpenseItem = ({ item }: { item: Expense }) => {
     const statusColor = getApprovalStatusColor(item.approval_status);
-    
+
     return (
       <View style={styles.expenseCard}>
         <View style={styles.expenseHeader}>
@@ -250,34 +256,34 @@ export default function ExpensesManagement() {
             </View>
           </View>
         </View>
-        
+
         <View style={styles.expenseBody}>
           <Text style={styles.expenseDescription} numberOfLines={2}>
             {item.description}
           </Text>
-          
+
           {item.purpose && (
             <Text style={styles.expensePurpose} numberOfLines={1}>
               Purpose: {item.purpose}
             </Text>
           )}
-          
+
           <View style={styles.expenseDetails}>
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Date:</Text>
               <Text style={styles.detailValue}>{new Date(item.expense_date).toLocaleDateString()}</Text>
             </View>
-            
+
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Category:</Text>
               <Text style={styles.detailValue}>{ExpenseCategoryLabels[item.category] || item.category}</Text>
             </View>
-            
+
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Payment:</Text>
               <Text style={styles.detailValue}>{PaymentMethodLabels[item.payment_method] || item.payment_method}</Text>
             </View>
-            
+
             {item.invoice_number && (
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Invoice:</Text>
@@ -286,7 +292,7 @@ export default function ExpensesManagement() {
             )}
           </View>
         </View>
-        
+
         <View style={styles.expenseFooter}>
           <View style={styles.amountContainer}>
             <Text style={styles.totalAmount}>{formatCurrency(item.total_amount)}</Text>
@@ -296,7 +302,7 @@ export default function ExpensesManagement() {
               </Text>
             )}
           </View>
-          
+
           <View style={styles.actionButtons}>
             {item.approval_status === 'pending' && (
               <>
@@ -306,7 +312,7 @@ export default function ExpensesManagement() {
                 >
                   <IconSymbol size={16} name="checkmark" color={FinancialColors.completed.primary} />
                 </TouchableOpacity>
-                
+
                 <TouchableOpacity
                   style={styles.rejectButton}
                   onPress={() => handleApprovalAction(item, 'reject')}
@@ -315,14 +321,14 @@ export default function ExpensesManagement() {
                 </TouchableOpacity>
               </>
             )}
-            
+
             <TouchableOpacity
               style={styles.editButton}
               onPress={() => handleEditExpense(item)}
             >
               <IconSymbol size={16} name="pencil" color={BrandColors.primary} />
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={styles.deleteButton}
               onPress={() => handleDeleteExpense(item)}
@@ -349,7 +355,7 @@ export default function ExpensesManagement() {
             onSubmitEditing={handleSearch}
           />
         </View>
-        
+
         <TouchableOpacity style={styles.addButton} onPress={handleAddExpense}>
           <IconSymbol size={20} name="plus" color={Colors.white} />
         </TouchableOpacity>
@@ -390,12 +396,12 @@ export default function ExpensesManagement() {
               <Text style={styles.saveButton}>Save</Text>
             </TouchableOpacity>
           </View>
-          
+
           <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
             {/* Vendor Information */}
             <View style={styles.formSection}>
               <Text style={styles.sectionTitle}>Vendor Information</Text>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Vendor Name *</Text>
                 <TextInput
@@ -405,7 +411,7 @@ export default function ExpensesManagement() {
                   placeholder="Enter vendor name"
                 />
               </View>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Vendor Contact</Text>
                 <TextInput
@@ -420,7 +426,7 @@ export default function ExpensesManagement() {
             {/* Expense Details */}
             <View style={styles.formSection}>
               <Text style={styles.sectionTitle}>Expense Details</Text>
-              
+
               <View style={styles.inputRow}>
                 <View style={[styles.inputGroup, { flex: 1, marginRight: Spacing.sm }]}>
                   <Text style={styles.inputLabel}>Expense Number</Text>
@@ -431,7 +437,7 @@ export default function ExpensesManagement() {
                     placeholder="EXP-001"
                   />
                 </View>
-                
+
                 <View style={[styles.inputGroup, { flex: 1, marginLeft: Spacing.sm }]}>
                   <Text style={styles.inputLabel}>Date</Text>
                   <TextInput
@@ -442,7 +448,7 @@ export default function ExpensesManagement() {
                   />
                 </View>
               </View>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Description *</Text>
                 <TextInput
@@ -454,7 +460,7 @@ export default function ExpensesManagement() {
                   numberOfLines={3}
                 />
               </View>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Purpose</Text>
                 <TextInput
@@ -469,7 +475,7 @@ export default function ExpensesManagement() {
             {/* Financial Details */}
             <View style={styles.formSection}>
               <Text style={styles.sectionTitle}>Financial Details</Text>
-              
+
               <View style={styles.inputRow}>
                 <View style={[styles.inputGroup, { flex: 1, marginRight: Spacing.sm }]}>
                   <Text style={styles.inputLabel}>Amount</Text>
@@ -481,7 +487,7 @@ export default function ExpensesManagement() {
                     placeholder="0"
                   />
                 </View>
-                
+
                 <View style={[styles.inputGroup, { flex: 1, marginLeft: Spacing.sm }]}>
                   <Text style={styles.inputLabel}>Tax Amount</Text>
                   <TextInput
@@ -493,7 +499,7 @@ export default function ExpensesManagement() {
                   />
                 </View>
               </View>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Total Amount</Text>
                 <TextInput
@@ -507,7 +513,7 @@ export default function ExpensesManagement() {
             {/* Payment & Documentation */}
             <View style={styles.formSection}>
               <Text style={styles.sectionTitle}>Payment & Documentation</Text>
-              
+
               <View style={styles.inputRow}>
                 <View style={[styles.inputGroup, { flex: 1, marginRight: Spacing.sm }]}>
                   <Text style={styles.inputLabel}>Invoice Number</Text>
@@ -518,7 +524,7 @@ export default function ExpensesManagement() {
                     placeholder="Vendor invoice number"
                   />
                 </View>
-                
+
                 <View style={[styles.inputGroup, { flex: 1, marginLeft: Spacing.sm }]}>
                   <Text style={styles.inputLabel}>Receipt Number</Text>
                   <TextInput
@@ -529,7 +535,7 @@ export default function ExpensesManagement() {
                   />
                 </View>
               </View>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Payment Reference</Text>
                 <TextInput
@@ -539,7 +545,7 @@ export default function ExpensesManagement() {
                   placeholder="Transaction ID or reference"
                 />
               </View>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Notes</Text>
                 <TextInput
@@ -568,7 +574,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: Spacing.base,
-    backgroundColor: Colors.white,
+    backgroundColor: BrandColors.surface,
     borderBottomWidth: 1,
     borderBottomColor: Colors.neutral[200],
     ...Shadows.sm,
@@ -577,7 +583,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.neutral[100],
+    backgroundColor: Colors.white,
     borderRadius: BorderRadius.lg,
     paddingHorizontal: Spacing.md,
     marginRight: Spacing.md,
@@ -601,8 +607,8 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing['2xl'],
   },
   expenseCard: {
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.md,
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.lg,
     padding: Spacing.base,
     marginBottom: Spacing.md,
     ...Shadows.base,
@@ -748,7 +754,7 @@ const styles = StyleSheet.create({
   // Modal Styles
   modalContainer: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: BrandColors.surface,
   },
   modalHeader: {
     flexDirection: 'row',

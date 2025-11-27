@@ -1,23 +1,23 @@
-import React, { useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  StatusBar,
-  Platform,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
+import React from 'react';
+import {
+  Platform,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors, Typography, Spacing, BrandColors } from '@/constants/design-system';
-import { useMediaHubStore } from '@/stores/mediaHubStore';
+import { BrandColors, Spacing, Typography } from '@/constants/design-system';
 import { useAuthStore } from '@/stores/authStore';
+import { useMediaHubStore } from '@/stores/mediaHubStore';
 
 // Import sections
-import CaptureSection from '@/components/media-hub/CaptureSection';
 import AudioSection from '@/components/media-hub/AudioSection';
+import CaptureSection from '@/components/media-hub/CaptureSection';
 import LibrarySection from '@/components/media-hub/LibrarySection';
 import SearchSection from '@/components/media-hub/SearchSection';
 
@@ -91,7 +91,7 @@ export default function MediaHubScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={BrandColors.surface} />
-      
+
       {/* Full Header */}
       <LinearGradient
         colors={[BrandColors.surface, BrandColors.surface]}
@@ -106,7 +106,7 @@ export default function MediaHubScreen() {
               </Text>
             )}
           </View>
-          
+
           {/* Quick Stats */}
           <View style={styles.headerStats}>
             <View style={styles.statBadge}>
@@ -160,11 +160,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: BrandColors.surface,
   },
-  
+
   // Header styles
   headerGradient: {
     paddingTop: Platform.OS === 'ios' ? 60 : 40, // Account for status bar
-    paddingBottom: Spacing.base,
+    paddingBottom: 0,
   },
   header: {
     flexDirection: 'row',
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
   tabNavigation: {
     flexDirection: 'row',
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.sm,
+    paddingBottom: 0,
     gap: Spacing.xs,
   },
   tabButton: {

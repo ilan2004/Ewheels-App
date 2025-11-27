@@ -1,50 +1,15 @@
-import { Customer, InvoiceCustomerData, CustomerMappingResult } from '@/types/customer';
+import { Customer, CustomerMappingResult, InvoiceCustomerData } from '@/types/customer';
 
 /**
  * Maps a database Customer object to the invoice customer format
  * and returns both the invoice customer data and the linked customer ID
  */
 export function mapCustomerForInvoice(customer: Customer): CustomerMappingResult {
-  // Parse address if it's a single string
-  const parseAddress = (address?: string) => {
-    if (!address) return {};
-
-    // Try to split address into components
-    // This is a simple approach - you might want more sophisticated parsing
-    const parts = address.split(',').map(part => part.trim());
-    
-    if (parts.length >= 3) {
-      return {
-        street: parts[0],
-        city: parts[1],
-        state: parts[2],
-        zip: customer.postal_code || undefined,
-        country: 'US', // Default country, you might want to make this configurable
-      };
-    } else if (parts.length >= 2) {
-      return {
-        street: parts[0],
-        city: parts[1],
-        state: customer.state || undefined,
-        zip: customer.postal_code || undefined,
-        country: 'US',
-      };
-    } else {
-      return {
-        street: address,
-        city: customer.city || undefined,
-        state: customer.state || undefined,
-        zip: customer.postal_code || undefined,
-        country: 'US',
-      };
-    }
-  };
-
   const invoiceCustomer: InvoiceCustomerData = {
     name: customer.name,
     email: customer.email || undefined,
     phone: customer.phone || customer.contact || undefined,
-    address: parseAddress(customer.address),
+    address: formatCustomerAddress(customer),
   };
 
   return {
@@ -149,7 +114,7 @@ export function filterCustomers(customers: Customer[], query: string): Customer[
   if (!query.trim()) return customers;
 
   const searchTerm = query.toLowerCase().trim();
-  
+
   return customers.filter(customer => {
     const searchKey = createCustomerSearchKey(customer);
     return searchKey.includes(searchTerm);
@@ -195,8 +160,8 @@ export function debounce<T extends (...args: any[]) => void>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout;
-  
+  let timeout: any;
+
   return (...args: Parameters<T>) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);

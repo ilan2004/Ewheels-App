@@ -1,36 +1,37 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Alert,
-  Platform,
-  KeyboardAvoidingView,
-} from 'react-native';
-import { router } from 'expo-router';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
+import React, { useState } from 'react';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
+import { CustomerSelection } from '@/components/customers/CustomerSelection';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { useAuthStore } from '@/stores/authStore';
-import { useLocationStore } from '@/stores/locationStore';
-import { InvoiceService } from '@/services/invoiceService';
-import { InvoiceItem, InvoiceCustomer, CreateInvoiceRequest } from '@/types/invoice';
-import { Customer } from '@/types/customer';
-import { BrandColors, Typography, Spacing, BorderRadius, Shadows } from '@/constants/design-system';
+import { BorderRadius, BrandColors, Shadows, Spacing, Typography } from '@/constants/design-system';
+import { mapCustomerForInvoice } from '@/lib/customerMapping';
 import {
-  createBlankInvoiceItem,
-  updateInvoiceItemCalculations,
   calculateInvoiceTotals,
+  createBlankInvoiceItem,
   formatCurrency,
+  updateInvoiceItemCalculations,
   validateInvoiceItem,
 } from '@/lib/invoiceCalculations';
-import { mapCustomerForInvoice } from '@/lib/customerMapping';
-import { CustomerSelection } from '@/components/customers/CustomerSelection';
+import { generateAndShareInvoicePDF } from '@/lib/pdfGenerator';
+import { InvoiceService } from '@/services/invoiceService';
+import { useAuthStore } from '@/stores/authStore';
+import { useLocationStore } from '@/stores/locationStore';
+import { Customer } from '@/types/customer';
+import { CreateInvoiceRequest, InvoiceCustomer, InvoiceItem } from '@/types/invoice';
 
 interface LineItemRowProps {
   item: InvoiceItem;
@@ -53,7 +54,7 @@ const LineItemRow: React.FC<LineItemRowProps> = ({ item, onUpdate, onDelete }) =
           <IconSymbol name="trash" size={16} color="#EF4444" />
         </TouchableOpacity>
       </View>
-      
+
       <View style={styles.lineItemFields}>
         {/* Description */}
         <View style={styles.fieldContainer}>
@@ -70,7 +71,7 @@ const LineItemRow: React.FC<LineItemRowProps> = ({ item, onUpdate, onDelete }) =
 
         {/* Quantity & Unit Price */}
         <View style={styles.twoColumnRow}>
-          <View style={[styles.fieldContainer, { flex: 1, marginRight: Spacing.sm }]}>
+          <View style={[styles.fieldContainer, { flex: 1 }]}>
             <Text style={styles.fieldLabel}>Quantity</Text>
             <TextInput
               style={styles.numberInput}
@@ -81,7 +82,7 @@ const LineItemRow: React.FC<LineItemRowProps> = ({ item, onUpdate, onDelete }) =
               placeholderTextColor={BrandColors.ink + '60'}
             />
           </View>
-          <View style={[styles.fieldContainer, { flex: 1, marginLeft: Spacing.sm }]}>
+          <View style={[styles.fieldContainer, { flex: 1 }]}>
             <Text style={styles.fieldLabel}>Unit Price</Text>
             <TextInput
               style={styles.numberInput}
@@ -94,28 +95,33 @@ const LineItemRow: React.FC<LineItemRowProps> = ({ item, onUpdate, onDelete }) =
           </View>
         </View>
 
-        {/* Discount & Tax Rate */}
-        <View style={styles.twoColumnRow}>
-          <View style={[styles.fieldContainer, { flex: 1, marginRight: Spacing.sm }]}>
-            <Text style={styles.fieldLabel}>Discount %</Text>
+        {/* Discount & Tax Rates */}
+        <View style={styles.threeColumnRow}>
+          <View style={[styles.fieldContainer, { flex: 1 }]}>
+            <Text style={styles.fieldLabel}>Disc %</Text>
             <TextInput
               style={styles.numberInput}
               value={item.discount.toString()}
               onChangeText={(value) => handleFieldChange('discount', parseFloat(value) || 0)}
-              placeholder="0"
               keyboardType="numeric"
-              placeholderTextColor={BrandColors.ink + '60'}
             />
           </View>
-          <View style={[styles.fieldContainer, { flex: 1, marginLeft: Spacing.sm }]}>
-            <Text style={styles.fieldLabel}>Tax Rate %</Text>
+          <View style={[styles.fieldContainer, { flex: 1 }]}>
+            <Text style={styles.fieldLabel}>SGST %</Text>
             <TextInput
               style={styles.numberInput}
-              value={item.tax_rate.toString()}
-              onChangeText={(value) => handleFieldChange('tax_rate', parseFloat(value) || 0)}
-              placeholder="0"
+              value={item.sgst_rate.toString()}
+              onChangeText={(value) => handleFieldChange('sgst_rate', parseFloat(value) || 0)}
               keyboardType="numeric"
-              placeholderTextColor={BrandColors.ink + '60'}
+            />
+          </View>
+          <View style={[styles.fieldContainer, { flex: 1 }]}>
+            <Text style={styles.fieldLabel}>CGST %</Text>
+            <TextInput
+              style={styles.numberInput}
+              value={item.cgst_rate.toString()}
+              onChangeText={(value) => handleFieldChange('cgst_rate', parseFloat(value) || 0)}
+              keyboardType="numeric"
             />
           </View>
         </View>
@@ -127,12 +133,8 @@ const LineItemRow: React.FC<LineItemRowProps> = ({ item, onUpdate, onDelete }) =
             <Text style={styles.totalValue}>{formatCurrency(item.subtotal)}</Text>
           </View>
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Discount:</Text>
-            <Text style={styles.totalValue}>-{formatCurrency(item.discount_amount)}</Text>
-          </View>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Tax:</Text>
-            <Text style={styles.totalValue}>{formatCurrency(item.tax_amount)}</Text>
+            <Text style={styles.totalLabel}>Tax (SGST+CGST):</Text>
+            <Text style={styles.totalValue}>{formatCurrency(item.sgst_amount + item.cgst_amount)}</Text>
           </View>
           <View style={[styles.totalRow, styles.finalTotal]}>
             <Text style={styles.finalTotalLabel}>Total:</Text>
@@ -154,15 +156,10 @@ export default function CreateInvoiceScreen() {
     name: '',
     email: '',
     phone: '',
-    address: {
-      street: '',
-      city: '',
-      state: '',
-      zip: '',
-      country: '',
-    },
+    address: '',
+    gstNumber: '',
   });
-  
+
   // Customer management state - now managed by CustomerSelection component
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [linkedCustomerId, setLinkedCustomerId] = useState<string | undefined>(undefined);
@@ -175,7 +172,10 @@ export default function CreateInvoiceScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [notes, setNotes] = useState('');
   const [terms, setTerms] = useState('Payment due within 30 days');
-  const [currency] = useState('USD');
+  const [currency] = useState('INR');
+
+  const [shippingAmount, setShippingAmount] = useState(0);
+  const [adjustmentAmount, setAdjustmentAmount] = useState(0);
 
   // Create invoice mutation
   const createMutation = useMutation({
@@ -216,20 +216,8 @@ export default function CreateInvoiceScreen() {
     }
   };
 
-  const handleAddressFieldChange = (field: keyof InvoiceCustomer['address'], value: string) => {
-    setCustomer(prev => ({
-      ...prev,
-      address: { ...prev.address, [field]: value },
-    }));
-    // Clear linked customer when manually editing
-    if (selectedCustomer) {
-      setSelectedCustomer(null);
-      setLinkedCustomerId(undefined);
-    }
-  };
-
   const handleLineItemUpdate = (index: number, updatedItem: InvoiceItem) => {
-    setLineItems(prev => 
+    setLineItems(prev =>
       prev.map((item, i) => i === index ? updatedItem : item)
     );
   };
@@ -244,6 +232,21 @@ export default function CreateInvoiceScreen() {
     } else {
       Alert.alert('Error', 'At least one line item is required');
     }
+  };
+
+  const totals = calculateInvoiceTotals(lineItems, shippingAmount, adjustmentAmount);
+
+  const handlePreviewPDF = async () => {
+    await generateAndShareInvoicePDF({
+      invoiceNumber: 'DRAFT',
+      date: new Date(),
+      dueDate,
+      customer,
+      items: lineItems,
+      totals,
+      notes,
+      terms
+    });
   };
 
   const handleSave = () => {
@@ -277,22 +280,13 @@ export default function CreateInvoiceScreen() {
         ...customer,
         id: linkedCustomerId, // Include linked customer ID if available
       },
-      items: lineItems.map(item => ({
-        line_id: item.line_id,
-        description: item.description,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        discount: item.discount,
-        tax_rate: item.tax_rate,
-        subtotal: item.subtotal,
-        discount_amount: item.discount_amount,
-        tax_amount: item.tax_amount,
-        total: item.total,
-      })),
+      items: lineItems,
       currency,
       due_date: dueDate.toISOString(),
       notes: notes.trim() || undefined,
       terms: terms.trim() || undefined,
+      shipping_amount: shippingAmount,
+      adjustment_amount: adjustmentAmount,
       location_id: activeLocation.id,
     };
 
@@ -305,8 +299,6 @@ export default function CreateInvoiceScreen() {
       setDueDate(selectedDate);
     }
   };
-
-  const totals = calculateInvoiceTotals(lineItems);
 
   return (
     <ThemedView style={styles.container}>
@@ -331,11 +323,11 @@ export default function CreateInvoiceScreen() {
           </TouchableOpacity>
         </View>
 
-          <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Customer Information */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Customer Information</Text>
-            
+
             <View style={styles.card}>
               <CustomerSelection
                 value={customer.name}
@@ -346,9 +338,9 @@ export default function CreateInvoiceScreen() {
                 placeholder="Search or add customer..."
                 label="Customer Name *"
               />
-              
+
               <View style={styles.twoColumnRow}>
-                <View style={[styles.fieldContainer, { flex: 1, marginRight: Spacing.sm }]}>
+                <View style={[styles.fieldContainer, { flex: 1 }]}>
                   <Text style={styles.fieldLabel}>Email</Text>
                   <TextInput
                     style={styles.textInput}
@@ -359,7 +351,7 @@ export default function CreateInvoiceScreen() {
                     placeholderTextColor={BrandColors.ink + '60'}
                   />
                 </View>
-                <View style={[styles.fieldContainer, { flex: 1, marginLeft: Spacing.sm }]}>
+                <View style={[styles.fieldContainer, { flex: 1 }]}>
                   <Text style={styles.fieldLabel}>Phone</Text>
                   <TextInput
                     style={styles.textInput}
@@ -373,37 +365,26 @@ export default function CreateInvoiceScreen() {
               </View>
 
               <View style={styles.fieldContainer}>
-                <Text style={styles.fieldLabel}>Street Address</Text>
+                <Text style={styles.fieldLabel}>Address</Text>
                 <TextInput
-                  style={styles.textInput}
-                  value={customer.address?.street}
-                  onChangeText={(value) => handleAddressFieldChange('street', value)}
-                  placeholder="123 Main Street"
+                  style={[styles.textInput, { height: 80 }]}
+                  value={customer.address || ''}
+                  onChangeText={(value) => handleCustomerFieldChange('address', value)}
+                  placeholder="Enter full address"
+                  multiline
                   placeholderTextColor={BrandColors.ink + '60'}
                 />
               </View>
 
-              <View style={styles.twoColumnRow}>
-                <View style={[styles.fieldContainer, { flex: 1, marginRight: Spacing.sm }]}>
-                  <Text style={styles.fieldLabel}>City</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={customer.address?.city}
-                    onChangeText={(value) => handleAddressFieldChange('city', value)}
-                    placeholder="City"
-                    placeholderTextColor={BrandColors.ink + '60'}
-                  />
-                </View>
-                <View style={[styles.fieldContainer, { flex: 1, marginLeft: Spacing.sm }]}>
-                  <Text style={styles.fieldLabel}>State/Province</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={customer.address?.state}
-                    onChangeText={(value) => handleAddressFieldChange('state', value)}
-                    placeholder="State"
-                    placeholderTextColor={BrandColors.ink + '60'}
-                  />
-                </View>
+              <View style={styles.fieldContainer}>
+                <Text style={styles.fieldLabel}>GST Number</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={customer.gstNumber || ''}
+                  onChangeText={(value) => handleCustomerFieldChange('gstNumber', value)}
+                  placeholder="GSTIN"
+                  placeholderTextColor={BrandColors.ink + '60'}
+                />
               </View>
             </View>
           </View>
@@ -420,12 +401,40 @@ export default function CreateInvoiceScreen() {
 
             {lineItems.map((item, index) => (
               <LineItemRow
-                key={item.line_id}
+                key={item.id || index}
                 item={item}
                 onUpdate={(updatedItem) => handleLineItemUpdate(index, updatedItem)}
                 onDelete={() => handleDeleteLineItem(index)}
               />
             ))}
+          </View>
+
+          {/* Additional Costs Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Additional Costs</Text>
+            <View style={styles.card}>
+              <View style={styles.twoColumnRow}>
+                <View style={[styles.fieldContainer, { flex: 1 }]}>
+                  <Text style={styles.fieldLabel}>Shipping Amount</Text>
+                  <TextInput
+                    style={styles.numberInput}
+                    value={shippingAmount.toString()}
+                    onChangeText={(v) => setShippingAmount(parseFloat(v) || 0)}
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View style={[styles.fieldContainer, { flex: 1 }]}>
+                  <Text style={styles.fieldLabel}>Adjustment (+/-)</Text>
+                  <TextInput
+                    style={styles.numberInput}
+                    value={adjustmentAmount.toString()}
+                    onChangeText={(v) => setAdjustmentAmount(parseFloat(v) || 0)}
+                    keyboardType="numeric"
+                    placeholder="-0.00"
+                  />
+                </View>
+              </View>
+            </View>
           </View>
 
           {/* Invoice Details */}
@@ -481,17 +490,38 @@ export default function CreateInvoiceScreen() {
               </View>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Total Discount:</Text>
-                <Text style={styles.summaryValue}>-{formatCurrency(totals.totalDiscount)}</Text>
+                <Text style={styles.summaryValue}>-{formatCurrency(totals.discount_total)}</Text>
               </View>
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Total Tax:</Text>
-                <Text style={styles.summaryValue}>{formatCurrency(totals.totalTax)}</Text>
+                <Text style={styles.summaryLabel}>SGST:</Text>
+                <Text style={styles.summaryValue}>{formatCurrency(totals.sgst_total)}</Text>
               </View>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>CGST:</Text>
+                <Text style={styles.summaryValue}>{formatCurrency(totals.cgst_total)}</Text>
+              </View>
+              {totals.shipping_amount > 0 && (
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Shipping:</Text>
+                  <Text style={styles.summaryValue}>{formatCurrency(totals.shipping_amount)}</Text>
+                </View>
+              )}
+              {totals.adjustment_amount !== 0 && (
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Adjustment:</Text>
+                  <Text style={styles.summaryValue}>{formatCurrency(totals.adjustment_amount)}</Text>
+                </View>
+              )}
               <View style={[styles.summaryRow, styles.finalSummaryRow]}>
                 <Text style={styles.finalSummaryLabel}>Total Amount:</Text>
-                <Text style={styles.finalSummaryValue}>{formatCurrency(totals.total)}</Text>
+                <Text style={styles.finalSummaryValue}>{formatCurrency(totals.grand_total)}</Text>
               </View>
             </View>
+
+            <TouchableOpacity onPress={handlePreviewPDF} style={styles.pdfButton}>
+              <IconSymbol name="doc.text" size={20} color={BrandColors.primary} />
+              <Text style={styles.pdfButtonText}>Preview PDF</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
 
@@ -505,7 +535,7 @@ export default function CreateInvoiceScreen() {
             minimumDate={new Date()}
           />
         )}
-        
+
       </KeyboardAvoidingView>
     </ThemedView>
   );
@@ -556,66 +586,75 @@ const styles = StyleSheet.create({
   },
   section: {
     padding: Spacing.lg,
-    paddingBottom: 0,
+    paddingBottom: Spacing.md,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.base,
+    marginBottom: Spacing.md,
   },
   sectionTitle: {
     fontSize: Typography.fontSize.lg,
     fontFamily: Typography.fontFamily.bold,
     color: BrandColors.title,
-    marginBottom: Spacing.base,
+    marginBottom: Spacing.md,
   },
   card: {
     backgroundColor: BrandColors.surface,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: BrandColors.ink + '10',
-    padding: Spacing.base,
-    marginBottom: Spacing.base,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
     ...Shadows.sm,
   },
   fieldContainer: {
-    marginBottom: Spacing.base,
+    marginBottom: Spacing.lg,
   },
   fieldLabel: {
     fontSize: Typography.fontSize.sm,
     fontFamily: Typography.fontFamily.semibold,
     color: BrandColors.ink,
-    marginBottom: Spacing.xs,
+    marginBottom: Spacing.sm,
   },
   textInput: {
     borderWidth: 1,
     borderColor: BrandColors.ink + '20',
     borderRadius: BorderRadius.md,
-    padding: Spacing.sm,
+    padding: Spacing.md,
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.regular,
     color: BrandColors.ink,
     backgroundColor: BrandColors.surface,
+    minHeight: 48, // Better touch target
   },
   numberInput: {
     borderWidth: 1,
     borderColor: BrandColors.ink + '20',
     borderRadius: BorderRadius.md,
-    padding: Spacing.sm,
+    padding: Spacing.md,
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.regular,
     color: BrandColors.ink,
     backgroundColor: BrandColors.surface,
     textAlign: 'right',
+    minHeight: 48, // Better touch target
   },
   notesInput: {
-    height: 80,
+    height: 100,
     textAlignVertical: 'top',
+    paddingTop: Spacing.md,
   },
   twoColumnRow: {
     flexDirection: 'row',
-    marginBottom: Spacing.base,
+    marginBottom: Spacing.lg,
+    gap: Spacing.md,
+  },
+  threeColumnRow: {
+    flexDirection: 'row',
+    marginBottom: Spacing.lg,
+    gap: Spacing.md,
   },
   datePickerButton: {
     flexDirection: 'row',
@@ -624,8 +663,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: BrandColors.ink + '20',
     borderRadius: BorderRadius.md,
-    padding: Spacing.sm,
+    padding: Spacing.md,
     backgroundColor: BrandColors.surface,
+    minHeight: 48,
   },
   datePickerText: {
     fontSize: Typography.fontSize.base,
@@ -635,10 +675,11 @@ const styles = StyleSheet.create({
   addItemButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.xs,
+    gap: Spacing.sm,
+    padding: Spacing.sm, // Increase touch area
   },
   addItemText: {
-    fontSize: Typography.fontSize.sm,
+    fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.semibold,
     color: BrandColors.primary,
   },
@@ -647,15 +688,18 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: BrandColors.ink + '10',
-    padding: Spacing.base,
-    marginBottom: Spacing.base,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
     ...Shadows.sm,
   },
   lineItemHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.base,
+    marginBottom: Spacing.md,
+    paddingBottom: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: BrandColors.ink + '05',
   },
   lineItemLabel: {
     fontSize: Typography.fontSize.base,
@@ -663,45 +707,45 @@ const styles = StyleSheet.create({
     color: BrandColors.title,
   },
   deleteButton: {
-    padding: Spacing.xs,
+    padding: Spacing.sm,
   },
   lineItemFields: {
-    gap: Spacing.base,
+    gap: Spacing.md,
   },
   calculatedTotals: {
     backgroundColor: BrandColors.primary + '08',
     borderRadius: BorderRadius.md,
-    padding: Spacing.sm,
-    marginTop: Spacing.sm,
+    padding: Spacing.md,
+    marginTop: Spacing.md,
   },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   totalLabel: {
-    fontSize: Typography.fontSize.xs,
+    fontSize: Typography.fontSize.sm,
     fontFamily: Typography.fontFamily.medium,
     color: BrandColors.ink + '80',
   },
   totalValue: {
-    fontSize: Typography.fontSize.xs,
+    fontSize: Typography.fontSize.sm,
     fontFamily: Typography.fontFamily.semibold,
     color: BrandColors.ink,
   },
   finalTotal: {
     borderTopWidth: 1,
     borderTopColor: BrandColors.ink + '20',
-    paddingTop: 4,
-    marginTop: 4,
+    paddingTop: 8,
+    marginTop: 8,
   },
   finalTotalLabel: {
-    fontSize: Typography.fontSize.sm,
+    fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.bold,
     color: BrandColors.primary,
   },
   finalTotalValue: {
-    fontSize: Typography.fontSize.sm,
+    fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.bold,
     color: BrandColors.primary,
   },
@@ -710,13 +754,13 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: BrandColors.primary + '20',
-    padding: Spacing.base,
-    marginBottom: Spacing.base,
+    padding: Spacing.xl,
+    marginBottom: Spacing.lg,
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: Spacing.xs,
+    marginBottom: Spacing.sm,
   },
   summaryLabel: {
     fontSize: Typography.fontSize.base,
@@ -731,155 +775,34 @@ const styles = StyleSheet.create({
   finalSummaryRow: {
     borderTopWidth: 2,
     borderTopColor: BrandColors.primary,
-    paddingTop: Spacing.sm,
-    marginTop: Spacing.sm,
+    paddingTop: Spacing.md,
+    marginTop: Spacing.md,
   },
   finalSummaryLabel: {
-    fontSize: Typography.fontSize.lg,
-    fontFamily: Typography.fontFamily.bold,
-    color: BrandColors.primary,
-  },
-  finalSummaryValue: {
     fontSize: Typography.fontSize.xl,
     fontFamily: Typography.fontFamily.bold,
     color: BrandColors.primary,
   },
-  // Customer Selection Styles
-  selectCustomerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  selectCustomerText: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.semibold,
+  finalSummaryValue: {
+    fontSize: Typography.fontSize['2xl'],
+    fontFamily: Typography.fontFamily.bold,
     color: BrandColors.primary,
   },
-  selectedCustomerCard: {
+  pdfButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    padding: Spacing.lg,
     backgroundColor: BrandColors.primary + '10',
-    borderRadius: BorderRadius.md,
-    padding: Spacing.sm,
-    marginBottom: Spacing.base,
+    borderRadius: BorderRadius.lg,
+    marginTop: Spacing.lg,
+    gap: Spacing.sm,
     borderWidth: 1,
     borderColor: BrandColors.primary + '30',
   },
-  selectedCustomerInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  customerIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: BrandColors.primary + '20',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: Spacing.sm,
-  },
-  customerDetails: {
-    flex: 1,
-  },
-  selectedCustomerName: {
-    fontSize: Typography.fontSize.base,
-    fontFamily: Typography.fontFamily.semibold,
-    color: BrandColors.title,
-    marginBottom: 2,
-  },
-  selectedCustomerContact: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.regular,
-    color: BrandColors.primary,
-  },
-  clearCustomerButton: {
-    padding: Spacing.xs,
-  },
-  // Smart Customer Input Styles
-  customerInputContainer: {
-    position: 'relative',
-  },
-  searchIndicator: {
-    position: 'absolute',
-    right: Spacing.sm,
-    top: '50%',
-    transform: [{ translateY: -8 }],
-  },
-  searchResultsContainer: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    backgroundColor: BrandColors.surface,
-    borderWidth: 1,
-    borderColor: BrandColors.ink + '20',
-    borderTopWidth: 0,
-    borderBottomLeftRadius: BorderRadius.md,
-    borderBottomRightRadius: BorderRadius.md,
-    maxHeight: 200,
-    zIndex: 1000,
-    ...Shadows.md,
-  },
-  searchResultsList: {
-    maxHeight: 150,
-  },
-  searchResultItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.base,
-    borderBottomWidth: 1,
-    borderBottomColor: BrandColors.ink + '10',
-  },
-  resultIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: BrandColors.primary + '20',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: Spacing.sm,
-  },
-  resultInfo: {
-    flex: 1,
-  },
-  resultName: {
-    fontSize: Typography.fontSize.base,
-    fontFamily: Typography.fontFamily.semibold,
-    color: BrandColors.ink,
-    marginBottom: 2,
-  },
-  resultContact: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.regular,
-    color: BrandColors.primary,
-  },
-  createNewOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.base,
-    paddingHorizontal: Spacing.base,
-    backgroundColor: BrandColors.primary + '08',
-    borderTopWidth: 1,
-    borderTopColor: BrandColors.ink + '10',
-  },
-  createNewIcon: {
-    marginRight: Spacing.sm,
-  },
-  createNewInfo: {
-    flex: 1,
-  },
-  createNewTitle: {
-    fontSize: Typography.fontSize.base,
+  pdfButtonText: {
+    fontSize: Typography.fontSize.lg,
     fontFamily: Typography.fontFamily.semibold,
     color: BrandColors.primary,
-    marginBottom: 2,
-  },
-  createNewSubtitle: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.regular,
-    color: BrandColors.ink + '80',
   },
 });

@@ -1,133 +1,109 @@
-import { InvoiceItem, InvoiceCalculations } from '@/types/invoice';
+import { InvoiceItem, InvoiceTotals } from '@/types/invoice';
 
-/**
- * Calculate line item totals
- */
-export function calculateLineItem(
-  quantity: number,
-  unitPrice: number,
-  discount: number = 0,
-  taxRate: number = 0
-): Omit<InvoiceItem, 'id' | 'invoice_id' | 'line_id' | 'description'> {
-  const subtotal = quantity * unitPrice;
-  const discountAmount = (subtotal * discount) / 100;
-  const taxableAmount = subtotal - discountAmount;
-  const taxAmount = (taxableAmount * taxRate) / 100;
-  const total = taxableAmount + taxAmount;
+export const DEFAULT_INVOICE_CONFIG = {
+  currency: 'INR',
+  locale: 'en-IN',
+  sgstRate: 9,
+  cgstRate: 9,
+};
 
-  return {
-    quantity,
-    unit_price: unitPrice,
-    discount,
-    tax_rate: taxRate,
-    subtotal,
-    discount_amount: discountAmount,
-    tax_amount: taxAmount,
-    total,
-  };
+export function roundToDecimalPlaces(value: number, places: number = 2): number {
+  return Math.round(value * Math.pow(10, places)) / Math.pow(10, places);
 }
 
-/**
- * Calculate invoice totals from line items
- */
-export function calculateInvoiceTotals(items: InvoiceItem[]): InvoiceCalculations {
-  const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
-  const totalDiscount = items.reduce((sum, item) => sum + item.discount_amount, 0);
-  const totalTax = items.reduce((sum, item) => sum + item.tax_amount, 0);
-  const total = items.reduce((sum, item) => sum + item.total, 0);
-
-  return {
-    subtotal,
-    totalDiscount,
-    totalTax,
-    total,
-  };
-}
-
-/**
- * Generate a unique line ID for invoice items
- */
-export function generateLineId(): string {
-  return `line_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-}
-
-/**
- * Format currency amount
- */
-export function formatCurrency(amount: number, currency: string = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: currency,
-  }).format(amount);
-}
-
-/**
- * Format percentage
- */
-export function formatPercentage(value: number): string {
-  return `${value.toFixed(1)}%`;
-}
-
-/**
- * Validate invoice item values
- */
-export function validateInvoiceItem(item: Partial<InvoiceItem>): string[] {
-  const errors: string[] = [];
-
-  if (!item.description || item.description.trim().length === 0) {
-    errors.push('Description is required');
-  }
-
-  if (!item.quantity || item.quantity <= 0) {
-    errors.push('Quantity must be greater than 0');
-  }
-
-  if (!item.unit_price || item.unit_price <= 0) {
-    errors.push('Unit price must be greater than 0');
-  }
-
-  if (item.discount !== undefined && (item.discount < 0 || item.discount > 100)) {
-    errors.push('Discount must be between 0% and 100%');
-  }
-
-  if (item.tax_rate !== undefined && (item.tax_rate < 0 || item.tax_rate > 100)) {
-    errors.push('Tax rate must be between 0% and 100%');
-  }
-
-  return errors;
-}
-
-/**
- * Create a new blank invoice item
- */
 export function createBlankInvoiceItem(): InvoiceItem {
-  return {
-    line_id: generateLineId(),
+  return updateInvoiceItemCalculations({
+    id: `temp-${Date.now()}`,
     description: '',
     quantity: 1,
     unit_price: 0,
     discount: 0,
-    tax_rate: 0,
+    sgst_rate: DEFAULT_INVOICE_CONFIG.sgstRate,
+    cgst_rate: DEFAULT_INVOICE_CONFIG.cgstRate,
     subtotal: 0,
     discount_amount: 0,
-    tax_amount: 0,
+    sgst_amount: 0,
+    cgst_amount: 0,
     total: 0,
-  };
+  });
 }
 
-/**
- * Update invoice item calculations
- */
 export function updateInvoiceItemCalculations(item: InvoiceItem): InvoiceItem {
-  const calculations = calculateLineItem(
-    item.quantity,
-    item.unit_price,
-    item.discount,
-    item.tax_rate
-  );
+  const quantity = Math.max(0, item.quantity || 0);
+  const unitPrice = Math.max(0, item.unit_price || 0);
+  const discount = Math.max(0, Math.min(100, item.discount || 0));
+  const sgstRate = Math.max(0, Math.min(100, item.sgst_rate || 0));
+  const cgstRate = Math.max(0, Math.min(100, item.cgst_rate || 0));
+
+  const subtotal = roundToDecimalPlaces(quantity * unitPrice);
+  const discountAmount = roundToDecimalPlaces(subtotal * (discount / 100));
+  const taxableAmount = subtotal - discountAmount;
+
+  const sgstAmount = roundToDecimalPlaces(taxableAmount * (sgstRate / 100));
+  const cgstAmount = roundToDecimalPlaces(taxableAmount * (cgstRate / 100));
+
+  const total = roundToDecimalPlaces(taxableAmount + sgstAmount + cgstAmount);
 
   return {
     ...item,
-    ...calculations,
+    quantity,
+    unit_price: unitPrice,
+    discount,
+    sgst_rate: sgstRate,
+    cgst_rate: cgstRate,
+    subtotal,
+    discount_amount: discountAmount,
+    sgst_amount: sgstAmount,
+    cgst_amount: cgstAmount,
+    total,
   };
+}
+
+export function calculateInvoiceTotals(
+  items: InvoiceItem[],
+  shippingAmount: number = 0,
+  adjustmentAmount: number = 0
+): InvoiceTotals {
+  const subtotal = roundToDecimalPlaces(
+    items.reduce((sum, item) => sum + item.subtotal, 0)
+  );
+  const discountTotal = roundToDecimalPlaces(
+    items.reduce((sum, item) => sum + item.discount_amount, 0)
+  );
+  const sgstTotal = roundToDecimalPlaces(
+    items.reduce((sum, item) => sum + item.sgst_amount, 0)
+  );
+  const cgstTotal = roundToDecimalPlaces(
+    items.reduce((sum, item) => sum + item.cgst_amount, 0)
+  );
+
+  const grandTotal = roundToDecimalPlaces(
+    subtotal - discountTotal + sgstTotal + cgstTotal + shippingAmount + adjustmentAmount
+  );
+
+  return {
+    subtotal,
+    discount_total: discountTotal,
+    sgst_total: sgstTotal,
+    cgst_total: cgstTotal,
+    shipping_amount: shippingAmount,
+    adjustment_amount: adjustmentAmount,
+    grand_total: grandTotal,
+  };
+}
+
+export function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 2,
+  }).format(amount);
+}
+
+export function validateInvoiceItem(item: InvoiceItem): string[] {
+  const errors: string[] = [];
+  if (!item.description?.trim()) errors.push('Description is required');
+  if (item.quantity <= 0) errors.push('Quantity must be greater than 0');
+  if (item.unit_price < 0) errors.push('Unit price cannot be negative');
+  return errors;
 }

@@ -257,3 +257,52 @@ export const ExpenseCategoryLabels: Record<ExpenseCategory, string> = {
   professional_services: 'Professional Services',
   other: 'Other'
 };
+
+// Report Types
+export interface DailyCash {
+  id: string;
+  date: string;
+  opening_cash: number;
+  closing_cash: number;
+  created_at: string;
+}
+
+export interface CategoryBreakdown {
+  category: string;
+  amount: number;
+  count: number;
+}
+
+export interface PaymentMethodBreakdown {
+  method: string;
+  amount: number;
+  count: number;
+}
+
+export interface ReportData {
+  totalSales: number;
+  totalExpenses: number;
+  netProfit: number;
+  salesCount: number;
+  expensesCount: number;
+  salesByCategory: CategoryBreakdown[];
+  expensesByCategory: CategoryBreakdown[];
+  salesByPaymentMethod: PaymentMethodBreakdown[];
+  expensesByPaymentMethod: PaymentMethodBreakdown[];
+  cashSummary: {
+    openingTotal: number;
+    closingTotal: number;
+    netChange: number;
+  };
+  // Raw data for PDF export
+  rawSales: Sale[];
+  rawExpenses: Expense[];
+  rawDailyCash: DailyCash[];
+  // Metadata
+  period: {
+    month: number;
+    year: number;
+    startDate: string;
+    endDate: string;
+  };
+}

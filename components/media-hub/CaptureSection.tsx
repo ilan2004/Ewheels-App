@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
   topControls: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingTop: 60,
+    paddingTop: Spacing.md,
     paddingHorizontal: Spacing.xl,
     paddingBottom: Spacing.xl,
   },

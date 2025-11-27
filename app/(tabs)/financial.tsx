@@ -1,62 +1,66 @@
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import {
+  BorderRadius,
+  BrandColors,
+  Colors,
+  Shadows,
+  Spacing,
+  Typography
+} from '@/constants/design-system';
+import { useFinancialData } from '@/hooks/useFinancial';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
+  Alert,
+  LayoutChangeEvent,
   SafeAreaView,
   StatusBar,
-  Alert,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { useFinancialData } from '@/hooks/useFinancial';
-import {
-  Colors,
-  Typography,
-  Spacing,
-  BorderRadius,
-  Shadows,
-  BrandColors,
-  FinancialColors,
-} from '@/constants/design-system';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring
+} from 'react-native-reanimated';
 
-// Import components (these will be created next)
-import FinancialOverview from '@/components/financial/FinancialOverview';
-import SalesManagement from '@/components/financial/SalesManagement';
+// Import components
 import ExpensesManagement from '@/components/financial/ExpensesManagement';
+import SalesManagement from '@/components/financial/SalesManagement';
+import ReportsScreen from '@/src/screens/dashboard/finances/ReportsScreen';
 
-type TabType = 'overview' | 'sales' | 'expenses';
+type TabType = 'sales' | 'expenses' | 'reports';
 
 const tabs: Array<{
   id: TabType;
   title: string;
   icon: any;
-  description: string;
 }> = [
-  {
-    id: 'overview',
-    title: 'Overview',
-    icon: 'chart.bar.fill',
-    description: 'Financial KPIs and insights'
-  },
-  {
-    id: 'sales',
-    title: 'Sales',
-    icon: 'arrow.up.circle.fill',
-    description: 'Manage sales and revenue'
-  },
-  {
-    id: 'expenses',
-    title: 'Expenses',
-    icon: 'arrow.down.circle.fill',
-    description: 'Track expenses and costs'
-  }
-];
+    {
+      id: 'reports',
+      title: 'Reports',
+      icon: 'doc.text.fill',
+    },
+    {
+      id: 'sales',
+      title: 'Sales',
+      icon: 'arrow.up.circle.fill',
+    },
+    {
+      id: 'expenses',
+      title: 'Expenses',
+      icon: 'arrow.down.circle.fill',
+    }
+  ];
 
 export default function FinancialTab() {
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [activeTab, setActiveTab] = useState<TabType>('reports');
   const { refreshAll } = useFinancialData();
+
+  // Animation values
+  const [tabBarWidth, setTabBarWidth] = useState(0);
+  const translateX = useSharedValue(0);
 
   const handleRefresh = () => {
     try {
@@ -66,31 +70,52 @@ export default function FinancialTab() {
     }
   };
 
+  const handleTabPress = (tabId: TabType, index: number) => {
+    setActiveTab(tabId);
+    const tabWidth = tabBarWidth / tabs.length;
+    translateX.value = withSpring(index * tabWidth, {
+      damping: 25,
+      stiffness: 300,
+      mass: 0.8,
+    });
+  };
+
+  const onTabBarLayout = (event: LayoutChangeEvent) => {
+    setTabBarWidth(event.nativeEvent.layout.width);
+  };
+
+  const animatedIndicatorStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateX: translateX.value }],
+      width: tabBarWidth / tabs.length,
+    };
+  });
+
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'overview':
-        return <FinancialOverview onRefresh={handleRefresh} />;
       case 'sales':
         return <SalesManagement />;
       case 'expenses':
         return <ExpensesManagement />;
+      case 'reports':
+        return <ReportsScreen />;
       default:
-        return <FinancialOverview onRefresh={handleRefresh} />;
+        return <ReportsScreen />;
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor={BrandColors.surface} barStyle="dark-content" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.headerTitle}>Financial Management</Text>
           <Text style={styles.headerSubtitle}>Track sales, expenses, and profitability</Text>
         </View>
-        <TouchableOpacity 
-          style={styles.refreshButton} 
+        <TouchableOpacity
+          style={styles.refreshButton}
           onPress={handleRefresh}
           accessibilityLabel="Refresh financial data"
         >
@@ -98,38 +123,43 @@ export default function FinancialTab() {
         </TouchableOpacity>
       </View>
 
-      {/* Tab Navigation */}
-      <View style={styles.tabContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabScrollContent}
-        >
-          {tabs.map((tab) => (
-            <TouchableOpacity
-              key={tab.id}
-              style={[
-                styles.tab,
-                activeTab === tab.id && styles.activeTab
-              ]}
-              onPress={() => setActiveTab(tab.id)}
-              accessibilityLabel={`Switch to ${tab.title} tab`}
-              accessibilityState={{ selected: activeTab === tab.id }}
-            >
-              <IconSymbol
-                size={20}
-                name={tab.icon}
-                color={activeTab === tab.id ? BrandColors.primary : BrandColors.ink}
-              />
-              <Text style={[
-                styles.tabText,
-                activeTab === tab.id && styles.activeTabText
-              ]}>
-                {tab.title}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+      {/* Animated Segmented Tab Bar */}
+      <View style={styles.tabBarContainer}>
+        <View style={styles.tabBar} onLayout={onTabBarLayout}>
+          {/* Animated Indicator */}
+          {tabBarWidth > 0 && (
+            <Animated.View style={[styles.activeIndicator, animatedIndicatorStyle]} />
+          )}
+
+          {/* Tab Items */}
+          {tabs.map((tab, index) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                style={styles.tabItem}
+                onPress={() => handleTabPress(tab.id, index)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.tabContent}>
+                  <IconSymbol
+                    size={18}
+                    name={tab.icon}
+                    color={isActive ? BrandColors.primary : Colors.neutral[500]}
+                  />
+                  <Text
+                    style={[
+                      styles.tabText,
+                      isActive && styles.activeTabText
+                    ]}
+                  >
+                    {tab.title}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
       {/* Tab Content */}
@@ -143,7 +173,7 @@ export default function FinancialTab() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.neutral[50],
+    backgroundColor: BrandColors.surface,
   },
   header: {
     flexDirection: 'row',
@@ -155,6 +185,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.neutral[200],
     ...Shadows.sm,
+    zIndex: 10,
   },
   headerLeft: {
     flex: 1,
@@ -175,41 +206,50 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.base,
     backgroundColor: BrandColors.primary + '15',
   },
-  tabContainer: {
+  tabBarContainer: {
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.md,
     backgroundColor: BrandColors.surface,
     borderBottomWidth: 1,
     borderBottomColor: Colors.neutral[200],
+    zIndex: 5,
   },
-  tabScrollContent: {
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm,
-    backgroundColor: '#ebe8df',
-    marginHorizontal: Spacing.base,
-    marginVertical: Spacing.sm,
-    borderRadius: BorderRadius.sm,
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: Colors.neutral[100],
+    borderRadius: BorderRadius.lg,
+    padding: 4,
+    height: 48,
+    position: 'relative',
   },
-  tab: {
+  activeIndicator: {
+    position: 'absolute',
+    top: 4,
+    bottom: 4,
+    left: 0,
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.md - 2,
+    ...Shadows.sm,
+  },
+  tabItem: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  tabContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-    marginRight: Spacing.sm,
-    borderRadius: BorderRadius.lg,
-    backgroundColor: 'transparent',
-    minWidth: 100,
-  },
-  activeTab: {
-    backgroundColor: '#ffffff',
-    ...Shadows.sm,
+    gap: 6,
   },
   tabText: {
     fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.semibold,
-    color: BrandColors.ink,
-    marginLeft: Spacing.xs,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.neutral[500],
   },
   activeTabText: {
     color: BrandColors.primary,
+    fontFamily: Typography.fontFamily.semibold,
   },
   content: {
     flex: 1,
