@@ -1,22 +1,23 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
   Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useLocalSearchParams, router, Stack } from 'expo-router';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { ThemedView } from '@/components/themed-view';
+import { StatusIcon } from '@/components/empty-states';
 import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BorderRadius, BrandColors, Colors, Shadows, Spacing, Typography } from '@/constants/design-system';
 import { floorManagerService } from '@/services/floorManagerService';
 import { jobCardsService } from '@/services/jobCardsService';
-import { StatusIcon } from '@/components/empty-states';
 
 export default function TechnicianDetailsScreen() {
   const { technicianId } = useLocalSearchParams<{ technicianId: string }>();
@@ -93,20 +94,20 @@ export default function TechnicianDetailsScreen() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'reported': return '#EF4444';
-      case 'assigned': return '#3B82F6';
-      case 'in_progress': return '#8B5CF6';
-      case 'completed': return '#10B981';
-      default: return '#6B7280';
+      case 'reported': return Colors.error[500];
+      case 'assigned': return BrandColors.primary;
+      case 'in_progress': return Colors.info[500];
+      case 'completed': return Colors.success[500];
+      default: return Colors.neutral[500];
     }
   };
 
   const getPriorityColor = (priority: number) => {
     switch (priority) {
-      case 1: return '#EF4444';
-      case 2: return '#F59E0B';
-      case 3: return '#6B7280';
-      default: return '#6B7280';
+      case 1: return Colors.error[500];
+      case 2: return Colors.warning[500];
+      case 3: return Colors.neutral[500];
+      default: return Colors.neutral[500];
     }
   };
 
@@ -130,27 +131,27 @@ export default function TechnicianDetailsScreen() {
             title: 'Loading...',
             headerBackTitle: 'Back',
             headerStyle: {
-              backgroundColor: '#FFFFFF',
+              backgroundColor: BrandColors.surface,
             },
           }}
         />
         <ThemedView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <View style={styles.loadingCard}>
-            <View style={styles.loadingAvatar} />
-            <View style={styles.loadingTextLarge} />
-            <View style={styles.loadingTextSmall} />
+          <View style={styles.loadingContainer}>
+            <View style={styles.loadingCard}>
+              <View style={styles.loadingAvatar} />
+              <View style={styles.loadingTextLarge} />
+              <View style={styles.loadingTextSmall} />
+            </View>
+            <View style={styles.loadingStatsContainer}>
+              {[1, 2, 3].map((i) => (
+                <View key={i} style={styles.loadingStatItem}>
+                  <View style={styles.loadingStatValue} />
+                  <View style={styles.loadingStatLabel} />
+                </View>
+              ))}
+            </View>
           </View>
-          <View style={styles.loadingStatsContainer}>
-            {[1, 2, 3].map((i) => (
-              <View key={i} style={styles.loadingStatItem}>
-                <View style={styles.loadingStatValue} />
-                <View style={styles.loadingStatLabel} />
-              </View>
-            ))}
-          </View>
-        </View>
-      </ThemedView>
+        </ThemedView>
       </>
     );
   }
@@ -163,18 +164,18 @@ export default function TechnicianDetailsScreen() {
             title: 'Not Found',
             headerBackTitle: 'Back',
             headerStyle: {
-              backgroundColor: '#FFFFFF',
+              backgroundColor: BrandColors.surface,
             },
           }}
         />
         <ThemedView style={styles.errorContainer}>
-        <IconSymbol name="person.slash" size={48} color="#EF4444" />
-        <Text style={styles.errorText}>Technician not found</Text>
-        <Text style={styles.errorSubtext}>This technician may have been removed or the ID is invalid.</Text>
-        <TouchableOpacity onPress={() => router.back()} style={styles.retryButton}>
-          <Text style={styles.retryText}>Go Back</Text>
-        </TouchableOpacity>
-      </ThemedView>
+          <IconSymbol name="person.slash" size={48} color={Colors.error[500]} />
+          <Text style={styles.errorText}>Technician not found</Text>
+          <Text style={styles.errorSubtext}>This technician may have been removed or the ID is invalid.</Text>
+          <TouchableOpacity onPress={() => router.back()} style={styles.retryButton}>
+            <Text style={styles.retryText}>Go Back</Text>
+          </TouchableOpacity>
+        </ThemedView>
       </>
     );
   }
@@ -187,192 +188,193 @@ export default function TechnicianDetailsScreen() {
           title: 'Technician Details',
           headerBackTitle: 'Back',
           headerStyle: {
-            backgroundColor: '#FFFFFF',
+            backgroundColor: BrandColors.surface,
           },
           headerTitleStyle: {
             fontWeight: '600',
-            color: '#111827',
+            color: BrandColors.ink,
           },
+          headerTintColor: BrandColors.primary,
         }}
       />
       <ThemedView style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-      >
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+        >
 
-        {technician && (
-          <>
-            {/* Technician Info */}
-            <View style={styles.section}>
-              <View style={styles.technicianCard}>
-                <View style={styles.technicianHeader}>
-                  <View style={styles.technicianAvatar}>
-                    <Text style={styles.technicianInitials}>
-                      {technician.name
-                        .split(' ')
-                        .map(n => n[0])
-                        .join('')
-                        .toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={styles.technicianInfo}>
-                    <Text style={styles.technicianName}>{technician.name}</Text>
-                    <Text style={styles.technicianEmail}>{technician.email}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.statsGrid}>
-                  <View style={[styles.statItem, styles.statItemActive]}>
-                    <View style={styles.statIcon}>
-                      <IconSymbol name="gearshape.2.fill" size={24} color="#10B981" />
-                    </View>
-                    <View style={styles.statContent}>
-                      <Text style={styles.statLabel}>Active Tasks</Text>
-                      <Text style={[styles.statValue, { color: '#10B981' }]}>{technician.activeTickets}</Text>
-                    </View>
-                  </View>
-                </View>
-
-
-                {/* Performance Metrics */}
-                <View style={styles.performanceSection}>
-                  <Text style={styles.performanceSectionTitle}>Performance Overview</Text>
-                  <View style={styles.performanceGrid}>
-                    <View style={styles.performanceItem}>
-                      <IconSymbol name="clock" size={16} color="#F59E0B" />
-                      <Text style={styles.performanceValue}>
-                        {technician.oldestTicketDays || 0} days
+          {technician && (
+            <>
+              {/* Technician Info */}
+              <View style={styles.section}>
+                <View style={styles.technicianCard}>
+                  <View style={styles.technicianHeader}>
+                    <View style={styles.technicianAvatar}>
+                      <Text style={styles.technicianInitials}>
+                        {technician.name
+                          .split(' ')
+                          .map(n => n[0])
+                          .join('')
+                          .toUpperCase()}
                       </Text>
-                      <Text style={styles.performanceLabel}>Oldest Task</Text>
                     </View>
-                    <View style={styles.performanceItem}>
-                      <IconSymbol name="checkmark.circle" size={16} color="#3B82F6" />
-                      <Text style={styles.performanceValue}>12</Text>
-                      <Text style={styles.performanceLabel}>Completed</Text>
+                    <View style={styles.technicianInfo}>
+                      <Text style={styles.technicianName}>{technician.name}</Text>
+                      <Text style={styles.technicianEmail}>{technician.email}</Text>
                     </View>
                   </View>
+
+                  <View style={styles.statsGrid}>
+                    <View style={[styles.statItem, styles.statItemActive]}>
+                      <View style={styles.statIcon}>
+                        <IconSymbol name="gearshape.2.fill" size={24} color={Colors.success[600]} />
+                      </View>
+                      <View style={styles.statContent}>
+                        <Text style={styles.statLabel}>Active Tasks</Text>
+                        <Text style={[styles.statValue, { color: Colors.success[600] }]}>{technician.activeTickets}</Text>
+                      </View>
+                    </View>
+                  </View>
+
+
+                  {/* Performance Metrics */}
+                  <View style={styles.performanceSection}>
+                    <Text style={styles.performanceSectionTitle}>Performance Overview</Text>
+                    <View style={styles.performanceGrid}>
+                      <View style={styles.performanceItem}>
+                        <IconSymbol name="clock" size={16} color={Colors.warning[600]} />
+                        <Text style={styles.performanceValue}>
+                          {technician.oldestTicketDays || 0} days
+                        </Text>
+                        <Text style={styles.performanceLabel}>Oldest Task</Text>
+                      </View>
+                      <View style={styles.performanceItem}>
+                        <IconSymbol name="checkmark.circle" size={16} color={BrandColors.primary} />
+                        <Text style={styles.performanceValue}>12</Text>
+                        <Text style={styles.performanceLabel}>Completed</Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {technician.oldestTicketDays && technician.oldestTicketDays > 5 && (
+                    <View style={styles.warningBanner}>
+                      <IconSymbol name="exclamationmark.triangle.fill" size={16} color={Colors.warning[700]} />
+                      <Text style={styles.warningText}>
+                        ⚠️ Attention Required: Tasks pending for {technician.oldestTicketDays} days
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              {/* Active Tickets */}
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <ThemedText type="subtitle" style={styles.sectionTitle}>
+                    Active Tickets ({tickets?.length || 0})
+                  </ThemedText>
+                  <TouchableOpacity onPress={() => router.push('/jobcards')}>
+                    <Text style={styles.viewAllText}>View All</Text>
+                  </TouchableOpacity>
                 </View>
 
-                {technician.oldestTicketDays && technician.oldestTicketDays > 5 && (
-                  <View style={styles.warningBanner}>
-                    <IconSymbol name="exclamationmark.triangle.fill" size={16} color="#EF4444" />
-                    <Text style={styles.warningText}>
-                      ⚠️ Attention Required: Tasks pending for {technician.oldestTicketDays} days
+                {tickets && tickets.length > 0 ? (
+                  <View style={styles.ticketsList}>
+                    {tickets.map((ticket) => {
+                      const dueDate = ticket.due_date;
+                      const isOverdue = dueDate && new Date(dueDate) < new Date();
+                      const isDueToday = dueDate &&
+                        new Date(dueDate).toDateString() === new Date().toDateString();
+
+                      return (
+                        <TouchableOpacity
+                          key={ticket.id}
+                          style={styles.ticketCard}
+                          onPress={() => handleTicketPress(ticket.id)}
+                        >
+                          <View style={styles.ticketHeader}>
+                            <Text style={styles.ticketNumber}>{ticket.ticket_number}</Text>
+                            <View style={styles.ticketBadges}>
+                              {isOverdue && (
+                                <View style={[styles.badge, styles.overdueBadge]}>
+                                  <Text style={[styles.badgeText, { color: Colors.error[600] }]}>Overdue</Text>
+                                </View>
+                              )}
+                              {isDueToday && !isOverdue && (
+                                <View style={[styles.badge, styles.dueTodayBadge]}>
+                                  <Text style={[styles.badgeText, { color: Colors.warning[600] }]}>Due Today</Text>
+                                </View>
+                              )}
+                              {ticket.priority && (
+                                <View style={[styles.priorityDot, { backgroundColor: getPriorityColor(ticket.priority) }]} />
+                              )}
+                              <TouchableOpacity
+                                onPress={() => handleReassignTicket(ticket.id, ticket.customer_complaint)}
+                                style={styles.reassignButton}
+                              >
+                                <IconSymbol name="arrow.triangle.2.circlepath" size={14} color={Colors.neutral[500]} />
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+
+                          <Text style={styles.ticketSymptom} numberOfLines={2}>
+                            {ticket.customer_complaint}
+                          </Text>
+
+                          <View style={styles.ticketMeta}>
+                            {/* Customer - Enhanced visibility */}
+                            <View style={styles.customerRow}>
+                              <View style={styles.customerInfo}>
+                                <Text style={styles.customerLabel}>Customer</Text>
+                                <Text style={styles.customerName}>
+                                  {ticket.customer?.name || 'Unknown Customer'}
+                                </Text>
+                              </View>
+                            </View>
+
+                            {/* Vehicle Info */}
+                            {ticket.vehicle_reg_no && (
+                              <View style={styles.ticketMetaRow}>
+                                <Text style={styles.ticketMetaLabel}>Vehicle:</Text>
+                                <Text style={styles.ticketMetaValue}>{ticket.vehicle_reg_no}</Text>
+                              </View>
+                            )}
+                          </View>
+
+                          <View style={styles.ticketFooter}>
+                            <View style={styles.ticketFooterLeft}>
+                              <View style={[styles.statusBadge, { backgroundColor: getStatusColor(ticket.status) + '20' }]}>
+                                <StatusIcon status={ticket.status as any} size="sm" />
+                                <Text style={[styles.statusText, { color: getStatusColor(ticket.status) }]}>
+                                  {(ticket.status || 'Unknown').replace('_', ' ')}
+                                </Text>
+                              </View>
+                              <Text style={styles.ticketDate}>
+                                {new Date(ticket.created_at || Date.now()).toLocaleDateString()}
+                              </Text>
+                            </View>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                ) : (
+                  <View style={styles.emptyContainer}>
+                    <IconSymbol name="checkmark.circle" size={48} color={Colors.success[500]} />
+                    <Text style={styles.emptyTitle}>No Active Tickets</Text>
+                    <Text style={styles.emptySubtitle}>
+                      This technician has completed all assigned tasks
                     </Text>
                   </View>
                 )}
               </View>
-            </View>
-
-            {/* Active Tickets */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <ThemedText type="subtitle" style={styles.sectionTitle}>
-                  Active Tickets ({tickets?.length || 0})
-                </ThemedText>
-                <TouchableOpacity onPress={() => router.push('/jobcards')}>
-                  <Text style={styles.viewAllText}>View All</Text>
-                </TouchableOpacity>
-              </View>
-
-              {tickets && tickets.length > 0 ? (
-                <View style={styles.ticketsList}>
-                  {tickets.map((ticket) => {
-                    const dueDate = ticket.due_date || ticket.dueDate;
-                    const isOverdue = dueDate && new Date(dueDate) < new Date();
-                    const isDueToday = dueDate && 
-                      new Date(dueDate).toDateString() === new Date().toDateString();
-                    
-                    return (
-                      <TouchableOpacity
-                        key={ticket.id}
-                        style={styles.ticketCard}
-                        onPress={() => handleTicketPress(ticket.id)}
-                      >
-                        <View style={styles.ticketHeader}>
-                          <Text style={styles.ticketNumber}>{ticket.ticket_number || ticket.ticketNumber}</Text>
-                          <View style={styles.ticketBadges}>
-                            {isOverdue && (
-                              <View style={[styles.badge, styles.overdueBadge]}>
-                                <Text style={[styles.badgeText, { color: '#DC2626' }]}>Overdue</Text>
-                              </View>
-                            )}
-                            {isDueToday && !isOverdue && (
-                              <View style={[styles.badge, styles.dueTodayBadge]}>
-                                <Text style={[styles.badgeText, { color: '#D97706' }]}>Due Today</Text>
-                              </View>
-                            )}
-                            {ticket.priority && (
-                              <View style={[styles.priorityDot, { backgroundColor: getPriorityColor(ticket.priority) }]} />
-                            )}
-                            <TouchableOpacity
-                              onPress={() => handleReassignTicket(ticket.id, ticket.customer_complaint || ticket.symptom)}
-                              style={styles.reassignButton}
-                            >
-                              <IconSymbol name="arrow.triangle.2.circlepath" size={14} color="#6B7280" />
-                            </TouchableOpacity>
-                          </View>
-                        </View>
-
-                        <Text style={styles.ticketSymptom} numberOfLines={2}>
-                          {ticket.customer_complaint || ticket.symptom}
-                        </Text>
-
-                        <View style={styles.ticketMeta}>
-                          {/* Customer - Enhanced visibility */}
-                          <View style={styles.customerRow}>
-                            <View style={styles.customerInfo}>
-                              <Text style={styles.customerLabel}>Customer</Text>
-                              <Text style={styles.customerName}>
-                                {ticket.customer?.name || 'Unknown Customer'}
-                              </Text>
-                            </View>
-                          </View>
-                          
-                          {/* Vehicle Info */}
-                          {(ticket.vehicle_reg_no || ticket.vehicleRegNo) && (
-                            <View style={styles.ticketMetaRow}>
-                              <Text style={styles.ticketMetaLabel}>Vehicle:</Text>
-                              <Text style={styles.ticketMetaValue}>{ticket.vehicle_reg_no || ticket.vehicleRegNo}</Text>
-                            </View>
-                          )}
-                        </View>
-
-                        <View style={styles.ticketFooter}>
-                          <View style={styles.ticketFooterLeft}>
-                            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(ticket.status) + '20' }]}>
-                              <StatusIcon status={ticket.status as any} size="sm" />
-                              <Text style={[styles.statusText, { color: getStatusColor(ticket.status) }]}>
-                                {ticket.status.replace('_', ' ')}
-                              </Text>
-                            </View>
-                            <Text style={styles.ticketDate}>
-                              {new Date(ticket.created_at || ticket.createdAt || Date.now()).toLocaleDateString()}
-                            </Text>
-                          </View>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              ) : (
-                <View style={styles.emptyContainer}>
-                  <IconSymbol name="checkmark.circle" size={48} color="#10B981" />
-                  <Text style={styles.emptyTitle}>No Active Tickets</Text>
-                  <Text style={styles.emptySubtitle}>
-                    This technician has completed all assigned tasks
-                  </Text>
-                </View>
-              )}
-            </View>
-          </>
-        )}
-      </ScrollView>
-    </ThemedView>
+            </>
+          )}
+        </ScrollView>
+      </ThemedView>
     </>
   );
 }
@@ -380,203 +382,195 @@ export default function TechnicianDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: BrandColors.surface,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: Spacing['2xl'],
   },
   section: {
-    padding: 20,
+    padding: Spacing.lg,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: Spacing.base,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.semibold as any,
+    color: BrandColors.ink,
   },
   viewAllText: {
-    fontSize: 14,
-    color: '#3B82F6',
-    fontWeight: '500',
+    fontSize: Typography.fontSize.sm,
+    color: BrandColors.primary,
+    fontWeight: Typography.fontWeight.medium as any,
   },
   technicianCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    ...Shadows.sm,
   },
   technicianHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: Spacing.lg,
   },
   technicianAvatar: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#3B82F6',
+    backgroundColor: BrandColors.primary + '10',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: Spacing.md,
   },
   technicianInitials: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: 'bold',
+    color: BrandColors.primary,
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.bold as any,
   },
   technicianInfo: {
     flex: 1,
   },
   technicianName: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.semibold as any,
+    color: BrandColors.ink,
     marginBottom: 4,
   },
   technicianEmail: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: Typography.fontSize.sm,
+    color: Colors.neutral[500],
   },
   statsGrid: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: Spacing.lg,
   },
   statItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: '#F9FAFB',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    backgroundColor: BrandColors.surface,
     flex: 1,
     maxWidth: '100%',
   },
   statItemActive: {
-    backgroundColor: '#F0FDF4',
-    borderWidth: 2,
-    borderColor: '#10B981',
+    backgroundColor: Colors.success[50],
+    borderWidth: 1,
+    borderColor: Colors.success[200],
   },
   statIcon: {
-    marginRight: 12,
+    marginRight: Spacing.sm,
   },
   statContent: {
     flex: 1,
     alignItems: 'flex-end',
   },
   statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
+    fontSize: Typography.fontSize['2xl'],
+    fontWeight: Typography.fontWeight.bold as any,
+    color: BrandColors.ink,
   },
   statLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '500',
+    fontSize: Typography.fontSize.xs,
+    color: Colors.neutral[500],
+    fontWeight: Typography.fontWeight.medium as any,
     marginBottom: 2,
   },
   performanceSection: {
-    marginBottom: 16,
+    marginBottom: Spacing.md,
   },
   performanceSectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 12,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold as any,
+    color: Colors.neutral[700],
+    marginBottom: Spacing.sm,
   },
   performanceGrid: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    gap: 16,
+    gap: Spacing.md,
   },
   performanceItem: {
     flex: 1,
     alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
+    padding: Spacing.sm,
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.md,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: Colors.neutral[200],
   },
   performanceValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold as any,
+    color: BrandColors.ink,
     marginTop: 4,
   },
   performanceLabel: {
     fontSize: 10,
-    color: '#6B7280',
+    color: Colors.neutral[500],
     marginTop: 2,
     textAlign: 'center',
   },
   warningBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF3C7',
-    borderRadius: 8,
-    padding: 12,
-    gap: 8,
+    backgroundColor: Colors.warning[50],
+    borderRadius: BorderRadius.md,
+    padding: Spacing.sm,
+    gap: Spacing.xs,
   },
   warningText: {
-    color: '#92400E',
-    fontSize: 14,
-    fontWeight: '500',
+    color: Colors.warning[800],
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.medium as any,
   },
   ticketsList: {
-    gap: 12,
+    gap: Spacing.md,
   },
   ticketCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    ...Shadows.sm,
   },
   ticketHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: Spacing.xs,
   },
   ticketNumber: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semibold as any,
+    color: BrandColors.ink,
   },
   ticketBadges: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: Spacing.xs,
   },
   badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: Spacing.xs,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.full,
   },
   overdueBadge: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: Colors.error[50],
   },
   dueTodayBadge: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: Colors.warning[50],
   },
   badgeText: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold as any,
   },
   priorityDot: {
     width: 8,
@@ -587,52 +581,52 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   ticketSymptom: {
-    fontSize: 14,
-    color: '#374151',
-    marginBottom: 12,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.neutral[600],
+    marginBottom: Spacing.sm,
     lineHeight: 20,
   },
   ticketMeta: {
     gap: 6,
-    marginBottom: 12,
+    marginBottom: Spacing.sm,
   },
   // Enhanced customer styles
   customerRow: {
-    marginBottom: 8,
+    marginBottom: Spacing.xs,
   },
   customerInfo: {
-    backgroundColor: '#EFF6FF',
-    padding: 10,
-    borderRadius: 8,
+    backgroundColor: BrandColors.primary + '05',
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.md,
     borderLeftWidth: 3,
-    borderLeftColor: '#3B82F6',
+    borderLeftColor: BrandColors.primary,
   },
   customerLabel: {
     fontSize: 10,
-    color: '#3B82F6',
-    fontWeight: '600',
+    color: BrandColors.primary,
+    fontWeight: Typography.fontWeight.semibold as any,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 2,
   },
   customerName: {
-    fontSize: 14,
-    color: '#1E40AF',
-    fontWeight: '700',
+    fontSize: Typography.fontSize.sm,
+    color: BrandColors.ink,
+    fontWeight: Typography.fontWeight.bold as any,
   },
   ticketMetaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   ticketMetaLabel: {
-    fontSize: 12,
-    color: '#6B7280',
+    fontSize: Typography.fontSize.xs,
+    color: Colors.neutral[500],
     flex: 1,
   },
   ticketMetaValue: {
-    fontSize: 12,
-    color: '#111827',
-    fontWeight: '500',
+    fontSize: Typography.fontSize.xs,
+    color: BrandColors.ink,
+    fontWeight: Typography.fontWeight.medium as any,
     flex: 2,
     textAlign: 'right',
   },
@@ -644,80 +638,81 @@ const styles = StyleSheet.create({
   ticketFooterLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: Spacing.sm,
     flex: 1,
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 6,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+    gap: 4,
   },
   statusText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 10,
+    fontWeight: Typography.fontWeight.semibold as any,
     textTransform: 'capitalize',
   },
   ticketDate: {
-    fontSize: 12,
-    color: '#6B7280',
+    fontSize: 10,
+    color: Colors.neutral[400],
   },
   emptyContainer: {
     alignItems: 'center',
-    padding: 40,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    padding: Spacing['2xl'],
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.lg,
+    ...Shadows.sm,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    marginTop: 16,
-    marginBottom: 8,
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.semibold as any,
+    color: BrandColors.ink,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.xs,
   },
   emptySubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: Typography.fontSize.sm,
+    color: Colors.neutral[500],
     textAlign: 'center',
   },
   loadingContainer: {
-    padding: 20,
+    padding: Spacing.lg,
   },
   loadingCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: Spacing.lg,
   },
   loadingAvatar: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#E5E7EB',
-    marginBottom: 16,
+    backgroundColor: Colors.neutral[200],
+    marginBottom: Spacing.md,
   },
   loadingTextLarge: {
     width: 120,
     height: 20,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: Colors.neutral[200],
     borderRadius: 4,
     marginBottom: 8,
   },
   loadingTextSmall: {
     width: 80,
     height: 16,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: Colors.neutral[200],
     borderRadius: 4,
   },
   loadingStatsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
   },
   loadingStatItem: {
     alignItems: 'center',
@@ -725,45 +720,46 @@ const styles = StyleSheet.create({
   loadingStatValue: {
     width: 40,
     height: 24,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: Colors.neutral[200],
     borderRadius: 4,
     marginBottom: 8,
   },
   loadingStatLabel: {
     width: 60,
     height: 12,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: Colors.neutral[200],
     borderRadius: 4,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: Spacing.lg,
+    backgroundColor: BrandColors.surface,
   },
   errorText: {
-    fontSize: 18,
-    color: '#EF4444',
-    marginTop: 16,
-    marginBottom: 8,
+    fontSize: Typography.fontSize.lg,
+    color: Colors.error[500],
+    marginTop: Spacing.md,
+    marginBottom: Spacing.xs,
     textAlign: 'center',
-    fontWeight: '600',
+    fontWeight: Typography.fontWeight.semibold as any,
   },
   errorSubtext: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 24,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.neutral[500],
+    marginBottom: Spacing.xl,
     textAlign: 'center',
     lineHeight: 20,
   },
   retryButton: {
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
+    backgroundColor: BrandColors.primary,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
   },
   retryText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+    color: Colors.white,
+    fontWeight: Typography.fontWeight.semibold as any,
   },
 });

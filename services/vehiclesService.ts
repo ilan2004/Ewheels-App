@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { VehicleCase, CaseFilters, PaginatedResponse } from '@/types';
+import { CaseFilters, PaginatedResponse, VehicleCase } from '@/types';
 
 export class VehiclesService {
   // Check if we're in mock mode - only use mock when explicitly enabled
@@ -11,7 +11,7 @@ export class VehiclesService {
   private generateMockVehicles(limit: number = 10): VehicleCase[] {
     const vehicleMakes = ['Ola', 'Ather', 'TVS', 'Bajaj', 'Hero Electric', 'Okinawa'];
     const vehicleModels = ['S1 Pro', '450X', 'iQube', 'Chetak', 'Optima', 'Praise Pro'];
-    const statuses: Array<'received' | 'diagnosed' | 'in_progress' | 'completed' | 'delivered'> = 
+    const statuses: Array<'received' | 'diagnosed' | 'in_progress' | 'completed' | 'delivered'> =
       ['received', 'diagnosed', 'in_progress', 'completed', 'delivered'];
 
     return Array.from({ length: limit }, (_, index) => {
@@ -19,7 +19,7 @@ export class VehiclesService {
       const model = vehicleModels[index % vehicleModels.length];
       const regNo = `KA${String(index + 1).padStart(2, '0')}AB${String(index + 1000).padStart(4, '0')}`;
       const status = statuses[index % statuses.length];
-      
+
       const createdDate = new Date(Date.now() - Math.random() * 14 * 24 * 60 * 60 * 1000);
       const receivedDate = new Date(createdDate.getTime() + Math.random() * 24 * 60 * 60 * 1000);
 
@@ -33,8 +33,8 @@ export class VehiclesService {
         vehicle_color: ['Red', 'Blue', 'White', 'Black', 'Silver'][Math.floor(Math.random() * 5)],
         vehicle_type: 'Electric Scooter',
         status,
-        initial_diagnosis: index % 3 === 0 ? 'Motor noise during acceleration' : 
-                          index % 3 === 1 ? 'Brake system needs adjustment' : 'Electrical system diagnostic required',
+        initial_diagnosis: index % 3 === 0 ? 'Motor noise during acceleration' :
+          index % 3 === 1 ? 'Brake system needs adjustment' : 'Electrical system diagnostic required',
         symptoms_observed: 'Customer reported issues with performance and handling',
         diagnostic_notes: status !== 'received' ? 'Initial diagnostic tests completed. Further analysis required.' : null,
         repair_notes: ['in_progress', 'completed', 'delivered'].includes(status) ? 'Repair work in progress according to diagnostic findings.' : null,
@@ -66,7 +66,7 @@ export class VehiclesService {
     return this.mockVehicles.slice(0, limit);
   }
 
-  // Get vehicles assigned to current technician via service tickets (two-step to avoid FK name dependency)
+  // Get vehicles assigned to current technician via service tickets
   async getMyVehicles(technicianId?: string): Promise<VehicleCase[]> {
     if (this.isMockMode()) {
       const mockVehicles = this.getMockVehicles(20);
@@ -88,14 +88,14 @@ export class VehiclesService {
         .order('created_at', { ascending: false });
 
       if (ticketsError) throw ticketsError;
-      const vehicleIds = (tickets || []).map(t => t.vehicle_case_id).filter(Boolean) as string[];
-      if (vehicleIds.length === 0) return [];
+      const vehicleCaseIds = (tickets || []).map(t => t.vehicle_case_id).filter(Boolean) as string[];
+      if (vehicleCaseIds.length === 0) return [];
 
-      // 2) Fetch vehicle records by those IDs
+      // 2) Fetch vehicle cases by those IDs
       const { data: vehicles, error: vehiclesError } = await supabase
-        .from('vehicle_records')
+        .from('vehicle_cases')
         .select('*')
-        .in('id', vehicleIds);
+        .in('id', vehicleCaseIds);
 
       if (vehiclesError) throw vehiclesError;
 
@@ -115,7 +115,7 @@ export class VehiclesService {
 
       // Keep same order as tickets query
       const orderIndex: Record<string, number> = {};
-      vehicleIds.forEach((id, idx) => { orderIndex[id] = idx; });
+      vehicleCaseIds.forEach((id, idx) => { orderIndex[id] = idx; });
 
       return enriched.sort((a, b) => (orderIndex[a.id] ?? 0) - (orderIndex[b.id] ?? 0));
     } catch (error) {
@@ -264,7 +264,7 @@ export class VehiclesService {
       console.log(`Mock: Updating vehicle ${id}`, updates);
       const vehicle = await this.getVehicle(id);
       if (!vehicle) throw new Error('Vehicle not found');
-      
+
       return { ...vehicle, ...updates, updated_at: new Date().toISOString() };
     }
 
@@ -289,12 +289,12 @@ export class VehiclesService {
 
   // Update vehicle status with automatic timestamp updates
   async updateStatus(
-    id: string, 
-    status: 'received' | 'diagnosed' | 'in_progress' | 'completed' | 'delivered', 
+    id: string,
+    status: 'received' | 'diagnosed' | 'in_progress' | 'completed' | 'delivered',
     notes?: string
   ): Promise<VehicleCase> {
     const updates: any = { status };
-    
+
     // Set appropriate timestamp based on status
     switch (status) {
       case 'diagnosed':

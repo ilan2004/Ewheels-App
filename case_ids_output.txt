@@ -1,0 +1,37 @@
+
+=== ALL BATTERY CASES IN DATABASE ===
+Total: 6
+ID: 1924ec3f-9ef9-4f39-849b-56e1ce1c0081
+  Ticket: 9139aad6-6d33-4b58-bab5-3ce9496de930
+  Record: 598f00cc-b6e7-4795-a0ed-2809c2174c3a
+  Status: received
+
+ID: e551e90e-1cee-40a2-87ec-85cbace72f95
+  Ticket: 04c57771-5fb9-490f-8729-787b9556bd38
+  Record: 34f7172c-4f1d-492d-b0e3-9d2f9f6dfa89
+  Status: received
+
+ID: b7054454-53ef-43d2-aa9e-ea27cd4702d7
+  Ticket: 85c41283-659d-435b-9fbf-634715cda326
+  Record: 53000ff1-7dca-4d67-ac98-b41f57b52042
+  Status: received
+
+ID: b1da0381-e064-4dc3-91f0-5735c8f50aeb
+  Ticket: 4a724820-b4df-4b0e-ae57-0e6c80575170
+  Record: eeaf75e1-4edc-4f51-bfe5-9db582745ed8
+  Status: received
+
+ID: 6dcfd783-a7c2-4ebc-8118-1185ffdbbe37
+  Ticket: fa446eaa-a87a-434a-adc9-e9f74f229c8f
+  Record: 79047b4e-ed49-4be7-b072-ebe2068e0286
+  Status: received
+
+ID: 786fbed5-397a-41f7-bcc4-ceb743c20e54
+  Ticket: f107374c-171f-40f5-b07b-0730a1cb669b
+  Record: 89c673c7-1fd5-4d2f-997a-cd2f3934f941
+  Status: received
+
+
+=== SEARCHING FOR SPECIFIC IDS ===
+ID 89c673c7-1fd5-4d2f-997a-cd2f3934f941: NOT FOUND (Cannot coerce the result to a single JSON object)
+ID 79047b4e-ed49-4be7-b072-ebe2068e0286: NOT FOUND (Cannot coerce the result to a single JSON object)

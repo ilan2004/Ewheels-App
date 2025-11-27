@@ -1,39 +1,36 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-  Modal,
-  Alert,
-  ActivityIndicator,
-  Animated,
-  Image,
-  TextInput,
-  Platform,
-  Dimensions,
-  StatusBar,
-} from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from 'expo-audio';
-import { useLocalSearchParams, router, Stack } from 'expo-router';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Image,
+  Modal,
+  Platform,
+  RefreshControl,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
-import { ThemedView } from '@/components/themed-view';
-import { ThemedText } from '@/components/themed-text';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { jobCardsService } from '@/services/jobCardsService';
-import { floorManagerService } from '@/services/floorManagerService';
-import { vehiclesService } from '@/services/vehiclesService';
-import { batteriesService } from '@/services/batteriesService';
 import { StatusIcon } from '@/components/empty-states';
-import { StatusUpdatesTimeline } from '@/components/status/StatusUpdatesTimeline';
-import { StatusUpdateInput } from '@/components/status/StatusUpdateInput';
 import { HorizontalServiceProgress } from '@/components/progress/HorizontalServiceProgress';
+import { StatusUpdateInput } from '@/components/status/StatusUpdateInput';
+import { StatusUpdatesTimeline } from '@/components/status/StatusUpdatesTimeline';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 import { TriageManagement } from '@/components/triage/TriageManagement';
-import { BrandColors, Typography, Spacing, BorderRadius, ComponentStyles, StatusColors, PriorityColors } from '@/constants/design-system';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BorderRadius, BrandColors, ComponentStyles, PriorityColors, Spacing, StatusColors, Typography } from '@/constants/design-system';
+import { batteriesService } from '@/services/batteriesService';
+import { jobCardsService } from '@/services/jobCardsService';
+import { vehiclesService } from '@/services/vehiclesService';
 
 interface TechnicianPickerModalProps {
   visible: boolean;
@@ -291,7 +288,7 @@ const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
     <Modal visible={visible} animationType="fade" presentationStyle="fullScreen">
       <View style={styles.imageViewerContainer}>
         <StatusBar hidden />
-        
+
         {/* Header */}
         <View style={styles.imageViewerHeader}>
           <TouchableOpacity onPress={onClose} style={styles.imageViewerCloseButton}>
@@ -384,9 +381,9 @@ const AudioPlayerModal: React.FC<AudioPlayerModalProps> = ({
         console.log('Failed to set audio mode:', e);
       }
     };
-    
+
     configureAudio();
-    
+
     return () => {
       try {
         audioPlayer.remove();
@@ -405,7 +402,7 @@ const AudioPlayerModal: React.FC<AudioPlayerModalProps> = ({
 
   const togglePlayback = async () => {
     try {
-      if (playerStatus?.isPlaying) {
+      if (playerStatus?.playing) {
         audioPlayer.pause();
       } else {
         audioPlayer.play();
@@ -503,11 +500,11 @@ const AudioPlayerModal: React.FC<AudioPlayerModalProps> = ({
                   }}
                 >
                   <View style={styles.progressBackground} />
-                  <View 
+                  <View
                     style={[
-                      styles.progressFill, 
+                      styles.progressFill,
                       { width: (playerStatus?.duration && playerStatus?.currentTime) ? `${((playerStatus.currentTime / playerStatus.duration) * 100)}%` : '0%' }
-                    ]} 
+                    ]}
                   />
                 </TouchableOpacity>
               </View>
@@ -667,7 +664,7 @@ export default function JobCardDetailScreen() {
         url: imageUrls[att.id],
         name: att.originalName || att.original_name || att.fileName || att.file_name || 'Image'
       }));
-    
+
     const index = imageAttachments.findIndex(img => img.id === attachmentId);
     if (index >= 0) {
       setSelectedImageIndex(index);
@@ -678,7 +675,7 @@ export default function JobCardDetailScreen() {
   const handleAudioClick = (attachmentId: string) => {
     const attachment = attachments.find(att => att.id === attachmentId);
     const audioUrl = audioUrls[attachmentId];
-    
+
     if (attachment && audioUrl) {
       setSelectedAudio({
         id: attachment.id,
@@ -716,7 +713,7 @@ export default function JobCardDetailScreen() {
         const isAudio = attachment.attachmentType === 'audio' || attachment.attachment_type === 'audio';
         const storagePath = attachment.storagePath || attachment.storage_path;
         const attachmentType = attachment.attachmentType || attachment.attachment_type;
-        
+
         if (isPhoto && storagePath && !imageUrls[attachment.id]) {
           try {
             const signedUrl = await jobCardsService.getAttachmentSignedUrl(storagePath, attachmentType);
@@ -750,9 +747,9 @@ export default function JobCardDetailScreen() {
 
   const getPriorityColor = (priority: number) => {
     const priorityMap = {
-      1: PriorityColors.high,
-      2: PriorityColors.medium,
-      3: PriorityColors.low,
+      1: PriorityColors[1],
+      2: PriorityColors[2],
+      3: PriorityColors[3],
     };
     return priorityMap[priority as keyof typeof priorityMap] || BrandColors.ink + '60';
   };
@@ -848,10 +845,10 @@ export default function JobCardDetailScreen() {
               {assignTicketMutation.isPending ? (
                 <ActivityIndicator size="small" color="#3B82F6" />
               ) : (
-                <IconSymbol 
-                  name={(ticket?.assigned_to || ticket?.assignedTo) ? "arrow.triangle.2.circlepath" : "person.badge.plus"} 
-                  size={24} 
-                  color="#3B82F6" 
+                <IconSymbol
+                  name={(ticket?.assigned_to || ticket?.assignedTo) ? "arrow.triangle.2.circlepath" : "person.badge.plus"}
+                  size={24}
+                  color="#3B82F6"
                 />
               )}
             </TouchableOpacity>
@@ -873,373 +870,223 @@ export default function JobCardDetailScreen() {
             </View>
           )}
 
-        {ticket && (
-          <>
-            {/* Status Progress */}
-            <View style={styles.section}>
-              <HorizontalServiceProgress 
-                currentStatus={ticket.status}
-              />
-            </View>
-
-            {/* Ticket Info */}
-            <View style={styles.section}>
-              <View style={styles.ticketCard}>
-                <View style={styles.ticketHeader}>
-                  <View style={styles.ticketHeaderLeft}>
-                    <View style={styles.ticketNumberContainer}>
-                      <IconSymbol name="doc.text.fill" size={20} color="#3B82F6" />
-                      <Text style={styles.ticketNumber}>{ticket.ticket_number || ticket.ticketNumber}</Text>
-                    </View>
-                    <View style={styles.ticketBadges}>
-                      <View style={[styles.statusBadge, { backgroundColor: getStatusColor(ticket.status) + '20' }]}>
-                        <StatusIcon status={ticket.status as any} size="sm" />
-                        <Text style={[styles.statusText, { color: getStatusColor(ticket.status) }]}>
-                          {ticket.status.replace('_', ' ')}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                </View>
-
-                <Text style={styles.symptom}>{ticket.customer_complaint || ticket.symptom}</Text>
-                {ticket.description && (
-                  <Text style={styles.description}>{ticket.description}</Text>
-                )}
-              </View>
-            </View>
-
-            {/* Customer Info */}
-            <View style={styles.section}>
-              <ThemedText type="subtitle" style={styles.sectionTitle}>
-                <IconSymbol name="person.fill" size={18} color={BrandColors.title} /> Customer Information
-              </ThemedText>
-              <View style={styles.infoCard}>
-                <View style={styles.infoRow}>
-                  <View style={styles.infoLabelContainer}>
-                    <IconSymbol name="person.circle" size={16} color="#6B7280" />
-                    <Text style={styles.infoLabel}>Name</Text>
-                  </View>
-                  <Text style={styles.infoValue}>{ticket.customer?.name || 'N/A'}</Text>
-                </View>
-                <View style={styles.infoRow}>
-                  <View style={styles.infoLabelContainer}>
-                    <IconSymbol name="phone.fill" size={16} color="#6B7280" />
-                    <Text style={styles.infoLabel}>Contact</Text>
-                  </View>
-                  <Text style={styles.infoValue}>{ticket.customer?.contact || 'N/A'}</Text>
-                </View>
-                <View style={styles.infoRow}>
-                  <View style={styles.infoLabelContainer}>
-                    <IconSymbol name="envelope.fill" size={16} color="#6B7280" />
-                    <Text style={styles.infoLabel}>Email</Text>
-                  </View>
-                  <Text style={styles.infoValue}>{ticket.customer?.email || 'N/A'}</Text>
-                </View>
-                {(ticket.vehicle_reg_no || ticket.vehicleRegNo) && (
-                  <View style={styles.infoRow}>
-                    <View style={styles.infoLabelContainer}>
-                      <IconSymbol name="car.fill" size={16} color="#6B7280" />
-                      <Text style={styles.infoLabel}>Vehicle</Text>
-                    </View>
-                    <Text style={styles.infoValue}>{ticket.vehicle_reg_no || ticket.vehicleRegNo}</Text>
-                  </View>
-                )}
-              </View>
-            </View>
-
-            {/* Customer Bringing */}
-            {ticket.customer_bringing && (
+          {ticket && (
+            <>
+              {/* Status Progress */}
               <View style={styles.section}>
-                <ThemedText type="subtitle" style={styles.sectionTitle}>
-                  <IconSymbol name="shippingbox" size={18} color={BrandColors.title} /> What Customer Brought
-                </ThemedText>
-                <View style={styles.infoCard}>
-                  <View style={styles.infoRow}>
-                    <View style={styles.infoLabelContainer}>
-                      <IconSymbol name="checkmark.circle.fill" size={16} color="#10B981" />
-                      <Text style={styles.infoLabel}>Service Type</Text>
-                    </View>
-                    <Text style={[styles.infoValue, { color: '#10B981', fontWeight: '600' }]}>
-                      {ticket.customer_bringing === 'both' ? 'Vehicle & Battery' : 
-                       ticket.customer_bringing === 'vehicle' ? 'Vehicle Only' : 'Battery Only'}
-                    </Text>
-                  </View>
-                </View>
+                <HorizontalServiceProgress
+                  currentStatus={ticket.status}
+                />
               </View>
-            )}
 
-            {/* Triage Management - Show for all tickets, but only actionable for 'reported' */}
-            <View style={styles.section}>
-              <TriageManagement
-                ticket={ticket}
-                onTriageComplete={() => {
-                  refetch(); // Refresh ticket data
-                  refetchStatusUpdates(); // Refresh status updates
-                }}
-              />
-            </View>
-
-            {/* Vehicle Details */}
-            {(ticket.customer_bringing === 'vehicle' || ticket.customer_bringing === 'both') && vehicleRecord && (
+              {/* Ticket Info */}
               <View style={styles.section}>
-                <ThemedText type="subtitle" style={styles.sectionTitle}>
-                  <IconSymbol name="car.fill" size={18} color={BrandColors.title} /> Vehicle Details
-                </ThemedText>
-                <View style={styles.infoCard}>
-                  <View style={styles.infoRow}>
-                    <View style={styles.infoLabelContainer}>
-                      <IconSymbol name="number" size={16} color="#6B7280" />
-                      <Text style={styles.infoLabel}>Registration No.</Text>
-                    </View>
-                    <Text style={styles.infoValue}>{vehicleRecord.vehicle_reg_no}</Text>
-                  </View>
-                  <View style={styles.infoRow}>
-                    <View style={styles.infoLabelContainer}>
-                      <IconSymbol name="flag.fill" size={16} color={getStatusColor(vehicleRecord.status)} />
-                      <Text style={styles.infoLabel}>Intake Status</Text>
-                    </View>
-                    <Text style={[styles.infoValue, { color: getStatusColor(vehicleRecord.status) }]}>
-                      {vehicleRecord.status.replace('_', ' ').toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={styles.infoRow}>
-                    <View style={styles.infoLabelContainer}>
-                      <IconSymbol name="building.2" size={16} color="#6B7280" />
-                      <Text style={styles.infoLabel}>Make</Text>
-                    </View>
-                    <Text style={styles.infoValue}>{vehicleRecord.vehicle_make}</Text>
-                  </View>
-                  <View style={styles.infoRow}>
-                    <View style={styles.infoLabelContainer}>
-                      <IconSymbol name="car.rear.and.front.and.rear.waves" size={16} color="#6B7280" />
-                      <Text style={styles.infoLabel}>Model</Text>
-                    </View>
-                    <Text style={styles.infoValue}>{vehicleRecord.vehicle_model}</Text>
-                  </View>
-                  {vehicleRecord.vehicle_year && (
-                    <View style={styles.infoRow}>
-                      <View style={styles.infoLabelContainer}>
-                        <IconSymbol name="calendar" size={16} color="#6B7280" />
-                        <Text style={styles.infoLabel}>Year</Text>
+                <View style={styles.ticketCard}>
+                  <View style={styles.ticketHeader}>
+                    <View style={styles.ticketHeaderLeft}>
+                      <View style={styles.ticketNumberContainer}>
+                        <IconSymbol name="doc.text.fill" size={20} color="#3B82F6" />
+                        <Text style={styles.ticketNumber}>{ticket.ticket_number || ticket.ticketNumber}</Text>
                       </View>
-                      <Text style={styles.infoValue}>{vehicleRecord.vehicle_year}</Text>
-                    </View>
-                  )}
-                  {vehicleRecord.vin_number && (
-                    <View style={styles.infoRow}>
-                      <View style={styles.infoLabelContainer}>
-                        <IconSymbol name="barcode" size={16} color="#6B7280" />
-                        <Text style={styles.infoLabel}>VIN Number</Text>
-                      </View>
-                      <Text style={styles.infoValue}>{vehicleRecord.vin_number}</Text>
-                    </View>
-                  )}
-                  {vehicleRecord.vehicle_type && (
-                    <View style={styles.infoRow}>
-                      <View style={styles.infoLabelContainer}>
-                        <IconSymbol name="car.2" size={16} color="#6B7280" />
-                        <Text style={styles.infoLabel}>Vehicle Type</Text>
-                      </View>
-                      <Text style={styles.infoValue}>{vehicleRecord.vehicle_type}</Text>
-                    </View>
-                  )}
-                  {vehicleRecord.condition_notes && (
-                    <View style={styles.infoRow}>
-                      <View style={styles.infoLabelContainer}>
-                        <IconSymbol name="doc.text" size={16} color="#6B7280" />
-                        <Text style={styles.infoLabel}>Intake Condition</Text>
-                      </View>
-                      <Text style={styles.infoValue}>{vehicleRecord.condition_notes}</Text>
-                    </View>
-                  )}
-                  {vehicleCase && vehicleCase.initial_diagnosis && (
-                    <View style={styles.infoRow}>
-                      <View style={styles.infoLabelContainer}>
-                        <IconSymbol name="stethoscope" size={16} color="#F59E0B" />
-                        <Text style={styles.infoLabel}>Initial Diagnosis</Text>
-                      </View>
-                      <Text style={styles.infoValue}>{vehicleCase.initial_diagnosis}</Text>
-                    </View>
-                  )}
-                  {vehicleCase && vehicleCase.diagnostic_notes && (
-                    <View style={styles.infoRow}>
-                      <View style={styles.infoLabelContainer}>
-                        <IconSymbol name="wrench.and.screwdriver" size={16} color="#10B981" />
-                        <Text style={styles.infoLabel}>Service Diagnostics</Text>
-                      </View>
-                      <Text style={styles.infoValue}>{vehicleCase.diagnostic_notes}</Text>
-                    </View>
-                  )}
-                  {vehicleCase && (
-                    <View style={styles.infoRow}>
-                      <View style={styles.infoLabelContainer}>
-                        <IconSymbol name="gear" size={16} color="#8B5CF6" />
-                        <Text style={styles.infoLabel}>Service Status</Text>
-                      </View>
-                      <Text style={[styles.infoValue, { color: getStatusColor(vehicleCase.status) }]}>
-                        {vehicleCase.status.replace('_', ' ').toUpperCase()}
-                      </Text>
-                    </View>
-                  )}
-                  {vehicleRecord.received_date && (
-                    <View style={styles.infoRow}>
-                      <View style={styles.infoLabelContainer}>
-                        <IconSymbol name="calendar.badge.clock" size={16} color="#6B7280" />
-                        <Text style={styles.infoLabel}>Received</Text>
-                      </View>
-                      <Text style={styles.infoValue}>
-                        {new Date(vehicleRecord.received_date).toLocaleDateString('en-GB', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </Text>
-                    </View>
-                  )}
-                  <View style={styles.infoRow}>
-                    <View style={styles.infoLabelContainer}>
-                      <IconSymbol name="calendar.badge.plus" size={16} color="#6B7280" />
-                      <Text style={styles.infoLabel}>Intake Created</Text>
-                    </View>
-                    <Text style={styles.infoValue}>
-                      {new Date(vehicleRecord.created_at).toLocaleDateString('en-GB', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            )}
-
-            {/* Battery Details */}
-            {(ticket.customer_bringing === 'battery' || ticket.customer_bringing === 'both') && batteryRecords.length > 0 && (
-              <View style={styles.section}>
-                <ThemedText type="subtitle" style={styles.sectionTitle}>
-                  <IconSymbol name="battery.100" size={18} color={BrandColors.title} /> Battery Details ({batteryRecords.length} {batteryRecords.length === 1 ? 'Battery' : 'Batteries'})
-                </ThemedText>
-                {batteryRecords.map((batteryRecord, index) => {
-                  // Find corresponding battery case
-                  const batteryCase = batteryCases.find(bc => bc.battery_record_id === batteryRecord.id);
-                  
-                  return (
-                    <View key={batteryRecord.id} style={[styles.infoCard, index > 0 && { marginTop: 12 }]}>
-                      {batteryRecords.length > 1 && (
-                        <Text style={styles.batteryCardHeader}>Battery {index + 1}</Text>
-                      )}
-                      <View style={styles.infoRow}>
-                        <View style={styles.infoLabelContainer}>
-                          <IconSymbol name="number" size={16} color="#6B7280" />
-                          <Text style={styles.infoLabel}>Serial Number</Text>
-                        </View>
-                        <Text style={styles.infoValue}>{batteryRecord.serial_number}</Text>
-                      </View>
-                      <View style={styles.infoRow}>
-                        <View style={styles.infoLabelContainer}>
-                          <IconSymbol name="flag.fill" size={16} color={getStatusColor(batteryRecord.status)} />
-                          <Text style={styles.infoLabel}>Intake Status</Text>
-                        </View>
-                        <Text style={[styles.infoValue, { color: getStatusColor(batteryRecord.status) }]}>
-                          {batteryRecord.status.replace('_', ' ').toUpperCase()}
-                        </Text>
-                      </View>
-                      <View style={styles.infoRow}>
-                        <View style={styles.infoLabelContainer}>
-                          <IconSymbol name="building.2" size={16} color="#6B7280" />
-                          <Text style={styles.infoLabel}>Brand</Text>
-                        </View>
-                        <Text style={styles.infoValue}>{batteryRecord.brand}</Text>
-                      </View>
-                      {batteryRecord.model && (
-                        <View style={styles.infoRow}>
-                          <View style={styles.infoLabelContainer}>
-                            <IconSymbol name="battery.50" size={16} color="#6B7280" />
-                            <Text style={styles.infoLabel}>Model</Text>
-                          </View>
-                          <Text style={styles.infoValue}>{batteryRecord.model}</Text>
-                        </View>
-                      )}
-                      <View style={styles.infoRow}>
-                        <View style={styles.infoLabelContainer}>
-                          <IconSymbol name="gear" size={16} color="#6B7280" />
-                          <Text style={styles.infoLabel}>Battery Type</Text>
-                        </View>
-                        <Text style={styles.infoValue}>{batteryRecord.battery_type.toUpperCase()}</Text>
-                      </View>
-                      <View style={styles.infoRow}>
-                        <View style={styles.infoLabelContainer}>
-                          <IconSymbol name="bolt.circle" size={16} color="#F59E0B" />
-                          <Text style={styles.infoLabel}>Voltage</Text>
-                        </View>
-                        <Text style={styles.infoValue}>{batteryRecord.voltage}V</Text>
-                      </View>
-                      <View style={styles.infoRow}>
-                        <View style={styles.infoLabelContainer}>
-                          <IconSymbol name="bolt.fill" size={16} color="#10B981" />
-                          <Text style={styles.infoLabel}>Capacity</Text>
-                        </View>
-                        <Text style={styles.infoValue}>{batteryRecord.capacity} Ah</Text>
-                      </View>
-                      {batteryRecord.cell_type && (
-                        <View style={styles.infoRow}>
-                          <View style={styles.infoLabelContainer}>
-                            <IconSymbol name="circle.grid.3x3" size={16} color="#6B7280" />
-                            <Text style={styles.infoLabel}>Cell Type</Text>
-                          </View>
-                          <Text style={styles.infoValue}>{batteryRecord.cell_type}</Text>
-                        </View>
-                      )}
-                      {batteryRecord.repair_notes && (
-                        <View style={styles.infoRow}>
-                          <View style={styles.infoLabelContainer}>
-                            <IconSymbol name="doc.text" size={16} color="#F59E0B" />
-                            <Text style={styles.infoLabel}>Intake Condition</Text>
-                          </View>
-                          <Text style={styles.infoValue}>{batteryRecord.repair_notes}</Text>
-                        </View>
-                      )}
-                      {batteryCase && batteryCase.initial_diagnosis && (
-                        <View style={styles.infoRow}>
-                          <View style={styles.infoLabelContainer}>
-                            <IconSymbol name="stethoscope" size={16} color="#F59E0B" />
-                            <Text style={styles.infoLabel}>Initial Diagnosis</Text>
-                          </View>
-                          <Text style={styles.infoValue}>{batteryCase.initial_diagnosis}</Text>
-                        </View>
-                      )}
-                      {batteryCase && batteryCase.repair_type && (
-                        <View style={styles.infoRow}>
-                          <View style={styles.infoLabelContainer}>
-                            <IconSymbol name="wrench.and.screwdriver" size={16} color="#10B981" />
-                            <Text style={styles.infoLabel}>Repair Type</Text>
-                          </View>
-                          <Text style={styles.infoValue}>{batteryCase.repair_type}</Text>
-                        </View>
-                      )}
-                      {batteryCase && (
-                        <View style={styles.infoRow}>
-                          <View style={styles.infoLabelContainer}>
-                            <IconSymbol name="gear" size={16} color="#8B5CF6" />
-                            <Text style={styles.infoLabel}>Service Status</Text>
-                          </View>
-                          <Text style={[styles.infoValue, { color: getStatusColor(batteryCase.status) }]}>
-                            {batteryCase.status.replace('_', ' ').toUpperCase()}
+                      <View style={styles.ticketBadges}>
+                        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(ticket.status) + '20' }]}>
+                          <StatusIcon status={ticket.status as any} size="sm" />
+                          <Text style={[styles.statusText, { color: getStatusColor(ticket.status) }]}>
+                            {ticket.status.replace('_', ' ')}
                           </Text>
                         </View>
-                      )}
+                      </View>
+                    </View>
+                  </View>
+
+                  <Text style={styles.symptom}>{ticket.customer_complaint || ticket.symptom}</Text>
+                  {ticket.description && (
+                    <Text style={styles.description}>{ticket.description}</Text>
+                  )}
+                </View>
+              </View>
+
+              {/* Customer Info */}
+              <View style={styles.section}>
+                <ThemedText type="subtitle" style={styles.sectionTitle}>
+                  <IconSymbol name="person.fill" size={18} color={BrandColors.title} /> Customer Information
+                </ThemedText>
+                <View style={styles.infoCard}>
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoLabelContainer}>
+                      <IconSymbol name="person.circle" size={16} color="#6B7280" />
+                      <Text style={styles.infoLabel}>Name</Text>
+                    </View>
+                    <Text style={styles.infoValue}>{ticket.customer?.name || 'N/A'}</Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoLabelContainer}>
+                      <IconSymbol name="phone.fill" size={16} color="#6B7280" />
+                      <Text style={styles.infoLabel}>Contact</Text>
+                    </View>
+                    <Text style={styles.infoValue}>{ticket.customer?.contact || 'N/A'}</Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoLabelContainer}>
+                      <IconSymbol name="envelope.fill" size={16} color="#6B7280" />
+                      <Text style={styles.infoLabel}>Email</Text>
+                    </View>
+                    <Text style={styles.infoValue}>{ticket.customer?.email || 'N/A'}</Text>
+                  </View>
+                  {(ticket.vehicle_reg_no || ticket.vehicleRegNo) && (
+                    <View style={styles.infoRow}>
+                      <View style={styles.infoLabelContainer}>
+                        <IconSymbol name="car.fill" size={16} color="#6B7280" />
+                        <Text style={styles.infoLabel}>Vehicle</Text>
+                      </View>
+                      <Text style={styles.infoValue}>{ticket.vehicle_reg_no || ticket.vehicleRegNo}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              {/* Customer Bringing */}
+              {ticket.customer_bringing && (
+                <View style={styles.section}>
+                  <ThemedText type="subtitle" style={styles.sectionTitle}>
+                    <IconSymbol name="shippingbox" size={18} color={BrandColors.title} /> What Customer Brought
+                  </ThemedText>
+                  <View style={styles.infoCard}>
+                    <View style={styles.infoRow}>
+                      <View style={styles.infoLabelContainer}>
+                        <IconSymbol name="checkmark.circle.fill" size={16} color="#10B981" />
+                        <Text style={styles.infoLabel}>Service Type</Text>
+                      </View>
+                      <Text style={[styles.infoValue, { color: '#10B981', fontWeight: '600' }]}>
+                        {ticket.customer_bringing === 'both' ? 'Vehicle & Battery' :
+                          ticket.customer_bringing === 'vehicle' ? 'Vehicle Only' : 'Battery Only'}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              {/* Triage Management - Show for all tickets, but only actionable for 'reported' */}
+              <View style={styles.section}>
+                <TriageManagement
+                  ticket={ticket}
+                  onTriageComplete={() => {
+                    refetch(); // Refresh ticket data
+                    refetchStatusUpdates(); // Refresh status updates
+                  }}
+                />
+              </View>
+
+              {/* Vehicle Details */}
+              {(ticket.customer_bringing === 'vehicle' || ticket.customer_bringing === 'both') && vehicleRecord && (
+                <View style={styles.section}>
+                  <ThemedText type="subtitle" style={styles.sectionTitle}>
+                    <IconSymbol name="car.fill" size={18} color={BrandColors.title} /> Vehicle Details
+                  </ThemedText>
+                  <View style={styles.infoCard}>
+                    <View style={styles.infoRow}>
+                      <View style={styles.infoLabelContainer}>
+                        <IconSymbol name="number" size={16} color="#6B7280" />
+                        <Text style={styles.infoLabel}>Registration No.</Text>
+                      </View>
+                      <Text style={styles.infoValue}>{vehicleRecord.vehicle_reg_no}</Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                      <View style={styles.infoLabelContainer}>
+                        <IconSymbol name="flag.fill" size={16} color={getStatusColor(vehicleRecord.status)} />
+                        <Text style={styles.infoLabel}>Intake Status</Text>
+                      </View>
+                      <Text style={[styles.infoValue, { color: getStatusColor(vehicleRecord.status) }]}>
+                        {vehicleRecord.status.replace('_', ' ').toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                      <View style={styles.infoLabelContainer}>
+                        <IconSymbol name="building.2" size={16} color="#6B7280" />
+                        <Text style={styles.infoLabel}>Make</Text>
+                      </View>
+                      <Text style={styles.infoValue}>{vehicleRecord.vehicle_make}</Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                      <View style={styles.infoLabelContainer}>
+                        <IconSymbol name="car.fill" size={16} color="#6B7280" />
+                        <Text style={styles.infoLabel}>Model</Text>
+                      </View>
+                      <Text style={styles.infoValue}>{vehicleRecord.vehicle_model}</Text>
+                    </View>
+                    {vehicleRecord.vehicle_year && (
                       <View style={styles.infoRow}>
                         <View style={styles.infoLabelContainer}>
-                          <IconSymbol name="calendar.badge.plus" size={16} color="#6B7280" />
-                          <Text style={styles.infoLabel}>Intake Created</Text>
+                          <IconSymbol name="calendar" size={16} color="#6B7280" />
+                          <Text style={styles.infoLabel}>Year</Text>
+                        </View>
+                        <Text style={styles.infoValue}>{vehicleRecord.vehicle_year}</Text>
+                      </View>
+                    )}
+                    {vehicleRecord.vin_number && (
+                      <View style={styles.infoRow}>
+                        <View style={styles.infoLabelContainer}>
+                          <IconSymbol name="barcode" size={16} color="#6B7280" />
+                          <Text style={styles.infoLabel}>VIN Number</Text>
+                        </View>
+                        <Text style={styles.infoValue}>{vehicleRecord.vin_number}</Text>
+                      </View>
+                    )}
+                    {vehicleRecord.vehicle_type && (
+                      <View style={styles.infoRow}>
+                        <View style={styles.infoLabelContainer}>
+                          <IconSymbol name="car.2" size={16} color="#6B7280" />
+                          <Text style={styles.infoLabel}>Vehicle Type</Text>
+                        </View>
+                        <Text style={styles.infoValue}>{vehicleRecord.vehicle_type}</Text>
+                      </View>
+                    )}
+                    {vehicleRecord.condition_notes && (
+                      <View style={styles.infoRow}>
+                        <View style={styles.infoLabelContainer}>
+                          <IconSymbol name="doc.text" size={16} color="#6B7280" />
+                          <Text style={styles.infoLabel}>Intake Condition</Text>
+                        </View>
+                        <Text style={styles.infoValue}>{vehicleRecord.condition_notes}</Text>
+                      </View>
+                    )}
+                    {vehicleCase && vehicleCase.initial_diagnosis && (
+                      <View style={styles.infoRow}>
+                        <View style={styles.infoLabelContainer}>
+                          <IconSymbol name="stethoscope" size={16} color="#F59E0B" />
+                          <Text style={styles.infoLabel}>Initial Diagnosis</Text>
+                        </View>
+                        <Text style={styles.infoValue}>{vehicleCase.initial_diagnosis}</Text>
+                      </View>
+                    )}
+                    {vehicleCase && vehicleCase.diagnostic_notes && (
+                      <View style={styles.infoRow}>
+                        <View style={styles.infoLabelContainer}>
+                          <IconSymbol name="wrench.and.screwdriver" size={16} color="#10B981" />
+                          <Text style={styles.infoLabel}>Service Diagnostics</Text>
+                        </View>
+                        <Text style={styles.infoValue}>{vehicleCase.diagnostic_notes}</Text>
+                      </View>
+                    )}
+                    {vehicleCase && (
+                      <View style={styles.infoRow}>
+                        <View style={styles.infoLabelContainer}>
+                          <IconSymbol name="gear" size={16} color="#8B5CF6" />
+                          <Text style={styles.infoLabel}>Service Status</Text>
+                        </View>
+                        <Text style={[styles.infoValue, { color: getStatusColor(vehicleCase.status) }]}>
+                          {vehicleCase.status.replace('_', ' ').toUpperCase()}
+                        </Text>
+                      </View>
+                    )}
+                    {vehicleRecord.received_date && (
+                      <View style={styles.infoRow}>
+                        <View style={styles.infoLabelContainer}>
+                          <IconSymbol name="calendar.badge.clock" size={16} color="#6B7280" />
+                          <Text style={styles.infoLabel}>Received</Text>
                         </View>
                         <Text style={styles.infoValue}>
-                          {new Date(batteryRecord.created_at).toLocaleDateString('en-GB', {
+                          {new Date(vehicleRecord.received_date).toLocaleDateString('en-GB', {
                             day: '2-digit',
                             month: '2-digit',
                             year: 'numeric',
@@ -1248,300 +1095,450 @@ export default function JobCardDetailScreen() {
                           })}
                         </Text>
                       </View>
+                    )}
+                    <View style={styles.infoRow}>
+                      <View style={styles.infoLabelContainer}>
+                        <IconSymbol name="calendar.badge.plus" size={16} color="#6B7280" />
+                        <Text style={styles.infoLabel}>Intake Created</Text>
+                      </View>
+                      <Text style={styles.infoValue}>
+                        {new Date(vehicleRecord.created_at).toLocaleDateString('en-GB', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </Text>
                     </View>
-                  );
-                })}
-              </View>
-            )}
-
-            {/* Description */}
-            {ticket.description && (
-              <View style={styles.section}>
-                <ThemedText type="subtitle" style={styles.sectionTitle}>
-                  <IconSymbol name="doc.text" size={18} color={BrandColors.title} /> Description
-                </ThemedText>
-                <View style={styles.infoCard}>
-                  <Text style={styles.descriptionText}>{ticket.description || ticket.customer_complaint}</Text>
-                </View>
-              </View>
-            )}
-
-            {/* Intake Media */}
-            {attachments.length > 0 && (
-              <View style={styles.section}>
-                <ThemedText type="subtitle" style={styles.sectionTitle}>
-                  <IconSymbol name="camera" size={18} color={BrandColors.title} /> Intake Media
-                </ThemedText>
-                <View style={styles.infoCard}>
-                  <View style={styles.mediaStats}>
-                    {attachments.filter(att => att.attachmentType === 'photo' || att.attachment_type === 'photo').length > 0 && (
-                      <View style={styles.mediaStatItem}>
-                        <IconSymbol name="photo" size={16} color="#6B7280" />
-                        <Text style={styles.mediaStatText}>
-                          {attachments.filter(att => att.attachmentType === 'photo' || att.attachment_type === 'photo').length} photos
-                        </Text>
-                      </View>
-                    )}
-                    {attachments.filter(att => att.attachmentType === 'audio' || att.attachment_type === 'audio').length > 0 && (
-                      <View style={styles.mediaStatItem}>
-                        <IconSymbol name="mic" size={16} color="#6B7280" />
-                        <Text style={styles.mediaStatText}>
-                          {attachments.filter(att => att.attachmentType === 'audio' || att.attachment_type === 'audio').length} audio files
-                        </Text>
-                      </View>
-                    )}
                   </View>
-                  
-                  {/* Media Grid */}
-                  <View style={styles.mediaGrid}>
-                    {attachments.map((attachment) => {
-                      const isPhoto = attachment.attachmentType === 'photo' || attachment.attachment_type === 'photo';
-                      const isAudio = attachment.attachmentType === 'audio' || attachment.attachment_type === 'audio';
-                      const imageUrl = imageUrls[attachment.id];
-                      const audioUrl = audioUrls[attachment.id];
-                      const fileName = attachment.originalName || attachment.original_name || attachment.fileName || attachment.file_name;
-                      const fileSize = attachment.fileSize || attachment.file_size;
-                      
-                      return (
-                        <TouchableOpacity
-                          key={attachment.id}
-                          style={styles.mediaItem}
-                          onPress={() => {
-                            if (isPhoto) {
-                              handleImageClick(attachment.id);
-                            } else if (isAudio) {
-                              handleAudioClick(attachment.id);
-                            }
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          {isPhoto ? (
-                            <View style={styles.photoItem}>
-                              {imageUrl ? (
-                                <View style={styles.imageContainer}>
-                                  <Image 
-                                    source={{ uri: imageUrl }}
-                                    style={styles.attachmentImage}
-                                    resizeMode="cover"
-                                  />
-                                  <View style={styles.imageOverlay}>
-                                    <IconSymbol name="eye.fill" size={16} color="#FFFFFF" />
+                </View>
+              )}
+
+              {/* Battery Details */}
+              {(ticket.customer_bringing === 'battery' || ticket.customer_bringing === 'both') && batteryRecords.length > 0 && (
+                <View style={styles.section}>
+                  <ThemedText type="subtitle" style={styles.sectionTitle}>
+                    <IconSymbol name="battery.100" size={18} color={BrandColors.title} /> Battery Details ({batteryRecords.length} {batteryRecords.length === 1 ? 'Battery' : 'Batteries'})
+                  </ThemedText>
+                  {batteryRecords.map((batteryRecord, index) => {
+                    // Find corresponding battery case
+                    const batteryCase = batteryCases.find(bc => bc.battery_record_id === batteryRecord.id);
+
+                    return (
+                      <View key={batteryRecord.id} style={[styles.infoCard, index > 0 && { marginTop: 12 }]}>
+                        {batteryRecords.length > 1 && (
+                          <Text style={styles.batteryCardHeader}>Battery {index + 1}</Text>
+                        )}
+                        <View style={styles.infoRow}>
+                          <View style={styles.infoLabelContainer}>
+                            <IconSymbol name="number" size={16} color="#6B7280" />
+                            <Text style={styles.infoLabel}>Serial Number</Text>
+                          </View>
+                          <Text style={styles.infoValue}>{batteryRecord.serial_number}</Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                          <View style={styles.infoLabelContainer}>
+                            <IconSymbol name="flag.fill" size={16} color={getStatusColor(batteryRecord.status)} />
+                            <Text style={styles.infoLabel}>Intake Status</Text>
+                          </View>
+                          <Text style={[styles.infoValue, { color: getStatusColor(batteryRecord.status) }]}>
+                            {batteryRecord.status.replace('_', ' ').toUpperCase()}
+                          </Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                          <View style={styles.infoLabelContainer}>
+                            <IconSymbol name="building.2" size={16} color="#6B7280" />
+                            <Text style={styles.infoLabel}>Brand</Text>
+                          </View>
+                          <Text style={styles.infoValue}>{batteryRecord.brand}</Text>
+                        </View>
+                        {batteryRecord.model && (
+                          <View style={styles.infoRow}>
+                            <View style={styles.infoLabelContainer}>
+                              <IconSymbol name="battery.50" size={16} color="#6B7280" />
+                              <Text style={styles.infoLabel}>Model</Text>
+                            </View>
+                            <Text style={styles.infoValue}>{batteryRecord.model}</Text>
+                          </View>
+                        )}
+                        <View style={styles.infoRow}>
+                          <View style={styles.infoLabelContainer}>
+                            <IconSymbol name="gear" size={16} color="#6B7280" />
+                            <Text style={styles.infoLabel}>Battery Type</Text>
+                          </View>
+                          <Text style={styles.infoValue}>{batteryRecord.battery_type.toUpperCase()}</Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                          <View style={styles.infoLabelContainer}>
+                            <IconSymbol name="bolt.circle" size={16} color="#F59E0B" />
+                            <Text style={styles.infoLabel}>Voltage</Text>
+                          </View>
+                          <Text style={styles.infoValue}>{batteryRecord.voltage}V</Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                          <View style={styles.infoLabelContainer}>
+                            <IconSymbol name="bolt.fill" size={16} color="#10B981" />
+                            <Text style={styles.infoLabel}>Capacity</Text>
+                          </View>
+                          <Text style={styles.infoValue}>{batteryRecord.capacity} Ah</Text>
+                        </View>
+                        {batteryRecord.cell_type && (
+                          <View style={styles.infoRow}>
+                            <View style={styles.infoLabelContainer}>
+                              <IconSymbol name="circle.grid.3x3" size={16} color="#6B7280" />
+                              <Text style={styles.infoLabel}>Cell Type</Text>
+                            </View>
+                            <Text style={styles.infoValue}>{batteryRecord.cell_type}</Text>
+                          </View>
+                        )}
+                        {batteryRecord.repair_notes && (
+                          <View style={styles.infoRow}>
+                            <View style={styles.infoLabelContainer}>
+                              <IconSymbol name="doc.text" size={16} color="#F59E0B" />
+                              <Text style={styles.infoLabel}>Intake Condition</Text>
+                            </View>
+                            <Text style={styles.infoValue}>{batteryRecord.repair_notes}</Text>
+                          </View>
+                        )}
+                        {batteryCase && batteryCase.initial_diagnosis && (
+                          <View style={styles.infoRow}>
+                            <View style={styles.infoLabelContainer}>
+                              <IconSymbol name="stethoscope" size={16} color="#F59E0B" />
+                              <Text style={styles.infoLabel}>Initial Diagnosis</Text>
+                            </View>
+                            <Text style={styles.infoValue}>{batteryCase.initial_diagnosis}</Text>
+                          </View>
+                        )}
+                        {batteryCase && batteryCase.repair_type && (
+                          <View style={styles.infoRow}>
+                            <View style={styles.infoLabelContainer}>
+                              <IconSymbol name="wrench.and.screwdriver" size={16} color="#10B981" />
+                              <Text style={styles.infoLabel}>Repair Type</Text>
+                            </View>
+                            <Text style={styles.infoValue}>{batteryCase.repair_type}</Text>
+                          </View>
+                        )}
+                        {batteryCase && (
+                          <View style={styles.infoRow}>
+                            <View style={styles.infoLabelContainer}>
+                              <IconSymbol name="gear" size={16} color="#8B5CF6" />
+                              <Text style={styles.infoLabel}>Service Status</Text>
+                            </View>
+                            <Text style={[styles.infoValue, { color: getStatusColor(batteryCase.status) }]}>
+                              {batteryCase.status.replace('_', ' ').toUpperCase()}
+                            </Text>
+                          </View>
+                        )}
+                        <View style={styles.infoRow}>
+                          <View style={styles.infoLabelContainer}>
+                            <IconSymbol name="calendar.badge.plus" size={16} color="#6B7280" />
+                            <Text style={styles.infoLabel}>Intake Created</Text>
+                          </View>
+                          <Text style={styles.infoValue}>
+                            {new Date(batteryRecord.created_at).toLocaleDateString('en-GB', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+
+              {/* Description */}
+              {ticket.description && (
+                <View style={styles.section}>
+                  <ThemedText type="subtitle" style={styles.sectionTitle}>
+                    <IconSymbol name="doc.text" size={18} color={BrandColors.title} /> Description
+                  </ThemedText>
+                  <View style={styles.infoCard}>
+                    <Text style={styles.descriptionText}>{ticket.description || ticket.customer_complaint}</Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Intake Media */}
+              {attachments.length > 0 && (
+                <View style={styles.section}>
+                  <ThemedText type="subtitle" style={styles.sectionTitle}>
+                    <IconSymbol name="camera" size={18} color={BrandColors.title} /> Intake Media
+                  </ThemedText>
+                  <View style={styles.infoCard}>
+                    <View style={styles.mediaStats}>
+                      {attachments.filter(att => att.attachmentType === 'photo' || att.attachment_type === 'photo').length > 0 && (
+                        <View style={styles.mediaStatItem}>
+                          <IconSymbol name="photo" size={16} color="#6B7280" />
+                          <Text style={styles.mediaStatText}>
+                            {attachments.filter(att => att.attachmentType === 'photo' || att.attachment_type === 'photo').length} photos
+                          </Text>
+                        </View>
+                      )}
+                      {attachments.filter(att => att.attachmentType === 'audio' || att.attachment_type === 'audio').length > 0 && (
+                        <View style={styles.mediaStatItem}>
+                          <IconSymbol name="mic" size={16} color="#6B7280" />
+                          <Text style={styles.mediaStatText}>
+                            {attachments.filter(att => att.attachmentType === 'audio' || att.attachment_type === 'audio').length} audio files
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Media Grid */}
+                    <View style={styles.mediaGrid}>
+                      {attachments.map((attachment) => {
+                        const isPhoto = attachment.attachmentType === 'photo' || attachment.attachment_type === 'photo';
+                        const isAudio = attachment.attachmentType === 'audio' || attachment.attachment_type === 'audio';
+                        const imageUrl = imageUrls[attachment.id];
+                        const audioUrl = audioUrls[attachment.id];
+                        const fileName = attachment.originalName || attachment.original_name || attachment.fileName || attachment.file_name;
+                        const fileSize = attachment.fileSize || attachment.file_size;
+
+                        return (
+                          <TouchableOpacity
+                            key={attachment.id}
+                            style={styles.mediaItem}
+                            onPress={() => {
+                              if (isPhoto) {
+                                handleImageClick(attachment.id);
+                              } else if (isAudio) {
+                                handleAudioClick(attachment.id);
+                              }
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            {isPhoto ? (
+                              <View style={styles.photoItem}>
+                                {imageUrl ? (
+                                  <View style={styles.imageContainer}>
+                                    <Image
+                                      source={{ uri: imageUrl }}
+                                      style={styles.attachmentImage}
+                                      resizeMode="cover"
+                                    />
+                                    <View style={styles.imageOverlay}>
+                                      <IconSymbol name="eye.fill" size={16} color="#FFFFFF" />
+                                    </View>
+                                  </View>
+                                ) : (
+                                  <View style={styles.imagePlaceholder}>
+                                    <IconSymbol name="photo.fill" size={24} color="#3B82F6" />
+                                  </View>
+                                )}
+                                <Text style={styles.mediaFileName} numberOfLines={2}>
+                                  {fileName}
+                                </Text>
+                                <Text style={styles.mediaFileSize}>
+                                  {fileSize ? (fileSize / (1024 * 1024)).toFixed(1) + ' MB' : 'Image'}
+                                </Text>
+                              </View>
+                            ) : (
+                              <View style={styles.audioItem}>
+                                <View style={styles.audioIconContainer}>
+                                  <IconSymbol name="waveform" size={24} color="#10B981" />
+                                  <View style={styles.playIconOverlay}>
+                                    <IconSymbol name="play.fill" size={12} color="#FFFFFF" />
                                   </View>
                                 </View>
-                              ) : (
-                                <View style={styles.imagePlaceholder}>
-                                  <IconSymbol name="photo.fill" size={24} color="#3B82F6" />
-                                </View>
-                              )}
-                              <Text style={styles.mediaFileName} numberOfLines={2}>
-                                {fileName}
-                              </Text>
-                              <Text style={styles.mediaFileSize}>
-                                {fileSize ? (fileSize / (1024 * 1024)).toFixed(1) + ' MB' : 'Image'}
-                              </Text>
-                            </View>
-                          ) : (
-                            <View style={styles.audioItem}>
-                              <View style={styles.audioIconContainer}>
-                                <IconSymbol name="waveform" size={24} color="#10B981" />
-                                <View style={styles.playIconOverlay}>
-                                  <IconSymbol name="play.fill" size={12} color="#FFFFFF" />
-                                </View>
+                                <Text style={styles.mediaFileName} numberOfLines={2}>
+                                  {fileName}
+                                </Text>
+                                <Text style={styles.mediaFileSize}>
+                                  {attachment.duration ? `${attachment.duration}s` : 'Audio'}
+                                </Text>
                               </View>
-                              <Text style={styles.mediaFileName} numberOfLines={2}>
-                                {fileName}
-                              </Text>
-                              <Text style={styles.mediaFileSize}>
-                                {attachment.duration ? `${attachment.duration}s` : 'Audio'}
-                              </Text>
-                            </View>
-                          )}
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+                </View>
+              )}
+
+
+              {/* Assignment Info */}
+              <View style={styles.section}>
+                <ThemedText type="subtitle" style={styles.sectionTitle}>
+                  <IconSymbol name="person.badge.clock" size={18} color={BrandColors.title} /> Assignment Details
+                </ThemedText>
+                <View style={styles.infoCard}>
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoLabelContainer}>
+                      <IconSymbol name="flag.fill" size={16} color={getStatusColor(ticket.status)} />
+                      <Text style={styles.infoLabel}>Status</Text>
+                    </View>
+                    <Text style={[styles.infoValue, { color: getStatusColor(ticket.status) }]}>
+                      {ticket.status.replace('_', ' ').toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoLabelContainer}>
+                      <IconSymbol name={(ticket.assigned_to || ticket.assignedTo) ? "person.fill" : "person.badge.plus"} size={16} color={(ticket.assigned_to || ticket.assignedTo) ? "#10B981" : "#F59E0B"} />
+                      <Text style={styles.infoLabel}>Assigned to</Text>
+                    </View>
+                    <Text style={[styles.infoValue, { color: (ticket.assigned_to || ticket.assignedTo) ? '#10B981' : '#F59E0B' }]}>
+                      {getTechnicianName(ticket.assigned_to || ticket.assignedTo || '')}
+                    </Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoLabelContainer}>
+                      <IconSymbol name="person.crop.circle" size={16} color="#6B7280" />
+                      <Text style={styles.infoLabel}>Created By</Text>
+                    </View>
+                    <Text style={styles.infoValue}>
+                      {getCreatorName(ticket)}
+                    </Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoLabelContainer}>
+                      <IconSymbol name="calendar.badge.plus" size={16} color="#6B7280" />
+                      <Text style={styles.infoLabel}>Created At</Text>
+                    </View>
+                    <Text style={styles.infoValue}>
+                      {(ticket.created_at || ticket.createdAt) ? new Date(ticket.created_at || ticket.createdAt).toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                      }) : 'N/A'}
+                    </Text>
+                  </View>
+                  {(ticket.assigned_at || ticket.assignedAt) && (
+                    <View style={styles.infoRow}>
+                      <View style={styles.infoLabelContainer}>
+                        <IconSymbol name="calendar.badge.checkmark" size={16} color="#6B7280" />
+                        <Text style={styles.infoLabel}>Assigned</Text>
+                      </View>
+                      <Text style={styles.infoValue}>
+                        {new Date(ticket.assigned_at || ticket.assignedAt).toLocaleDateString()}
+                      </Text>
+                    </View>
+                  )}
+                  {(ticket.due_date || ticket.dueDate) && (
+                    <View style={styles.infoRow}>
+                      <View style={styles.infoLabelContainer}>
+                        <IconSymbol name="clock" size={16} color={new Date(ticket.due_date || ticket.dueDate) < new Date() ? "#EF4444" : "#6B7280"} />
+                        <Text style={styles.infoLabel}>Due Date</Text>
+                      </View>
+                      <Text style={[styles.infoValue, { color: new Date(ticket.due_date || ticket.dueDate) < new Date() ? '#EF4444' : '#111827' }]}>
+                        {new Date(ticket.due_date || ticket.dueDate).toLocaleDateString()}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              {/* Status Actions */}
+              {nextStatusOptions.length > 0 && (
+                <View style={styles.section}>
+                  <ThemedText type="subtitle" style={styles.sectionTitle}>
+                    <IconSymbol name="arrow.forward.circle" size={18} color={BrandColors.title} /> Status Actions
+                  </ThemedText>
+                  <View style={styles.statusActions}>
+                    {nextStatusOptions.map((status) => {
+                      const getStatusIcon = (status: string) => {
+                        switch (status) {
+                          case 'triaged': return 'magnifyingglass';
+                          case 'in_progress': return 'hammer';
+                          case 'completed': return 'checkmark.circle.fill';
+                          default: return 'arrow.forward';
+                        }
+                      };
+
+                      return (
+                        <TouchableOpacity
+                          key={status}
+                          style={[
+                            styles.statusActionButton,
+                            { backgroundColor: StatusColors[status as keyof typeof StatusColors]?.background || BrandColors.primary + '20' },
+                          ]}
+                          onPress={() => handleStatusUpdate(status)}
+                          activeOpacity={0.8}
+                        >
+                          <View style={styles.statusActionContent}>
+                            <IconSymbol
+                              name={getStatusIcon(status)}
+                              size={20}
+                              color={StatusColors[status as keyof typeof StatusColors]?.primary || BrandColors.primary}
+                            />
+                            <Text style={[styles.statusActionText, { color: StatusColors[status as keyof typeof StatusColors]?.primary || BrandColors.primary }]}>
+                              Mark as {status.replace('_', ' ')}
+                            </Text>
+                          </View>
                         </TouchableOpacity>
                       );
                     })}
                   </View>
                 </View>
-              </View>
-            )}
+              )}
 
-
-            {/* Assignment Info */}
-            <View style={styles.section}>
-              <ThemedText type="subtitle" style={styles.sectionTitle}>
-                <IconSymbol name="person.badge.clock" size={18} color={BrandColors.title} /> Assignment Details
-              </ThemedText>
-              <View style={styles.infoCard}>
-                <View style={styles.infoRow}>
-                  <View style={styles.infoLabelContainer}>
-                    <IconSymbol name="flag.fill" size={16} color={getStatusColor(ticket.status)} />
-                    <Text style={styles.infoLabel}>Status</Text>
-                  </View>
-                  <Text style={[styles.infoValue, { color: getStatusColor(ticket.status) }]}>
-                    {ticket.status.replace('_', ' ').toUpperCase()}
-                  </Text>
-                </View>
-                <View style={styles.infoRow}>
-                  <View style={styles.infoLabelContainer}>
-                    <IconSymbol name={(ticket.assigned_to || ticket.assignedTo) ? "person.fill" : "person.badge.plus"} size={16} color={(ticket.assigned_to || ticket.assignedTo) ? "#10B981" : "#F59E0B"} />
-                    <Text style={styles.infoLabel}>Assigned to</Text>
-                  </View>
-                  <Text style={[styles.infoValue, { color: (ticket.assigned_to || ticket.assignedTo) ? '#10B981' : '#F59E0B' }]}>
-                    {getTechnicianName(ticket.assigned_to || ticket.assignedTo || '')}
-                  </Text>
-                </View>
-                <View style={styles.infoRow}>
-                  <View style={styles.infoLabelContainer}>
-                    <IconSymbol name="person.crop.circle" size={16} color="#6B7280" />
-                    <Text style={styles.infoLabel}>Created By</Text>
-                  </View>
-                  <Text style={styles.infoValue}>
-                    {getCreatorName(ticket)}
-                  </Text>
-                </View>
-                <View style={styles.infoRow}>
-                  <View style={styles.infoLabelContainer}>
-                    <IconSymbol name="calendar.badge.plus" size={16} color="#6B7280" />
-                    <Text style={styles.infoLabel}>Created At</Text>
-                  </View>
-                  <Text style={styles.infoValue}>
-                    {new Date(ticket.created_at || ticket.createdAt).toLocaleDateString('en-GB', {
-                      day: '2-digit',
-                      month: '2-digit', 
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      second: '2-digit'
-                    })}
-                  </Text>
-                </View>
-                {(ticket.assigned_at || ticket.assignedAt) && (
-                  <View style={styles.infoRow}>
-                    <View style={styles.infoLabelContainer}>
-                      <IconSymbol name="calendar.badge.checkmark" size={16} color="#6B7280" />
-                      <Text style={styles.infoLabel}>Assigned</Text>
-                    </View>
-                    <Text style={styles.infoValue}>
-                      {new Date(ticket.assigned_at || ticket.assignedAt).toLocaleDateString()}
-                    </Text>
-                  </View>
-                )}
-                {(ticket.due_date || ticket.dueDate) && (
-                  <View style={styles.infoRow}>
-                    <View style={styles.infoLabelContainer}>
-                      <IconSymbol name="clock" size={16} color={new Date(ticket.due_date || ticket.dueDate) < new Date() ? "#EF4444" : "#6B7280"} />
-                      <Text style={styles.infoLabel}>Due Date</Text>
-                    </View>
-                    <Text style={[styles.infoValue, { color: new Date(ticket.due_date || ticket.dueDate) < new Date() ? '#EF4444' : '#111827' }]}>
-                      {new Date(ticket.due_date || ticket.dueDate).toLocaleDateString()}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </View>
-
-            {/* Status Actions */}
-            {nextStatusOptions.length > 0 && (
+              {/* Status Updates - Progress Timeline */}
               <View style={styles.section}>
                 <ThemedText type="subtitle" style={styles.sectionTitle}>
-                  <IconSymbol name="arrow.forward.circle" size={18} color={BrandColors.title} /> Status Actions
+                  <IconSymbol name="clock" size={18} color={BrandColors.title} /> Progress Updates
                 </ThemedText>
-                <View style={styles.statusActions}>
-                  {nextStatusOptions.map((status) => {
-                    const getStatusIcon = (status: string) => {
-                      switch (status) {
-                        case 'triaged': return 'magnifyingglass';
-                        case 'in_progress': return 'hammer';
-                        case 'completed': return 'checkmark.circle.fill';
-                        default: return 'arrow.forward';
-                      }
-                    };
-                    
-                    return (
-                      <TouchableOpacity
-                        key={status}
-                        style={[
-                          styles.statusActionButton,
-                          { backgroundColor: StatusColors[status as keyof typeof StatusColors]?.background || BrandColors.primary + '20' },
-                        ]}
-                        onPress={() => handleStatusUpdate(status)}
-                        activeOpacity={0.8}
-                      >
-                        <View style={styles.statusActionContent}>
-                          <IconSymbol 
-                            name={getStatusIcon(status)} 
-                            size={20} 
-                            color={StatusColors[status as keyof typeof StatusColors]?.primary || BrandColors.primary} 
-                          />
-                          <Text style={[styles.statusActionText, { color: StatusColors[status as keyof typeof StatusColors]?.primary || BrandColors.primary }]}>
-                            Mark as {status.replace('_', ' ')}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
+
+                <View style={styles.statusUpdatesCard}>
+                  {/* Add Update Button */}
+                  <StatusUpdateInput
+                    ticketId={ticketId}
+                    currentStatus={ticket.status}
+                    onUpdateAdded={() => {
+                      refetchStatusUpdates();
+                      refetch(); // Also refresh main ticket data
+                    }}
+                  />
+
+                  {/* Updates Timeline */}
+                  <StatusUpdatesTimeline
+                    updates={statusUpdates}
+                    currentStatus={ticket.status}
+                    canDelete={false} // For now, don't allow deletion
+                  />
                 </View>
               </View>
-            )}
+            </>
+          )}
+        </ScrollView>
 
-            {/* Status Updates - Progress Timeline */}
-            <View style={styles.section}>
-              <ThemedText type="subtitle" style={styles.sectionTitle}>
-                <IconSymbol name="clock" size={18} color={BrandColors.title} /> Progress Updates
-              </ThemedText>
-              
-              <View style={styles.statusUpdatesCard}>
-                {/* Add Update Button */}
-                <StatusUpdateInput
-                  ticketId={ticketId}
-                  currentStatus={ticket.status}
-                  onUpdateAdded={() => {
-                    refetchStatusUpdates();
-                    refetch(); // Also refresh main ticket data
-                  }}
-                />
-                
-                {/* Updates Timeline */}
-                <StatusUpdatesTimeline
-                  updates={statusUpdates}
-                  currentStatus={ticket.status}
-                  canDelete={false} // For now, don't allow deletion
-                />
-              </View>
-            </View>
-          </>
-        )}
-      </ScrollView>
+        {/* Technician Picker Modal */}
+        <TechnicianPickerModal
+          visible={showTechnicianPicker}
+          onClose={() => setShowTechnicianPicker(false)}
+          onSelect={handleAssignTechnician}
+          currentAssignee={(ticket?.assigned_to || ticket?.assignedTo) || undefined}
+          currentDueDate={ticket?.due_date || ticket?.dueDate}
+        />
 
-      {/* Technician Picker Modal */}
-      <TechnicianPickerModal
-        visible={showTechnicianPicker}
-        onClose={() => setShowTechnicianPicker(false)}
-        onSelect={handleAssignTechnician}
-        currentAssignee={ticket?.assigned_to || ticket?.assignedToId || ticket?.assignedTo}
-        currentDueDate={ticket?.due_date || ticket?.dueDate}
-      />
+        {/* Image Viewer Modal */}
+        <ImageViewerModal
+          visible={showImageViewer}
+          onClose={() => setShowImageViewer(false)}
+          images={attachments
+            .filter(att => (att.attachmentType === 'photo' || att.attachment_type === 'photo') && imageUrls[att.id])
+            .map(att => ({
+              id: att.id,
+              url: imageUrls[att.id],
+              name: att.originalName || att.original_name || att.fileName || att.file_name || 'Image'
+            }))}
+          initialIndex={selectedImageIndex}
+        />
 
-      {/* Image Viewer Modal */}
-      <ImageViewerModal
-        visible={showImageViewer}
-        onClose={() => setShowImageViewer(false)}
-        images={attachments
-          .filter(att => (att.attachmentType === 'photo' || att.attachment_type === 'photo') && imageUrls[att.id])
-          .map(att => ({
-            id: att.id,
-            url: imageUrls[att.id],
-            name: att.originalName || att.original_name || att.fileName || att.file_name || 'Image'
-          }))}
-        initialIndex={selectedImageIndex}
-      />
-
-      {/* Audio Player Modal */}
-      <AudioPlayerModal
-        visible={showAudioPlayer}
-        onClose={() => setShowAudioPlayer(false)}
-        audio={selectedAudio}
-      />
-    </ThemedView>
+        {/* Audio Player Modal */}
+        <AudioPlayerModal
+          visible={showAudioPlayer}
+          onClose={() => setShowAudioPlayer(false)}
+          audio={selectedAudio}
+        />
+      </ThemedView>
     </>
   );
 }

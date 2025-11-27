@@ -1,30 +1,74 @@
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BorderRadius, Colors, Shadows, Spacing, Typography } from '@/constants/design-system';
+import { useAuthStore } from '@/stores/authStore';
+import { Image } from 'expo-image';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Switch,
   Alert,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { Image } from 'expo-image';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors, Typography, Spacing } from '@/constants/design-system';
-import { useAuthStore } from '@/stores/authStore';
+
+interface ProfileItemProps {
+  icon: string;
+  title: string;
+  subtitle?: string;
+  onPress?: () => void;
+  showChevron?: boolean;
+  destructive?: boolean;
+  rightElement?: React.ReactNode;
+}
+
+const ProfileItem: React.FC<ProfileItemProps> = ({
+  icon,
+  title,
+  subtitle,
+  onPress,
+  showChevron = true,
+  destructive = false,
+  rightElement,
+}) => (
+  <TouchableOpacity
+    style={styles.profileItem}
+    onPress={onPress}
+    disabled={!onPress && !rightElement}
+    activeOpacity={onPress ? 0.7 : 1}
+  >
+    <View style={styles.profileItemLeft}>
+      <View style={styles.profileItemIcon}>
+        <IconSymbol name={icon} size={24} color={destructive ? Colors.error[600] : Colors.neutral[900]} />
+      </View>
+      <View style={styles.profileItemContent}>
+        <Text style={[styles.profileItemTitle, destructive && styles.destructiveText]}>{title}</Text>
+        {subtitle && <Text style={styles.profileItemSubtitle}>{subtitle}</Text>}
+      </View>
+    </View>
+    {rightElement ? (
+      rightElement
+    ) : (
+      showChevron && onPress && (
+        <IconSymbol name="chevron.right" size={20} color={Colors.neutral[400]} />
+      )
+    )}
+  </TouchableOpacity>
+);
 
 export default function FrontDeskProfile() {
   const { user, signOut } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
-  
+
   // Form states
   const [firstName, setFirstName] = useState(user?.firstName || 'John');
   const [lastName, setLastName] = useState(user?.lastName || 'Doe');
   const [email, setEmail] = useState(user?.email || 'john.doe@ewheels.com');
   const [phone, setPhone] = useState('+1 (555) 123-4567');
   const [employeeId, setEmployeeId] = useState('EW-FD-001');
-  
+
   // Settings states
   const [notifications, setNotifications] = useState(true);
   const [emailAlerts, setEmailAlerts] = useState(true);
@@ -40,7 +84,7 @@ export default function FrontDeskProfile() {
       phone,
       employeeId,
     });
-    
+
     Alert.alert('Profile Updated', 'Your profile has been successfully updated.');
     setIsEditing(false);
   };
@@ -104,7 +148,7 @@ export default function FrontDeskProfile() {
             <IconSymbol name="camera.fill" size={16} color={Colors.white} />
           </TouchableOpacity>
         </View>
-        
+
         <Text style={styles.name}>{firstName} {lastName}</Text>
         <Text style={styles.role}>Front Desk Manager</Text>
         <Text style={styles.employeeIdText}>Employee ID: {employeeId}</Text>
@@ -138,7 +182,7 @@ export default function FrontDeskProfile() {
                 placeholder="First Name"
               />
             </View>
-            
+
             <View style={styles.inputHalf}>
               <Text style={styles.inputLabel}>Last Name</Text>
               <TextInput
@@ -192,7 +236,7 @@ export default function FrontDeskProfile() {
               <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
                 <Text style={styles.saveButtonText}>Save Changes</Text>
               </TouchableOpacity>
@@ -204,68 +248,58 @@ export default function FrontDeskProfile() {
       {/* App Settings */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>App Settings</Text>
-        
-        <View style={styles.settingItem}>
-          <View style={styles.settingInfo}>
-            <IconSymbol name="bell.fill" size={20} color={Colors.primary[600]} />
-            <View style={styles.settingText}>
-              <Text style={styles.settingTitle}>Push Notifications</Text>
-              <Text style={styles.settingDescription}>Receive alerts for new tickets</Text>
-            </View>
-          </View>
-          <Switch
-            value={notifications}
-            onValueChange={setNotifications}
-            trackColor={{ false: Colors.neutral[300], true: Colors.primary[200] }}
-            thumbColor={notifications ? Colors.primary[600] : Colors.neutral[400]}
+        <View style={styles.listContainer}>
+          <ProfileItem
+            icon="bell.fill"
+            title="Push Notifications"
+            subtitle="Receive alerts for new tickets"
+            rightElement={
+              <Switch
+                value={notifications}
+                onValueChange={setNotifications}
+                trackColor={{ false: Colors.neutral[300], true: Colors.primary[200] }}
+                thumbColor={notifications ? Colors.primary[600] : Colors.neutral[400]}
+              />
+            }
           />
-        </View>
-
-        <View style={styles.settingItem}>
-          <View style={styles.settingInfo}>
-            <IconSymbol name="envelope.fill" size={20} color={Colors.primary[600]} />
-            <View style={styles.settingText}>
-              <Text style={styles.settingTitle}>Email Alerts</Text>
-              <Text style={styles.settingDescription}>Get email notifications</Text>
-            </View>
-          </View>
-          <Switch
-            value={emailAlerts}
-            onValueChange={setEmailAlerts}
-            trackColor={{ false: Colors.neutral[300], true: Colors.primary[200] }}
-            thumbColor={emailAlerts ? Colors.primary[600] : Colors.neutral[400]}
+          <ProfileItem
+            icon="envelope.fill"
+            title="Email Alerts"
+            subtitle="Get email notifications"
+            rightElement={
+              <Switch
+                value={emailAlerts}
+                onValueChange={setEmailAlerts}
+                trackColor={{ false: Colors.neutral[300], true: Colors.primary[200] }}
+                thumbColor={emailAlerts ? Colors.primary[600] : Colors.neutral[400]}
+              />
+            }
           />
-        </View>
-
-        <View style={styles.settingItem}>
-          <View style={styles.settingInfo}>
-            <IconSymbol name="arrow.clockwise.circle.fill" size={20} color={Colors.primary[600]} />
-            <View style={styles.settingText}>
-              <Text style={styles.settingTitle}>Auto Sync</Text>
-              <Text style={styles.settingDescription}>Automatically sync data</Text>
-            </View>
-          </View>
-          <Switch
-            value={autoSync}
-            onValueChange={setAutoSync}
-            trackColor={{ false: Colors.neutral[300], true: Colors.primary[200] }}
-            thumbColor={autoSync ? Colors.primary[600] : Colors.neutral[400]}
+          <ProfileItem
+            icon="arrow.clockwise.circle.fill"
+            title="Auto Sync"
+            subtitle="Automatically sync data"
+            rightElement={
+              <Switch
+                value={autoSync}
+                onValueChange={setAutoSync}
+                trackColor={{ false: Colors.neutral[300], true: Colors.primary[200] }}
+                thumbColor={autoSync ? Colors.primary[600] : Colors.neutral[400]}
+              />
+            }
           />
-        </View>
-
-        <View style={styles.settingItem}>
-          <View style={styles.settingInfo}>
-            <IconSymbol name="moon.fill" size={20} color={Colors.primary[600]} />
-            <View style={styles.settingText}>
-              <Text style={styles.settingTitle}>Dark Mode</Text>
-              <Text style={styles.settingDescription}>Use dark theme</Text>
-            </View>
-          </View>
-          <Switch
-            value={darkMode}
-            onValueChange={setDarkMode}
-            trackColor={{ false: Colors.neutral[300], true: Colors.primary[200] }}
-            thumbColor={darkMode ? Colors.primary[600] : Colors.neutral[400]}
+          <ProfileItem
+            icon="moon.fill"
+            title="Dark Mode"
+            subtitle="Use dark theme"
+            rightElement={
+              <Switch
+                value={darkMode}
+                onValueChange={setDarkMode}
+                trackColor={{ false: Colors.neutral[300], true: Colors.primary[200] }}
+                thumbColor={darkMode ? Colors.primary[600] : Colors.neutral[400]}
+              />
+            }
           />
         </View>
       </View>
@@ -273,41 +307,47 @@ export default function FrontDeskProfile() {
       {/* Security & Privacy */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Security & Privacy</Text>
-        
-        <TouchableOpacity style={styles.actionItem} onPress={handleChangePassword}>
-          <IconSymbol name="key.fill" size={20} color={Colors.warning[600]} />
-          <Text style={styles.actionItemText}>Change Password</Text>
-          <IconSymbol name="chevron.right" size={16} color={Colors.neutral[400]} />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionItem}>
-          <IconSymbol name="shield.fill" size={20} color={Colors.info[600]} />
-          <Text style={styles.actionItemText}>Privacy Policy</Text>
-          <IconSymbol name="chevron.right" size={16} color={Colors.neutral[400]} />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionItem}>
-          <IconSymbol name="doc.text.fill" size={20} color={Colors.info[600]} />
-          <Text style={styles.actionItemText}>Terms of Service</Text>
-          <IconSymbol name="chevron.right" size={16} color={Colors.neutral[400]} />
-        </TouchableOpacity>
+        <View style={styles.listContainer}>
+          <ProfileItem
+            icon="key.fill"
+            title="Change Password"
+            subtitle="Update your login password"
+            onPress={handleChangePassword}
+          />
+          <ProfileItem
+            icon="shield.fill"
+            title="Privacy Policy"
+            subtitle="Read our privacy policy"
+            onPress={() => { }}
+          />
+          <ProfileItem
+            icon="doc.text.fill"
+            title="Terms of Service"
+            subtitle="Read our terms of service"
+            onPress={() => { }}
+          />
+        </View>
       </View>
 
-      {/* Danger Zone */}
+      {/* Account Actions */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account Actions</Text>
-        
-        <TouchableOpacity style={styles.actionItem} onPress={handleLogout}>
-          <IconSymbol name="arrow.right.square.fill" size={20} color={Colors.danger[600]} />
-          <Text style={[styles.actionItemText, styles.dangerText]}>Logout</Text>
-          <IconSymbol name="chevron.right" size={16} color={Colors.neutral[400]} />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionItem} onPress={handleDeleteAccount}>
-          <IconSymbol name="trash.fill" size={20} color={Colors.danger[600]} />
-          <Text style={[styles.actionItemText, styles.dangerText]}>Delete Account</Text>
-          <IconSymbol name="chevron.right" size={16} color={Colors.neutral[400]} />
-        </TouchableOpacity>
+        <View style={styles.listContainer}>
+          <ProfileItem
+            icon="arrow.right.square.fill"
+            title="Logout"
+            subtitle="Sign out of your account"
+            onPress={handleLogout}
+            destructive
+          />
+          <ProfileItem
+            icon="trash.fill"
+            title="Delete Account"
+            subtitle="Permanently delete your account"
+            onPress={handleDeleteAccount}
+            destructive
+          />
+        </View>
       </View>
 
       {/* App Version */}
@@ -370,7 +410,6 @@ const styles = StyleSheet.create({
     color: Colors.neutral[500],
   },
   section: {
-    backgroundColor: Colors.white,
     marginTop: Spacing.base,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.base,
@@ -383,14 +422,19 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: Typography.fontSize.lg,
-    fontFamily: Typography.fontFamily.semibold,
+    fontFamily: Typography.fontFamily.bold,
     color: Colors.neutral[900],
+    marginBottom: Spacing.md,
   },
   editButton: {
     padding: Spacing.xs,
   },
   formContainer: {
     gap: Spacing.base,
+    backgroundColor: Colors.white,
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    ...Shadows.sm,
   },
   inputRow: {
     flexDirection: 'row',
@@ -452,50 +496,47 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.medium,
     color: Colors.white,
   },
-  settingItem: {
+  listContainer: {
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.lg,
+    overflow: 'hidden',
+    ...Shadows.sm,
+  },
+  profileItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: Spacing.base,
+    justifyContent: 'space-between',
+    padding: Spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: Colors.neutral[100],
+    backgroundColor: Colors.white,
   },
-  settingInfo: {
+  profileItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
-  settingText: {
-    marginLeft: Spacing.base,
+  profileItemIcon: {
+    width: 24,
+    alignItems: 'center',
+    marginRight: Spacing.md,
+  },
+  profileItemContent: {
     flex: 1,
   },
-  settingTitle: {
+  profileItemTitle: {
     fontSize: Typography.fontSize.base,
-    fontFamily: Typography.fontFamily.medium,
+    fontFamily: Typography.fontFamily.semibold,
     color: Colors.neutral[900],
   },
-  settingDescription: {
+  profileItemSubtitle: {
     fontSize: Typography.fontSize.sm,
     fontFamily: Typography.fontFamily.regular,
     color: Colors.neutral[500],
     marginTop: 2,
   },
-  actionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.base,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.neutral[100],
-  },
-  actionItemText: {
-    fontSize: Typography.fontSize.base,
-    fontFamily: Typography.fontFamily.medium,
-    color: Colors.neutral[900],
-    flex: 1,
-    marginLeft: Spacing.base,
-  },
-  dangerText: {
-    color: Colors.danger[600],
+  destructiveText: {
+    color: Colors.error[600],
   },
   footer: {
     alignItems: 'center',

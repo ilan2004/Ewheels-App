@@ -1,22 +1,22 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-  TextInput,
   Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { router } from 'expo-router';
 
-import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { useAuthStore } from '@/stores/authStore';
 import { vehiclesService } from '@/services/vehiclesService';
+import { useAuthStore } from '@/stores/authStore';
 import { VehicleCase } from '@/types';
 
 interface VehicleCardProps {
@@ -65,7 +65,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onPress, onStatusUpd
 
   const handleStatusUpdate = () => {
     if (!nextAction) return;
-    
+
     Alert.alert(
       'Update Status',
       `Mark this vehicle as ${nextAction.label.toLowerCase()}?`,
@@ -87,10 +87,10 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onPress, onStatusUpd
     <TouchableOpacity style={styles.vehicleCard} onPress={onPress}>
       <View style={styles.vehicleHeader}>
         <View style={styles.vehicleTitleRow}>
-          <IconSymbol 
-            name={getStatusIcon()} 
-            size={20} 
-            color={getStatusColor()} 
+          <IconSymbol
+            name={getStatusIcon()}
+            size={20}
+            color={getStatusColor()}
           />
           <View style={styles.vehicleInfo}>
             <Text style={styles.vehicleRegNo}>{vehicle.vehicle_reg_no}</Text>
@@ -113,11 +113,11 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onPress, onStatusUpd
         </View>
       )}
 
-      {vehicle.symptoms_observed && (
+      {vehicle.service_ticket?.customer_complaint && (
         <View style={styles.symptomsSection}>
-          <Text style={styles.sectionLabel}>Symptoms Observed:</Text>
+          <Text style={styles.sectionLabel}>Customer Complaint:</Text>
           <Text style={styles.symptomsText} numberOfLines={2}>
-            {vehicle.symptoms_observed}
+            {vehicle.service_ticket.customer_complaint}
           </Text>
         </View>
       )}
@@ -127,12 +127,6 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onPress, onStatusUpd
           <View style={styles.metaRow}>
             <IconSymbol name="calendar" size={14} color="#6B7280" />
             <Text style={styles.metaText}>{vehicle.vehicle_year}</Text>
-          </View>
-        )}
-        {vehicle.vehicle_color && (
-          <View style={styles.metaRow}>
-            <IconSymbol name="paintbrush" size={14} color="#6B7280" />
-            <Text style={styles.metaText}>{vehicle.vehicle_color}</Text>
           </View>
         )}
         {vehicle.estimated_cost && (
@@ -225,7 +219,10 @@ export default function TechnicianVehiclesScreen() {
   };
 
   const handleVehiclePress = (vehicleId: string) => {
-    router.push(`/vehicles/${vehicleId}`);
+    const vehicle = vehicles?.find(v => v.id === vehicleId);
+    if (vehicle?.service_ticket_id) {
+      router.push(`/jobcards/${vehicle.service_ticket_id}`);
+    }
   };
 
   const handleStatusUpdate = (id: string, status: string, notes?: string) => {

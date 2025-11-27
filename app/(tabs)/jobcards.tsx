@@ -1,28 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  RefreshControl,
-  Modal,
-  Platform,
-  StatusBar,
-} from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  Modal,
+  Platform,
+  RefreshControl,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
-import { ThemedView } from '@/components/themed-view';
-import { ThemedText } from '@/components/themed-text';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { jobCardsService } from '@/services/jobCardsService';
-import { ServiceTicket, TicketFilters } from '@/types';
-import { useAuthStore } from '@/stores/authStore';
 import { EmptySearchResults, StatusIcon } from '@/components/empty-states';
-import { HeroImageCard } from '@/components/image-card';
-import { BrandColors, Colors, Typography, Spacing, BorderRadius, ComponentStyles, StatusColors, PriorityColors, Shadows } from '@/constants/design-system';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BorderRadius, BrandColors, Colors, ComponentStyles, PriorityColors, Spacing, StatusColors, Typography } from '@/constants/design-system';
+import { jobCardsService } from '@/services/jobCardsService';
+import { useAuthStore } from '@/stores/authStore';
+import { ServiceTicket, TicketFilters } from '@/types';
 
 interface FilterModalProps {
   visible: boolean;
@@ -116,9 +115,9 @@ const FilterModal: React.FC<FilterModalProps> = ({
                       localFilters.priority === priority && styles.filterOptionTextSelected,
                     ]}
                   >
-                    {priority === 'all' 
-                      ? 'All Priority' 
-                      : priority === '1' 
+                    {priority === 'all'
+                      ? 'All Priority'
+                      : priority === '1'
                         ? 'High Priority'
                         : priority === '2'
                           ? 'Medium Priority'
@@ -173,19 +172,21 @@ interface JobCardItemProps {
   bulkMode?: boolean;
   isSelected?: boolean;
   onSelect?: (ticketId: string) => void;
+  getTechnicianName: (technicianId: string) => string;
 }
 
-const JobCardItem: React.FC<JobCardItemProps> = ({ 
-  ticket, 
-  onPress, 
+const JobCardItem: React.FC<JobCardItemProps> = ({
+  ticket,
+  onPress,
   onAssignPress,
   bulkMode = false,
   isSelected = false,
-  onSelect
+  onSelect,
+  getTechnicianName
 }) => {
   const dueDate = ticket.due_date || ticket.dueDate;
   const isOverdue = dueDate && new Date(dueDate) < new Date();
-  const isDueToday = dueDate && 
+  const isDueToday = dueDate &&
     new Date(dueDate).toDateString() === new Date().toDateString();
 
   const getStatusColor = () => {
@@ -218,8 +219,8 @@ const JobCardItem: React.FC<JobCardItemProps> = ({
   };
 
   return (
-    <TouchableOpacity 
-      style={[styles.jobCardItem, isSelected && styles.jobCardItemSelected]} 
+    <TouchableOpacity
+      style={[styles.jobCardItem, isSelected && styles.jobCardItemSelected]}
       onPress={() => {
         if (bulkMode && onSelect) {
           onSelect(ticket.id);
@@ -232,10 +233,10 @@ const JobCardItem: React.FC<JobCardItemProps> = ({
         <View style={styles.jobCardTitleRow}>
           {bulkMode && (
             <View style={styles.selectionCheckbox}>
-              <IconSymbol 
-                name={isSelected ? "checkmark.circle.fill" : "circle"} 
-                size={20} 
-                color={isSelected ? Colors.primary[600] : Colors.neutral[400]} 
+              <IconSymbol
+                name={isSelected ? "checkmark.circle.fill" : "circle"}
+                size={20}
+                color={isSelected ? Colors.primary[600] : Colors.neutral[400]}
               />
             </View>
           )}
@@ -272,7 +273,7 @@ const JobCardItem: React.FC<JobCardItemProps> = ({
             </Text>
           </View>
         </View>
-        
+
         {/* Vehicle Info */}
         {(ticket.vehicle_reg_no || ticket.vehicleRegNo) && (
           <View style={styles.jobCardMetaRow}>
@@ -280,13 +281,13 @@ const JobCardItem: React.FC<JobCardItemProps> = ({
             <Text style={styles.jobCardMetaValue}>{ticket.vehicle_reg_no || ticket.vehicleRegNo}</Text>
           </View>
         )}
-        
+
         {/* Assigned To - Enhanced visibility */}
         {(ticket.assigned_to || ticket.assignedTo) && (
           <View style={styles.assignedRow}>
             <View style={styles.assignedInfo}>
               <Text style={styles.assignedLabel}>Assigned to</Text>
-              <Text style={styles.assignedName}>{ticket.assigned_to || ticket.assignedTo}</Text>
+              <Text style={styles.assignedName}>{getTechnicianName(ticket.assigned_to || ticket.assignedTo || '')}</Text>
             </View>
           </View>
         )}
@@ -304,10 +305,10 @@ const JobCardItem: React.FC<JobCardItemProps> = ({
             {new Date(ticket.created_at || ticket.createdAt).toLocaleDateString()}
           </Text>
         </View>
-        
+
         {/* Assign Technician Button - show for unassigned tickets */}
         {!(ticket.assigned_to || ticket.assignedTo) && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.assignButton}
             onPress={(e) => {
               e.stopPropagation();
@@ -339,6 +340,20 @@ export default function JobCardsScreen() {
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedTickets, setSelectedTickets] = useState<string[]>([]);
 
+  // Fetch technicians for name lookup
+  const { data: technicians = [] } = useQuery({
+    queryKey: ['technicians'],
+    queryFn: () => jobCardsService.getTechnicians(),
+  });
+
+  // Helper function to get technician name
+  const getTechnicianName = (technicianId: string): string => {
+    if (!technicianId) return 'Unassigned';
+    const technician = technicians.find(t => t.id === technicianId);
+    if (!technician) return technicianId;
+    return `${technician.first_name || ''} ${technician.last_name || ''}`.trim() || technician.email || technicianId;
+  };
+
   // Handle URL parameters for filtering
   useEffect(() => {
     if (params.filter) {
@@ -351,18 +366,16 @@ export default function JobCardsScreen() {
 
       switch (filterType) {
         case 'overdue':
-          // For overdue, we'll need to add this to the query logic
-          newFilters = { ...newFilters, status: 'all' }; // Will be handled in query
+          newFilters = { ...newFilters, dueDate: 'overdue' };
           break;
         case 'today':
-          // For due today, we'll need to add this to the query logic
-          newFilters = { ...newFilters, status: 'all' }; // Will be handled in query
+          newFilters = { ...newFilters, dueDate: 'today' };
           break;
         case 'unassigned':
           newFilters = { ...newFilters, assignedTo: 'unassigned' };
           break;
         case 'in_progress':
-          newFilters = { ...newFilters, status: 'in_progress' };
+          newFilters = { ...newFilters, statusGroup: 'active' };
           break;
         case 'reported':
           newFilters = { ...newFilters, status: 'reported' };
@@ -388,17 +401,6 @@ export default function JobCardsScreen() {
     queryKey: ['job-cards', filters, searchQuery, page, params.filter],
     queryFn: () => {
       const queryFilters = { ...filters, search: searchQuery };
-      
-      // Add special filters from URL params
-      if (params.filter) {
-        const filterType = params.filter as string;
-        if (filterType === 'overdue') {
-          queryFilters.dueDate = 'overdue';
-        } else if (filterType === 'today') {
-          queryFilters.dueDate = 'today';
-        }
-      }
-      
       return jobCardsService.getTickets(queryFilters, page, 20);
     },
     refetchInterval: 30000,
@@ -436,13 +438,13 @@ export default function JobCardsScreen() {
         <View style={styles.activeFilterIndicator}>
           <View style={styles.activeFilterContainer}>
             <Text style={styles.activeFilterText}>
-              Showing: {params.filter === 'overdue' ? 'Overdue Tasks' : 
-                       params.filter === 'today' ? 'Due Today' :
-                       params.filter === 'unassigned' ? 'Unassigned Tasks' :
-                       params.filter === 'in_progress' ? 'In Progress' :
-                       params.filter.replace('_', ' ')}
+              Showing: {params.filter === 'overdue' ? 'Overdue Tasks' :
+                params.filter === 'today' ? 'Due Today' :
+                  params.filter === 'unassigned' ? 'Unassigned Tasks' :
+                    params.filter === 'in_progress' ? 'Active Tasks' :
+                      (typeof params.filter === 'string' ? params.filter.replace('_', ' ') : '')}
             </Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => {
                 router.replace('/jobcards');
                 setFilters({ status: 'all', priority: 'all', assignedTo: 'all' });
@@ -472,7 +474,7 @@ export default function JobCardsScreen() {
             </TouchableOpacity>
           )}
         </View>
-        
+
         {/* Admin Bulk Actions */}
         {user?.role === 'admin' && (
           <TouchableOpacity
@@ -485,7 +487,7 @@ export default function JobCardsScreen() {
             <IconSymbol name="checkmark.circle" size={20} color={bulkMode ? Colors.white : Colors.neutral[500]} />
           </TouchableOpacity>
         )}
-        
+
         {/* Filter Button */}
         <TouchableOpacity
           style={styles.searchFilterButton}
@@ -550,6 +552,7 @@ export default function JobCardsScreen() {
                 bulkMode={bulkMode}
                 isSelected={selectedTickets.includes(ticket.id)}
                 onSelect={handleBulkSelect}
+                getTechnicianName={getTechnicianName}
               />
             ))}
             {!isLoading && ticketsData?.data.length === 0 && (

@@ -1,15 +1,13 @@
-import { Tabs, Redirect } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
-import { View, Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Logo } from '@/components/logo';
-import { Colors as LegacyColors } from '@/constants/theme';
-import { Colors, Typography, Spacing, ComponentStyles, BrandColors } from '@/constants/design-system';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BrandColors, Colors, ComponentStyles, Spacing, Typography } from '@/constants/design-system';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuthStore } from '@/stores/authStore';
-import { canAccessNavigation, isManagerLevel, isFloorManager, isFrontDeskManager } from '@/lib/permissions';
 
 // Define common screen options to avoid repetition
 // Uses BrandColors for app-wide chrome
@@ -72,7 +70,8 @@ const getAllHiddenScreens = () => [
   'technician',
   'technician-jobcards',
   'technician-profile',
-  // technician-vehicles and technician-batteries are now available for technicians
+  'technician-vehicles',
+  'technician-batteries',
   'camera', // Legacy - replaced by media-hub
   'media-library', // Legacy - replaced by media-hub
   'record-audio', // Legacy - replaced by media-hub

@@ -1,23 +1,23 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-  Alert,
-} from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import React from 'react';
+import {
+  Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
-import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BorderRadius, Colors, ComponentStyles, Shadows, Spacing, Typography } from '@/constants/design-system';
+import { jobCardsService } from '@/services/jobCardsService';
 import { useAuthStore } from '@/stores/authStore';
 import { useLocationStore } from '@/stores/locationStore';
-import { jobCardsService } from '@/services/jobCardsService';
-import { Colors, Typography, Spacing, BorderRadius, ComponentStyles, Shadows } from '@/constants/design-system';
 
 interface StatCardProps {
   title: string;
@@ -52,18 +52,20 @@ const StatCard: React.FC<StatCardProps> = ({
 
 interface ProfileItemProps {
   icon: string;
-  label: string;
-  value: string;
+  title: string;
+  subtitle?: string;
   onPress?: () => void;
   showChevron?: boolean;
+  destructive?: boolean;
 }
 
 const ProfileItem: React.FC<ProfileItemProps> = ({
   icon,
-  label,
-  value,
+  title,
+  subtitle,
   onPress,
-  showChevron = false,
+  showChevron = true,
+  destructive = false,
 }) => (
   <TouchableOpacity
     style={styles.profileItem}
@@ -73,15 +75,15 @@ const ProfileItem: React.FC<ProfileItemProps> = ({
   >
     <View style={styles.profileItemLeft}>
       <View style={styles.profileItemIcon}>
-        <IconSymbol name={icon} size={20} color="#6B7280" />
+        <IconSymbol name={icon} size={24} color={destructive ? Colors.error[600] : Colors.neutral[900]} />
       </View>
       <View style={styles.profileItemContent}>
-        <Text style={styles.profileItemLabel}>{label}</Text>
-        <Text style={styles.profileItemValue}>{value}</Text>
+        <Text style={[styles.profileItemTitle, destructive && styles.destructiveText]}>{title}</Text>
+        {subtitle && <Text style={styles.profileItemSubtitle}>{subtitle}</Text>}
       </View>
     </View>
     {showChevron && onPress && (
-      <IconSymbol name="chevron.right" size={16} color="#9CA3AF" />
+      <IconSymbol name="chevron.right" size={20} color={Colors.neutral[400]} />
     )}
   </TouchableOpacity>
 );
@@ -99,34 +101,33 @@ export default function TechnicianProfileScreen() {
     queryKey: ['technician-stats', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
-      
+
       // Get all tickets assigned to this technician
       const response = await jobCardsService.getTickets(
         { assignedTo: user.id, status: 'all' },
         1,
         100
       );
-      
+
       const tickets = response.data;
       const now = new Date();
       const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      
       return {
         totalAssigned: tickets.length,
         completed: tickets.filter(t => t.status === 'completed').length,
         inProgress: tickets.filter(t => t.status === 'in_progress').length,
         pending: tickets.filter(t => t.status === 'assigned').length,
-        completedThisWeek: tickets.filter(t => 
-          t.status === 'completed' && 
-          new Date(t.updated_at || t.updatedAt || t.created_at || t.createdAt) >= startOfWeek
+        completedThisWeek: tickets.filter(t =>
+          t.status === 'completed' &&
+          new Date(t.updated_at || t.created_at).getTime() >= startOfWeek.getTime()
         ).length,
-        completedThisMonth: tickets.filter(t => 
-          t.status === 'completed' && 
-          new Date(t.updated_at || t.updatedAt || t.created_at || t.createdAt) >= startOfMonth
+        completedThisMonth: tickets.filter(t =>
+          t.status === 'completed' &&
+          new Date(t.updated_at || t.created_at).getTime() >= startOfMonth.getTime()
         ).length,
-        avgCompletionTime: '2.3 days', // This would be calculated from actual data
-        efficiency: '94%', // This would be calculated from actual performance metrics
+        avgCompletionTime: '2.3 days',
+        efficiency: '94%',
       };
     },
     enabled: !!user?.id,
@@ -257,32 +258,24 @@ export default function TechnicianProfileScreen() {
           </View>
         </View>
 
-        {/* This Week/Month Stats */}
+        {/* Quick Actions */}
         <View style={styles.section}>
           <ThemedText type="subtitle" style={styles.sectionTitle}>
-            Recent Performance
+            Quick Actions
           </ThemedText>
-          <View style={styles.performanceCard}>
-            <View style={styles.performanceRow}>
-              <View style={styles.performanceStat}>
-                <Text style={styles.performanceValue}>
-                  {stats?.completedThisWeek || 0}
-                </Text>
-                <Text style={styles.performanceLabel}>This Week</Text>
-              </View>
-              <View style={styles.performanceStat}>
-                <Text style={styles.performanceValue}>
-                  {stats?.completedThisMonth || 0}
-                </Text>
-                <Text style={styles.performanceLabel}>This Month</Text>
-              </View>
-              <View style={styles.performanceStat}>
-                <Text style={styles.performanceValue}>
-                  {stats?.efficiency || 'N/A'}
-                </Text>
-                <Text style={styles.performanceLabel}>Efficiency</Text>
-              </View>
-            </View>
+          <View style={styles.listContainer}>
+            <ProfileItem
+              icon="doc.text.magnifyingglass"
+              title="View My Job Cards"
+              subtitle="See all assigned tasks"
+              onPress={() => router.push('/(tabs)/technician-jobcards')}
+            />
+            <ProfileItem
+              icon="bell.fill"
+              title="Notifications"
+              subtitle="Check alerts and updates"
+              onPress={() => router.push('/(tabs)/notifications')}
+            />
           </View>
         </View>
 
@@ -291,70 +284,34 @@ export default function TechnicianProfileScreen() {
           <ThemedText type="subtitle" style={styles.sectionTitle}>
             Profile Information
           </ThemedText>
-          <View style={styles.profileCard}>
+          <View style={styles.listContainer}>
             <ProfileItem
               icon="person.fill"
-              label="Name"
-              value={userName}
+              title="Name"
+              subtitle={userName}
             />
             <ProfileItem
               icon="envelope.fill"
-              label="Email"
-              value={user?.email || 'N/A'}
+              title="Email"
+              subtitle={user?.email || 'N/A'}
             />
             <ProfileItem
               icon="briefcase.fill"
-              label="Role"
-              value="Technician"
+              title="Role"
+              subtitle="Technician"
             />
             <ProfileItem
               icon="calendar.badge.plus"
-              label="Member Since"
-              value={user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
+              title="Member Since"
+              subtitle={user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
             />
             {activeLocation && (
               <ProfileItem
                 icon="location.fill"
-                label="Location"
-                value={activeLocation.name}
+                title="Location"
+                subtitle={activeLocation.name}
               />
             )}
-          </View>
-        </View>
-
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>
-            Quick Actions
-          </ThemedText>
-          <View style={styles.actionsCard}>
-            <TouchableOpacity
-              style={styles.actionItem}
-              onPress={() => router.push('/(tabs)/technician-jobcards')}
-            >
-              <View style={styles.actionIconContainer}>
-                <IconSymbol name="doc.text.magnifyingglass" size={24} color="#3B82F6" />
-              </View>
-              <View style={styles.actionContent}>
-                <Text style={styles.actionTitle}>View My Job Cards</Text>
-                <Text style={styles.actionSubtitle}>See all assigned tasks</Text>
-              </View>
-              <IconSymbol name="chevron.right" size={16} color="#9CA3AF" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionItem}
-              onPress={() => router.push('/(tabs)/notifications')}
-            >
-              <View style={styles.actionIconContainer}>
-                <IconSymbol name="bell.fill" size={24} color="#F59E0B" />
-              </View>
-              <View style={styles.actionContent}>
-                <Text style={styles.actionTitle}>Notifications</Text>
-                <Text style={styles.actionSubtitle}>Check alerts and updates</Text>
-              </View>
-              <IconSymbol name="chevron.right" size={16} color="#9CA3AF" />
-            </TouchableOpacity>
           </View>
         </View>
 
@@ -363,30 +320,36 @@ export default function TechnicianProfileScreen() {
           <ThemedText type="subtitle" style={styles.sectionTitle}>
             Settings
           </ThemedText>
-          <View style={styles.settingsCard}>
+          <View style={styles.listContainer}>
             <ProfileItem
               icon="lock.fill"
-              label="Change Password"
-              value="Update your password"
+              title="Change Password"
+              subtitle="Update your password"
               onPress={handleChangePassword}
-              showChevron
             />
             <ProfileItem
               icon="bell.badge.fill"
-              label="Notifications"
-              value="Manage notification preferences"
+              title="Notifications"
+              subtitle="Manage notification preferences"
               onPress={handleNotificationSettings}
-              showChevron
             />
           </View>
         </View>
 
         {/* Sign Out */}
         <View style={styles.section}>
-          <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-            <IconSymbol name="arrow.right.square" size={20} color="#EF4444" />
-            <Text style={styles.signOutText}>Sign Out</Text>
-          </TouchableOpacity>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>
+            Account
+          </ThemedText>
+          <View style={styles.listContainer}>
+            <ProfileItem
+              icon="arrow.right.square.fill"
+              title="Sign Out"
+              subtitle="Log out of your account"
+              onPress={handleSignOut}
+              destructive
+            />
+          </View>
         </View>
       </ScrollView>
     </ThemedView>
@@ -455,12 +418,13 @@ const styles = StyleSheet.create({
   },
   section: {
     padding: Spacing.lg,
+    paddingBottom: 0,
   },
   sectionTitle: {
     fontSize: Typography.fontSize.lg,
-    fontFamily: Typography.fontFamily.semibold,
+    fontFamily: Typography.fontFamily.bold,
     color: Colors.neutral[900],
-    marginBottom: Spacing.base,
+    marginBottom: Spacing.md,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -497,40 +461,20 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.regular,
     color: Colors.neutral[500],
   },
-  performanceCard: {
-    ...ComponentStyles.card,
-    padding: Spacing.lg,
-  },
-  performanceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  performanceStat: {
-    alignItems: 'center',
-  },
-  performanceValue: {
-    fontSize: Typography.fontSize['2xl'],
-    fontFamily: Typography.fontFamily.bold,
-    color: Colors.neutral[900],
-  },
-  performanceLabel: {
-    fontSize: Typography.fontSize.xs,
-    fontFamily: Typography.fontFamily.regular,
-    color: Colors.neutral[600],
-    marginTop: Spacing.xs,
-  },
-  profileCard: {
-    ...ComponentStyles.card,
-    padding: 0,
+  listContainer: {
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.lg,
     overflow: 'hidden',
+    ...Shadows.sm,
   },
   profileItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: Spacing.base,
+    padding: Spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: Colors.neutral[100],
+    backgroundColor: Colors.white,
   },
   profileItemLeft: {
     flexDirection: 'row',
@@ -538,83 +482,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileItemIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.neutral[100],
-    justifyContent: 'center',
+    width: 24,
     alignItems: 'center',
-    marginRight: Spacing.base,
+    marginRight: Spacing.md,
   },
   profileItemContent: {
     flex: 1,
   },
-  profileItemLabel: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.medium,
-    color: Colors.neutral[600],
-  },
-  profileItemValue: {
-    fontSize: Typography.fontSize.base,
-    fontFamily: Typography.fontFamily.regular,
-    color: Colors.neutral[900],
-    marginTop: 2,
-  },
-  actionsCard: {
-    ...ComponentStyles.card,
-    padding: 0,
-    overflow: 'hidden',
-  },
-  actionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: Spacing.base,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.neutral[100],
-  },
-  actionIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.neutral[100],
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: Spacing.base,
-  },
-  actionContent: {
-    flex: 1,
-  },
-  actionTitle: {
-    fontSize: Typography.fontSize.base,
-    fontFamily: Typography.fontFamily.medium,
-    color: Colors.neutral[900],
-  },
-  actionSubtitle: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.regular,
-    color: Colors.neutral[600],
-    marginTop: 2,
-  },
-  settingsCard: {
-    ...ComponentStyles.card,
-    padding: 0,
-    overflow: 'hidden',
-  },
-  signOutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.base,
-    gap: Spacing.sm,
-    borderWidth: 1,
-    borderColor: Colors.error[200],
-    ...Shadows.sm,
-  },
-  signOutText: {
+  profileItemTitle: {
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.semibold,
+    color: Colors.neutral[900],
+  },
+  profileItemSubtitle: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.neutral[500],
+    marginTop: 2,
+  },
+  destructiveText: {
     color: Colors.error[600],
   },
 });

@@ -1,16 +1,16 @@
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BorderRadius, BrandColors, Colors, Spacing, Typography } from '@/constants/design-system';
+import { MediaFilters, useMediaHubStore } from '@/stores/mediaHubStore';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  ScrollView,
   Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors, Typography, Spacing, BorderRadius, BrandColors } from '@/constants/design-system';
-import { MediaFilters, useMediaHubStore } from '@/stores/mediaHubStore';
 
 interface DateRangePickerProps {
   visible: boolean;
@@ -54,7 +54,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ visible, onClose, onS
               <IconSymbol name="xmark" size={20} color={Colors.neutral[600]} />
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.dateInputsContainer}>
             <View style={styles.dateInputGroup}>
               <Text style={styles.dateInputLabel}>From</Text>
@@ -66,7 +66,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ visible, onClose, onS
                 placeholderTextColor={Colors.neutral[400]}
               />
             </View>
-            
+
             <View style={styles.dateInputGroup}>
               <Text style={styles.dateInputLabel}>To</Text>
               <TextInput
@@ -78,13 +78,13 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({ visible, onClose, onS
               />
             </View>
           </View>
-          
+
           <View style={styles.datePickerFooter}>
             <TouchableOpacity style={styles.datePickerButton} onPress={handleClear}>
               <Text style={[styles.datePickerButtonText, { color: Colors.neutral[600] }]}>Clear</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.datePickerButton, styles.datePickerPrimaryButton]} 
+            <TouchableOpacity
+              style={[styles.datePickerButton, styles.datePickerPrimaryButton]}
               onPress={handleApply}
             >
               <Text style={[styles.datePickerButtonText, { color: Colors.white }]}>Apply</Text>
@@ -117,7 +117,6 @@ const MediaFilterBar: React.FC<MediaFilterBarProps> = ({ onFiltersChange }) => {
 
   const getActiveFiltersCount = () => {
     let count = 0;
-    if (filters.mediaType) count++;
     if (filters.ticketId) count++;
     if (filters.syncStatus) count++;
     if (filters.dateRange) count++;
@@ -125,12 +124,7 @@ const MediaFilterBar: React.FC<MediaFilterBarProps> = ({ onFiltersChange }) => {
     return count;
   };
 
-  const mediaTypeOptions = [
-    { value: undefined, label: 'All Types', icon: 'square.stack.3d.up.fill' },
-    { value: 'image', label: 'Photos', icon: 'photo.fill' },
-    { value: 'video', label: 'Videos', icon: 'video.fill' },
-    { value: 'audio', label: 'Audio', icon: 'waveform' },
-  ];
+
 
   const syncStatusOptions = [
     { value: undefined, label: 'All Status' },
@@ -168,40 +162,13 @@ const MediaFilterBar: React.FC<MediaFilterBarProps> = ({ onFiltersChange }) => {
       </View>
 
       {/* Filter Chips */}
-      <ScrollView 
-        horizontal 
+      <ScrollView
+        horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.filtersScroll}
         contentContainerStyle={styles.filtersScrollContent}
       >
-        {/* Media Type Filter */}
-        <View style={styles.filterGroup}>
-          <Text style={styles.filterGroupLabel}>Type</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {mediaTypeOptions.map((option) => (
-              <TouchableOpacity
-                key={option.label}
-                style={[
-                  styles.filterChip,
-                  filters.mediaType === option.value && styles.filterChipActive
-                ]}
-                onPress={() => updateFilter('mediaType', option.value)}
-              >
-                <IconSymbol 
-                  name={option.icon} 
-                  size={14} 
-                  color={filters.mediaType === option.value ? Colors.white : Colors.neutral[600]} 
-                />
-                <Text style={[
-                  styles.filterChipText,
-                  filters.mediaType === option.value && styles.filterChipTextActive
-                ]}>
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+
 
         {/* Sync Status Filter */}
         <View style={styles.filterGroup}>
@@ -218,11 +185,11 @@ const MediaFilterBar: React.FC<MediaFilterBarProps> = ({ onFiltersChange }) => {
               >
                 <View style={[
                   styles.syncStatusDot,
-                  { 
+                  {
                     backgroundColor: option.value === 'synced' ? Colors.success[500] :
-                                   option.value === 'pending' ? Colors.warning[500] :
-                                   option.value === 'failed' ? Colors.error[500] :
-                                   Colors.neutral[400]
+                      option.value === 'pending' ? Colors.warning[500] :
+                        option.value === 'failed' ? Colors.error[500] :
+                          Colors.neutral[400]
                   }
                 ]} />
                 <Text style={[
@@ -249,10 +216,10 @@ const MediaFilterBar: React.FC<MediaFilterBarProps> = ({ onFiltersChange }) => {
                 ]}
                 onPress={() => updateFilter('ticketId', option.value)}
               >
-                <IconSymbol 
-                  name={option.value === 'unassigned' ? 'exclamationmark.circle' : 'doc.text'} 
-                  size={12} 
-                  color={filters.ticketId === option.value ? Colors.white : Colors.neutral[600]} 
+                <IconSymbol
+                  name={option.value === 'unassigned' ? 'exclamationmark.circle' : 'doc.text'}
+                  size={12}
+                  color={filters.ticketId === option.value ? Colors.white : Colors.neutral[600]}
                 />
                 <Text style={[
                   styles.filterChipText,
@@ -273,10 +240,10 @@ const MediaFilterBar: React.FC<MediaFilterBarProps> = ({ onFiltersChange }) => {
           ]}
           onPress={() => setShowDatePicker(true)}
         >
-          <IconSymbol 
-            name="calendar" 
-            size={14} 
-            color={filters.dateRange ? Colors.white : Colors.neutral[600]} 
+          <IconSymbol
+            name="calendar"
+            size={14}
+            color={filters.dateRange ? Colors.white : Colors.neutral[600]}
           />
           <Text style={[
             styles.filterChipText,

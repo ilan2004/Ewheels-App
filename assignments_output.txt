@@ -1,0 +1,13 @@
+Total Battery Cases: 5
+Linked Tickets: 5
+Ticket T-20251126-591 (ID: 04c57771-5fb9-490f-8729-787b9556bd38) is assigned to: 92ee30c8-f545-44c3-87f2-8dd4a9c52de6
+  Linked Battery Case: null
+Ticket T-20251126-209 (ID: 4a724820-b4df-4b0e-ae57-0e6c80575170) is assigned to: 92ee30c8-f545-44c3-87f2-8dd4a9c52de6
+  Linked Battery Case: null
+Ticket T-20251126-131 (ID: 85c41283-659d-435b-9fbf-634715cda326) is assigned to: 92ee30c8-f545-44c3-87f2-8dd4a9c52de6
+  Linked Battery Case: null
+Ticket T-20251126-726 (ID: 9139aad6-6d33-4b58-bab5-3ce9496de930) is assigned to: 92ee30c8-f545-44c3-87f2-8dd4a9c52de6
+  Linked Battery Case: null
+Ticket T-20251126-518 (ID: fa446eaa-a87a-434a-adc9-e9f74f229c8f) is assigned to: 92ee30c8-f545-44c3-87f2-8dd4a9c52de6
+  Linked Battery Case: 79047b4e-ed49-4be7-b072-ebe2068e0286
+Orphaned Tickets (referencing non-existent cases): 1

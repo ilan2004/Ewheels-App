@@ -56,7 +56,7 @@ export class FloorManagerService {
   private getMockTechnicians(): TechnicianOverview[] {
     const hour = new Date().getHours();
     const workingHours = hour >= 8 && hour <= 18;
-    
+
     return [
       {
         id: 'tech_001',
@@ -68,7 +68,7 @@ export class FloorManagerService {
         tickets: this.getMockTicketsForTechnician('tech_001', workingHours ? 6 : 5),
       },
       {
-        id: 'tech_002', 
+        id: 'tech_002',
         name: 'Priya Sharma',
         email: 'priya.sharma@evwheels.com',
         activeTickets: workingHours ? 8 : 7,
@@ -79,7 +79,7 @@ export class FloorManagerService {
       {
         id: 'tech_003',
         name: 'Amit Patel',
-        email: 'amit.patel@evwheels.com', 
+        email: 'amit.patel@evwheels.com',
         activeTickets: workingHours ? 5 : 4,
         capacity: 8,
         oldestTicketDays: 1,
@@ -128,20 +128,23 @@ export class FloorManagerService {
     ];
 
     const numTickets = activeTicketCount || 3;
-    
+
     return Array.from({ length: numTickets }, (_, index) => {
       const template = ticketTemplates[index % ticketTemplates.length];
       const daysAgo = Math.floor(Math.random() * 10) + 1;
       const createdDate = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
-      
+
       return {
         id: `${technicianId}_ticket_${String(index + 1).padStart(3, '0')}`,
         ticketNumber: `EV-${new Date().getFullYear()}-${String(Date.now() + index).slice(-6)}`,
+        ticket_number: `EV-${new Date().getFullYear()}-${String(Date.now() + index).slice(-6)}`,
         symptom: template.symptom,
+        customer_complaint: template.symptom,
         description: `Customer complaint: ${template.symptom}. Assigned for inspection and repair.`,
         priority: template.priority,
         status: 'in_progress' as const,
         customerId: `customer_${index + 1}`,
+        customer_id: `customer_${index + 1}`,
         customer: {
           id: `customer_${index + 1}`,
           name: template.customer,
@@ -151,18 +154,28 @@ export class FloorManagerService {
           vehicleRegNo: template.vehicle,
           createdAt: createdDate.toISOString(),
           updatedAt: new Date().toISOString(),
+          created_at: createdDate.toISOString(),
+          updated_at: new Date().toISOString(),
         },
         vehicleRegNo: template.vehicle,
+        vehicle_reg_no: template.vehicle,
         assignedTo: technicianId,
+        assigned_to: technicianId,
         assignedToId: technicianId,
         assignedBy: 'floor_manager_001',
         assignedAt: new Date(createdDate.getTime() + Math.random() * 24 * 60 * 60 * 1000).toISOString(),
+        assigned_at: new Date(createdDate.getTime() + Math.random() * 24 * 60 * 60 * 1000).toISOString(),
         createdAt: createdDate.toISOString(),
+        created_at: createdDate.toISOString(),
         updatedAt: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         createdBy: 'system',
+        created_by: 'system',
         updatedBy: 'system',
+        updated_by: 'system',
         locationId: 'location_001',
         dueDate: new Date(Date.now() + (Math.random() * 5 + 1) * 24 * 60 * 60 * 1000).toISOString(),
+        due_date: new Date(Date.now() + (Math.random() * 5 + 1) * 24 * 60 * 60 * 1000).toISOString(),
       };
     });
   }
@@ -193,24 +206,24 @@ export class FloorManagerService {
         { count: dueTodayCount },
         { count: overdueCount },
       ] = await Promise.all([
-        // Unassigned tickets
+        // Unassigned tickets - any ticket not assigned and not completed/closed
         buildQuery(
           supabase
             .from('service_tickets')
             .select('id', { count: 'exact', head: true })
             .is('assigned_to', null)
-            .in('status', ['reported', 'triaged'])
+            .not('status', 'in', '(completed,delivered,closed,cancelled)')
         ),
-        
-        // In progress tickets  
+
+        // In progress/Assigned tickets  
         buildQuery(
           supabase
             .from('service_tickets')
             .select('id', { count: 'exact', head: true })
-            .eq('status', 'in_progress')
+            .in('status', ['assigned', 'in_progress'])
             .not('assigned_to', 'is', null)
         ),
-        
+
         // Due today
         buildQuery(
           supabase
@@ -220,7 +233,7 @@ export class FloorManagerService {
             .lt('due_date', new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString())
             .not('status', 'in', '(completed,delivered,closed)')
         ),
-        
+
         // Overdue
         buildQuery(
           supabase
@@ -237,8 +250,8 @@ export class FloorManagerService {
         .select('user_id', { count: 'exact', head: true })
         .eq('role', 'technician');
 
-      const avgTicketsPerTechnician = technicianCount && inProgressCount 
-        ? Math.round((inProgressCount || 0) / technicianCount) 
+      const avgTicketsPerTechnician = technicianCount && inProgressCount
+        ? Math.round((inProgressCount || 0) / technicianCount)
         : 0;
 
       return {
@@ -251,7 +264,15 @@ export class FloorManagerService {
       };
     } catch (error) {
       console.error('Error fetching floor manager stats:', error);
-      return this.getMockStats();
+      // Return zeroed stats instead of mock data on error to avoid confusion
+      return {
+        unassignedTickets: 0,
+        inProgressTickets: 0,
+        dueToday: 0,
+        overdue: 0,
+        totalTechnicians: 0,
+        avgTicketsPerTechnician: 0,
+      };
     }
   }
 
@@ -270,7 +291,7 @@ export class FloorManagerService {
 
       if (roleError) {
         console.warn('Error fetching technician roles:', roleError);
-        return this.getMockTechnicians();
+        return [];
       }
 
       if (!technicianRoles?.length) {
@@ -287,7 +308,7 @@ export class FloorManagerService {
 
       if (profileError) {
         console.warn('Error fetching technician profiles:', profileError);
-        return this.getMockTechnicians();
+        return [];
       }
 
       if (!technicians?.length) {
@@ -301,7 +322,7 @@ export class FloorManagerService {
             .from('service_tickets')
             .select('id, assigned_at, status')
             .eq('assigned_to', tech.user_id)
-            .eq('status', 'in_progress'); // Only use existing status value
+            .in('status', ['assigned', 'in_progress']);
 
           // Apply location filtering if needed
           if (locationId) {
@@ -315,14 +336,14 @@ export class FloorManagerService {
           }
 
           const activeTickets = tickets?.length || 0;
-          
+
           // Calculate oldest ticket days
           let oldestTicketDays = 0;
           if (tickets?.length) {
             const oldestAssignment = tickets
               .filter(t => t.assigned_at)
               .sort((a, b) => new Date(a.assigned_at!).getTime() - new Date(b.assigned_at!).getTime())[0];
-            
+
             if (oldestAssignment?.assigned_at) {
               const assignedDate = new Date(oldestAssignment.assigned_at);
               const today = new Date();
@@ -344,7 +365,7 @@ export class FloorManagerService {
       return technicianOverviews;
     } catch (error) {
       console.error('Error fetching technician overview:', error);
-      return this.getMockTechnicians();
+      return [];
     }
   }
 
@@ -415,7 +436,7 @@ export class FloorManagerService {
 
     try {
       const now = new Date().toISOString();
-      
+
       // Update tickets with assignment
       const { error } = await supabase
         .from('service_tickets')
@@ -454,7 +475,7 @@ export class FloorManagerService {
 
     try {
       const now = new Date().toISOString();
-      
+
       const { error } = await supabase
         .from('service_tickets')
         .update({
@@ -522,7 +543,7 @@ export class FloorManagerService {
           customer:customers(*)
         `)
         .eq('assigned_to', technicianId)
-        .eq('status', 'in_progress') // Only use existing status value
+        .in('status', ['assigned', 'in_progress'])
         .order('assigned_at', { ascending: true });
 
       if (locationId) {
@@ -536,7 +557,7 @@ export class FloorManagerService {
       }
 
       const activeTickets = tickets?.length || 0;
-      
+
       // Calculate oldest ticket days
       let oldestTicketDays = 0;
       if (tickets?.length) {

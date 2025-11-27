@@ -1,41 +1,27 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  ScrollView,
-  Dimensions,
-} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Slider from '@react-native-community/slider';
 import {
   useAudioPlayer,
   useAudioPlayerStatus,
 } from 'expo-audio';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LinearGradient } from 'expo-linear-gradient';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors, Typography, Spacing } from '@/constants/design-system';
+import { BorderRadius, BrandColors, Colors, Shadows, Spacing, Typography } from '@/constants/design-system';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 const RECORDING_NAMES_KEY = 'recordingNames';
-
-/**
- * Enhanced Recording Player Screen
- * 
- * Features:
- * - Gradient header with progress indicator
- * - Visual waveform representation
- * - Enhanced playback controls with skip buttons
- * - Volume control with visual feedback
- * - Improved name input with save status
- * - Card-based layout with shadows
- * - Scrollable content for better mobile experience
- */
 
 export default function RecordingPlayerScreen() {
   const router = useRouter();
@@ -61,10 +47,8 @@ export default function RecordingPlayerScreen() {
 
   useEffect(() => {
     if (uri) {
-      // Ensure the player has the correct source
       player.replace({ uri });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uri]);
 
   useEffect(() => {
@@ -117,195 +101,169 @@ export default function RecordingPlayerScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <View style={styles.container}>
       {/* Header */}
-      <LinearGradient
-        colors={[Colors.primary[600], Colors.primary[700]]}
-        style={styles.headerGradient}
-      >
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
-            <IconSymbol name="chevron.left" size={24} color={Colors.white} />
-          </TouchableOpacity>
-          <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Voice Recording</Text>
-            {duration > 0 && (
-              <Text style={styles.headerSubtitle}>
-                {formattedTimes.total} duration
-              </Text>
-            )}
-          </View>
-        </View>
-        
-        {/* Progress indicator */}
-        {duration > 0 && (
-          <View style={styles.progressContainer}>
-            <View 
-              style={[
-                styles.progressBar, 
-                { width: `${(currentTime / duration) * 100}%` }
-              ]} 
-            />
-          </View>
-        )}
-      </LinearGradient>
-
-      {/* Waveform Visualization */}
-      <View style={styles.waveformCard}>
-        <View style={styles.waveformContainer}>
-          {Array.from({ length: 40 }).map((_, index) => {
-            const height = Math.random() * 40 + 10;
-            const isActive = currentTime > 0 && (index / 40) <= (currentTime / Math.max(duration, 1));
-            return (
-              <View
-                key={index}
-                style={[
-                  styles.waveformBar,
-                  {
-                    height,
-                    backgroundColor: isActive ? Colors.primary[500] : Colors.neutral[300],
-                  },
-                ]}
-              />
-            );
-          })}
-        </View>
-        
-        {/* Time display */}
-        <View style={styles.timeContainer}>
-          <Text style={styles.currentTime}>{formattedTimes.current}</Text>
-          <Text style={styles.totalTime}>-{formatDuration(duration - currentTime)}</Text>
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
+          <IconSymbol name="chevron.left" size={24} color={BrandColors.ink} />
+        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Voice Recording</Text>
+          {duration > 0 && (
+            <Text style={styles.headerSubtitle}>
+              {formattedTimes.total} duration
+            </Text>
+          )}
         </View>
       </View>
 
-      {/* Main Controls */}
-      <View style={styles.controlsCard}>
-        {/* Playback Slider */}
-        <View style={styles.sliderContainer}>
-          <Slider
-            style={styles.mainSlider}
-            minimumValue={0}
-            maximumValue={Math.max(duration || 0, 1)}
-            value={currentTime}
-            minimumTrackTintColor={Colors.primary[600]}
-            maximumTrackTintColor={Colors.neutral[200]}
-            thumbTintColor={Colors.primary[600]}
-            onSlidingComplete={handleSeek}
-          />
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Waveform Visualization */}
+        <View style={styles.card}>
+          <View style={styles.waveformContainer}>
+            {Array.from({ length: 40 }).map((_, index) => {
+              const height = Math.random() * 40 + 10;
+              const isActive = currentTime > 0 && (index / 40) <= (currentTime / Math.max(duration, 1));
+              return (
+                <View
+                  key={index}
+                  style={[
+                    styles.waveformBar,
+                    {
+                      height,
+                      backgroundColor: isActive ? BrandColors.primary : Colors.neutral[300],
+                    },
+                  ]}
+                />
+              );
+            })}
+          </View>
+
+          {/* Time display */}
+          <View style={styles.timeContainer}>
+            <Text style={styles.currentTime}>{formattedTimes.current}</Text>
+            <Text style={styles.totalTime}>-{formatDuration(duration - currentTime)}</Text>
+          </View>
         </View>
 
-        {/* Play Button */}
-        <View style={styles.mainControlsRow}>
-          <TouchableOpacity
-            style={styles.skipButton}
-            onPress={() => handleSeek(Math.max(0, currentTime - 10))}
-          >
-            <IconSymbol name="gobackward.10" size={20} color={Colors.neutral[600]} />
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[
-              styles.playButton,
-              status?.playing && styles.playButtonActive
-            ]}
-            onPress={handlePlayPause}
-          >
-            <LinearGradient
-              colors={status?.playing ? 
-                [Colors.error[500], Colors.error[600]] : 
-                [Colors.primary[500], Colors.primary[600]]
-              }
-              style={styles.playButtonGradient}
+        {/* Main Controls */}
+        <View style={styles.card}>
+          {/* Playback Slider */}
+          <View style={styles.sliderContainer}>
+            <Slider
+              style={styles.mainSlider}
+              minimumValue={0}
+              maximumValue={Math.max(duration || 0, 1)}
+              value={currentTime}
+              minimumTrackTintColor={BrandColors.primary}
+              maximumTrackTintColor={Colors.neutral[200]}
+              thumbTintColor={BrandColors.primary}
+              onSlidingComplete={handleSeek}
+            />
+          </View>
+
+          {/* Play Button */}
+          <View style={styles.mainControlsRow}>
+            <TouchableOpacity
+              style={styles.skipButton}
+              onPress={() => handleSeek(Math.max(0, currentTime - 10))}
+            >
+              <IconSymbol name="gobackward.10" size={20} color={BrandColors.ink} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.playButton,
+                status?.playing && styles.playButtonActive
+              ]}
+              onPress={handlePlayPause}
             >
               <IconSymbol
                 name={status?.playing ? 'pause.fill' : 'play.fill'}
                 size={32}
                 color={Colors.white}
               />
-            </LinearGradient>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.skipButton}
-            onPress={() => handleSeek(Math.min(duration, currentTime + 10))}
-          >
-            <IconSymbol name="goforward.10" size={20} color={Colors.neutral[600]} />
-          </TouchableOpacity>
-        </View>
-      </View>
+            </TouchableOpacity>
 
-      {/* Volume Control Card */}
-      <View style={styles.volumeCard}>
-        <View style={styles.volumeHeader}>
-          <IconSymbol name="speaker.wave.2.fill" size={20} color={Colors.primary[600]} />
-          <Text style={styles.volumeLabel}>Volume</Text>
-          <Text style={styles.volumeValue}>{Math.round(volume * 100)}%</Text>
+            <TouchableOpacity
+              style={styles.skipButton}
+              onPress={() => handleSeek(Math.min(duration, currentTime + 10))}
+            >
+              <IconSymbol name="goforward.10" size={20} color={BrandColors.ink} />
+            </TouchableOpacity>
+          </View>
         </View>
-        
-        <View style={styles.volumeSliderContainer}>
-          <IconSymbol name="speaker.fill" size={16} color={Colors.neutral[400]} />
-          <Slider
-            style={styles.volumeSlider}
-            minimumValue={0}
-            maximumValue={1}
-            value={volume}
-            minimumTrackTintColor={Colors.primary[600]}
-            maximumTrackTintColor={Colors.neutral[200]}
-            thumbTintColor={Colors.primary[600]}
-            onValueChange={setVolume}
-          />
-          <IconSymbol name="speaker.3.fill" size={16} color={Colors.neutral[600]} />
-        </View>
-      </View>
 
-      {/* Name Input Card */}
-      <View style={styles.nameCard}>
-        <View style={styles.nameHeader}>
-          <IconSymbol name="textformat" size={20} color={Colors.primary[600]} />
-          <Text style={styles.nameLabel}>Recording Name</Text>
-        </View>
-        
-        <TextInput
-          style={styles.nameInput}
-          value={name}
-          onChangeText={setName}
-          placeholder="Enter a name for this recording"
-          placeholderTextColor={Colors.neutral[400]}
-        />
-        
-        <TouchableOpacity
-          style={[
-            styles.saveButton,
-            saving && styles.saveButtonDisabled,
-            name.trim() !== initialName && styles.saveButtonActive
-          ]}
-          onPress={handleSaveName}
-          disabled={saving}
-        >
-          <LinearGradient
-            colors={name.trim() !== initialName ? 
-              [Colors.success[500], Colors.success[600]] :
-              [Colors.neutral[400], Colors.neutral[500]]
-            }
-            style={styles.saveButtonGradient}
-          >
-            <IconSymbol 
-              name={saving ? 'clock.fill' : 'checkmark.circle.fill'} 
-              size={16} 
-              color={Colors.white} 
+        {/* Volume Control Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <IconSymbol name="speaker.wave.2.fill" size={20} color={BrandColors.primary} />
+            <Text style={styles.cardTitle}>Volume</Text>
+            <Text style={styles.cardValue}>{Math.round(volume * 100)}%</Text>
+          </View>
+
+          <View style={styles.volumeSliderContainer}>
+            <IconSymbol name="speaker.fill" size={16} color={Colors.neutral[400]} />
+            <Slider
+              style={styles.volumeSlider}
+              minimumValue={0}
+              maximumValue={1}
+              value={volume}
+              minimumTrackTintColor={BrandColors.primary}
+              maximumTrackTintColor={Colors.neutral[200]}
+              thumbTintColor={BrandColors.primary}
+              onValueChange={setVolume}
             />
-            <Text style={styles.saveButtonText}>
+            <IconSymbol name="speaker.3.fill" size={16} color={Colors.neutral[600]} />
+          </View>
+        </View>
+
+        {/* Name Input Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <IconSymbol name="textformat" size={20} color={BrandColors.primary} />
+            <Text style={styles.cardTitle}>Recording Name</Text>
+          </View>
+
+          <TextInput
+            style={styles.nameInput}
+            value={name}
+            onChangeText={setName}
+            placeholder="Enter a name for this recording"
+            placeholderTextColor={Colors.neutral[400]}
+          />
+
+          <TouchableOpacity
+            style={[
+              styles.saveButton,
+              saving && styles.saveButtonDisabled,
+              name.trim() !== initialName && styles.saveButtonActive
+            ]}
+            onPress={handleSaveName}
+            disabled={saving}
+          >
+            <IconSymbol
+              name={saving ? 'clock.fill' : 'checkmark.circle.fill'}
+              size={16}
+              color={name.trim() !== initialName ? Colors.white : BrandColors.ink}
+            />
+            <Text style={[
+              styles.saveButtonText,
+              name.trim() === initialName && styles.saveButtonTextDisabled
+            ]}>
               {saving ? 'Saving...' : name.trim() !== initialName ? 'Save Changes' : 'Saved'}
             </Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.bottomSpacer} />
-    </ScrollView>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -321,67 +279,78 @@ function formatDuration(seconds: number) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.neutral[50],
+    backgroundColor: BrandColors.surface,
   },
-  
+
   // Header styles
-  headerGradient: {
-    paddingTop: 50,
-    paddingBottom: Spacing.base,
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingTop: 60,
+    paddingBottom: Spacing.base,
     paddingHorizontal: Spacing.lg,
+    backgroundColor: BrandColors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: BrandColors.ink + '10',
   },
   backButton: {
     padding: Spacing.sm,
     marginRight: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: BrandColors.ink + '05',
   },
   headerContent: {
     flex: 1,
   },
   headerTitle: {
-    fontSize: Typography.fontSize.xl,
+    fontSize: Typography.fontSize.lg,
     fontFamily: Typography.fontFamily.bold,
-    color: Colors.white,
+    color: BrandColors.title,
   },
   headerSubtitle: {
     fontSize: Typography.fontSize.sm,
     fontFamily: Typography.fontFamily.medium,
-    color: Colors.primary[100],
+    color: BrandColors.ink + '60',
     marginTop: 2,
   },
-  progressContainer: {
-    height: 3,
-    backgroundColor: Colors.primary[400],
-    marginHorizontal: Spacing.lg,
-    marginTop: Spacing.base,
-    borderRadius: 2,
-    overflow: 'hidden',
+
+  scrollView: {
+    flex: 1,
   },
-  progressBar: {
-    height: '100%',
-    backgroundColor: Colors.white,
-    borderRadius: 2,
+  scrollContent: {
+    padding: Spacing.lg,
+    gap: Spacing.lg,
+    paddingBottom: 100,
+  },
+
+  // Card styles
+  card: {
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: BrandColors.ink + '10',
+    ...Shadows.sm,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.base,
+  },
+  cardTitle: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.ink,
+    marginLeft: Spacing.sm,
+    flex: 1,
+  },
+  cardValue: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.bold,
+    color: BrandColors.primary,
   },
 
   // Waveform styles
-  waveformCard: {
-    backgroundColor: Colors.white,
-    marginHorizontal: Spacing.base,
-    marginTop: -Spacing.lg,
-    borderRadius: 16,
-    padding: Spacing.lg,
-    shadowColor: Colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
   waveformContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -402,30 +371,15 @@ const styles = StyleSheet.create({
   currentTime: {
     fontSize: Typography.fontSize.lg,
     fontFamily: Typography.fontFamily.bold,
-    color: Colors.primary[600],
+    color: BrandColors.primary,
   },
   totalTime: {
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.medium,
-    color: Colors.neutral[500],
+    color: BrandColors.ink + '60',
   },
 
   // Controls styles
-  controlsCard: {
-    backgroundColor: Colors.white,
-    marginHorizontal: Spacing.base,
-    marginTop: Spacing.base,
-    borderRadius: 16,
-    padding: Spacing.lg,
-    shadowColor: Colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
   sliderContainer: {
     marginBottom: Spacing.lg,
   },
@@ -443,7 +397,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: Colors.neutral[100],
+    backgroundColor: BrandColors.ink + '05',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -451,61 +405,16 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
+    backgroundColor: BrandColors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: Colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 8,
+    ...Shadows.md,
   },
   playButtonActive: {
-    transform: [{ scale: 0.95 }],
-  },
-  playButtonGradient: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: Colors.error[500],
   },
 
   // Volume styles
-  volumeCard: {
-    backgroundColor: Colors.white,
-    marginHorizontal: Spacing.base,
-    marginTop: Spacing.base,
-    borderRadius: 16,
-    padding: Spacing.lg,
-    shadowColor: Colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  volumeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.base,
-  },
-  volumeLabel: {
-    fontSize: Typography.fontSize.base,
-    fontFamily: Typography.fontFamily.semibold,
-    color: Colors.neutral[700],
-    marginLeft: Spacing.sm,
-    flex: 1,
-  },
-  volumeValue: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.bold,
-    color: Colors.primary[600],
-  },
   volumeSliderContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -517,70 +426,40 @@ const styles = StyleSheet.create({
   },
 
   // Name input styles
-  nameCard: {
-    backgroundColor: Colors.white,
-    marginHorizontal: Spacing.base,
-    marginTop: Spacing.base,
-    borderRadius: 16,
-    padding: Spacing.lg,
-    shadowColor: Colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  nameHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.base,
-  },
-  nameLabel: {
-    fontSize: Typography.fontSize.base,
-    fontFamily: Typography.fontFamily.semibold,
-    color: Colors.neutral[700],
-    marginLeft: Spacing.sm,
-  },
   nameInput: {
-    borderWidth: 2,
-    borderColor: Colors.neutral[200],
-    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: BrandColors.ink + '20',
+    borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.md,
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.regular,
-    color: Colors.neutral[800],
-    backgroundColor: Colors.neutral[50],
+    color: BrandColors.ink,
+    backgroundColor: Colors.white,
     marginBottom: Spacing.base,
   },
   saveButton: {
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  saveButtonActive: {
-    // Additional styles for active state if needed
-  },
-  saveButtonDisabled: {
-    opacity: 0.6,
-  },
-  saveButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.md,
     gap: Spacing.xs,
+    borderRadius: BorderRadius.md,
+    backgroundColor: BrandColors.ink + '05',
+  },
+  saveButtonActive: {
+    backgroundColor: BrandColors.primary,
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
   },
   saveButtonText: {
     color: Colors.white,
     fontSize: Typography.fontSize.sm,
     fontFamily: Typography.fontFamily.semibold,
   },
-
-  bottomSpacer: {
-    height: 100,
+  saveButtonTextDisabled: {
+    color: BrandColors.ink + '60',
   },
 });
-

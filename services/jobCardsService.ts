@@ -1,14 +1,13 @@
 import { supabase } from '@/lib/supabase';
-import { 
-  ServiceTicket, 
-  DashboardKPIs, 
-  TechnicianWorkload, 
-  TicketFilters,
-  ApiResponse,
-  PaginatedResponse,
+import {
   CreateTicketForm,
-  UpdateTicketForm,
   Customer,
+  DashboardKPIs,
+  PaginatedResponse,
+  ServiceTicket,
+  TechnicianWorkload,
+  TicketFilters,
+  UpdateTicketForm
 } from '@/types';
 
 export class JobCardsService {
@@ -36,14 +35,14 @@ export class JobCardsService {
     if (this.isMockMode()) {
       return this.getMockKPIs();
     }
-    
+
     try {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const todayISO = today.toISOString();
-      
+
       const openStatuses = ['reported', 'triaged', 'in_progress'];
-      
+
       // Get all data in parallel
       const [
         { count: openCount },
@@ -58,34 +57,34 @@ export class JobCardsService {
           .from('service_tickets')
           .select('id', { count: 'exact', head: true })
           .in('status', openStatuses),
-          
+
         // In progress batteries (assuming you have battery_records table)
         supabase
           .from('battery_records')
           .select('id', { count: 'exact', head: true })
           .in('status', ['diagnosed', 'in_progress']),
-          
+
         // Due today
         supabase
           .from('service_tickets')
           .select('id', { count: 'exact', head: true })
           .gte('due_date', todayISO)
           .lt('due_date', new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString()),
-          
+
         // Overdue
         supabase
           .from('service_tickets')
           .select('id', { count: 'exact', head: true })
           .lt('due_date', todayISO)
           .not('status', 'in', '(completed,delivered,closed)'),
-          
+
         // Unassigned
         supabase
           .from('service_tickets')
           .select('id', { count: 'exact', head: true })
           .in('status', openStatuses)
           .is('assigned_to', null),
-          
+
         // SLA risk (due in next 24h)
         supabase
           .from('service_tickets')
@@ -158,8 +157,8 @@ export class JobCardsService {
       'AS16FG1234', 'SK17HI5678', 'NL18JK9012', 'TR19LM3456', 'AR20NO7890',
     ];
 
-      const technicians = ['tech_001', 'tech_002', 'tech_003', 'tech_004', 'tech_005', 'tech_006'];
-      const customerBringingOptions = ['vehicle', 'battery', 'both'] as const;
+    const technicians = ['tech_001', 'tech_002', 'tech_003', 'tech_004', 'tech_005', 'tech_006'];
+    const customerBringingOptions = ['vehicle', 'battery', 'both'] as const;
 
     return Array.from({ length: limit }, (_, index) => {
       const template = ticketTemplates[index % ticketTemplates.length];
@@ -167,22 +166,22 @@ export class JobCardsService {
       const vehicleNo = vehicleNumbers[index % vehicleNumbers.length];
       const daysAgo = Math.floor(Math.random() * 14) + 1; // 1-14 days ago
       const createdDate = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
-      
+
       // Generate due date based on priority (1-3 days for high, 5-7 for medium, 7-14 for low)
-      const dueDays = template.priority === 1 ? 1 + Math.random() * 2 : 
-                      template.priority === 2 ? 3 + Math.random() * 4 : 
-                      5 + Math.random() * 9;
+      const dueDays = template.priority === 1 ? 1 + Math.random() * 2 :
+        template.priority === 2 ? 3 + Math.random() * 4 :
+          5 + Math.random() * 9;
       const dueDate = new Date(createdDate.getTime() + dueDays * 24 * 60 * 60 * 1000);
-      
+
       // Determine if assigned - assign tickets with status 'assigned', 'in_progress' 
       const isAssigned = ['assigned', 'in_progress'].includes(template.status);
       const assignedTechnician = isAssigned ? technicians[Math.floor(Math.random() * technicians.length)] : undefined;
       const assignedDate = isAssigned ? new Date(createdDate.getTime() + Math.random() * 24 * 60 * 60 * 1000) : undefined;
-      
+
       const ticketId = `ticket_${String(index + 1).padStart(3, '0')}`;
       const customerId = `customer_${String((index % customers.length) + 1).padStart(3, '0')}`;
       const ticketNumber = `EV-${new Date().getFullYear()}-${String(Date.now() + index).slice(-6)}`;
-      
+
       // Randomly assign what customer is bringing
       const customerBringing = customerBringingOptions[Math.floor(Math.random() * customerBringingOptions.length)];
 
@@ -244,7 +243,7 @@ export class JobCardsService {
     }
     return this.cachedMockTickets.slice(0, limit);
   }
-  
+
   // Clear cached mock tickets (for debugging)
   clearMockTicketsCache(): void {
     this.cachedMockTickets = null;
@@ -257,7 +256,7 @@ export class JobCardsService {
     if (this.isMockMode()) {
       return this.getMockTickets(limit);
     }
-    
+
     try {
       const { data, error } = await supabase
         .from('service_tickets')
@@ -286,12 +285,12 @@ export class JobCardsService {
     if (this.isMockMode()) {
       const mockTickets = this.getMockTickets(50); // Get more tickets for filtering
       let filteredTickets = mockTickets;
-      
+
       // Apply status filtering
       if (filters.status && filters.status !== 'all') {
         filteredTickets = filteredTickets.filter(t => t.status === filters.status);
       }
-      
+
       // Apply assignedTo filtering
       if (filters.assignedTo) {
         if (filters.assignedTo === 'unassigned') {
@@ -300,22 +299,22 @@ export class JobCardsService {
           filteredTickets = filteredTickets.filter(t => t.assigned_to === filters.assignedTo);
         }
       }
-      
+
       // Apply search filtering
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
-        filteredTickets = filteredTickets.filter(t => 
+        filteredTickets = filteredTickets.filter(t =>
           t.ticket_number.toLowerCase().includes(searchLower) ||
-          t.symptom.toLowerCase().includes(searchLower) ||
+          (t.symptom?.toLowerCase() || '').includes(searchLower) ||
           t.customer_complaint.toLowerCase().includes(searchLower)
         );
       }
-      
+
       // Apply pagination
       const start = (page - 1) * pageSize;
       const end = start + pageSize;
       const paginatedData = filteredTickets.slice(start, end);
-      
+
       return {
         data: paginatedData,
         count: filteredTickets.length,
@@ -324,7 +323,7 @@ export class JobCardsService {
         totalPages: Math.ceil(filteredTickets.length / pageSize),
       };
     }
-    
+
     try {
       let query = supabase
         .from('service_tickets')
@@ -338,6 +337,11 @@ export class JobCardsService {
         query = query.eq('status', filters.status);
       }
 
+      if (filters.statusGroup === 'active') {
+        query = query.in('status', ['assigned', 'in_progress']);
+        query = query.not('assigned_to', 'is', null);
+      }
+
       if (filters.priority && filters.priority !== 'all') {
         query = query.eq('priority', filters.priority);
       }
@@ -345,6 +349,8 @@ export class JobCardsService {
       if (filters.assignedTo) {
         if (filters.assignedTo === 'unassigned') {
           query = query.is('assigned_to', null);
+          // Match dashboard logic: exclude closed/completed/cancelled
+          query = query.not('status', 'in', '(completed,delivered,closed,cancelled)');
         } else if (filters.assignedTo !== 'all') {
           query = query.eq('assigned_to', filters.assignedTo);
         }
@@ -357,7 +363,10 @@ export class JobCardsService {
       if (filters.dueDate) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        
+
+        // Match dashboard logic: exclude closed/completed
+        query = query.not('status', 'in', '(completed,delivered,closed)');
+
         switch (filters.dueDate) {
           case 'overdue':
             query = query.lt('due_date', today.toISOString());
@@ -380,6 +389,10 @@ export class JobCardsService {
             query = query.gte('due_date', today.toISOString()).lt('due_date', weekEnd.toISOString());
             break;
         }
+      }
+
+      if (filters.excludeClosed) {
+        query = query.not('status', 'in', '(completed,delivered,closed,cancelled)');
       }
 
       // Apply pagination
@@ -411,7 +424,7 @@ export class JobCardsService {
   private generateMockTeamWorkload(): TechnicianWorkload[] {
     const hour = new Date().getHours();
     const workingHours = hour >= 8 && hour <= 18;
-    
+
     const technicians = [
       {
         id: 'tech_001',
@@ -430,7 +443,7 @@ export class JobCardsService {
         status: 'active',
       },
       {
-        id: 'tech_002', 
+        id: 'tech_002',
         name: 'Priya Sharma',
         email: 'priya.sharma@evwheels.com',
         phone: '+91 8765432109',
@@ -449,7 +462,7 @@ export class JobCardsService {
         id: 'tech_003',
         name: 'Amit Patel',
         email: 'amit.patel@evwheels.com',
-        phone: '+91 7654321098', 
+        phone: '+91 7654321098',
         experience: '3 years',
         specialization: ['Mechanical Repair', 'Body Work'],
         rating: 4.6,
@@ -577,32 +590,32 @@ export class JobCardsService {
     if (this.isMockMode()) {
       return this.getMockTeamWorkload();
     }
-    
+
     try {
       // 1. Get users with technician role
       const { data: technicianRoles, error: rolesError } = await supabase
         .from('app_roles')
         .select('user_id')
         .eq('role', 'technician');
-      
+
       if (rolesError) {
         console.error('Error fetching technician roles for workload:', rolesError);
         throw rolesError;
       }
-      
+
       if (!technicianRoles?.length) {
         return [];
       }
-      
+
       const userIds = technicianRoles.map(r => r.user_id);
-      
+
       // 2. Get profiles for those users
       const { data: technicians, error: techError } = await supabase
         .from('profiles')
         .select('user_id, username, email')
         .in('user_id', userIds)
         .eq('is_active', true);
-        
+
       if (techError) {
         console.error('Error fetching technicians for workload:', techError);
         throw techError;
@@ -619,7 +632,7 @@ export class JobCardsService {
           .select('id')
           .eq('assigned_to', tech.user_id)
           .in('status', ['in_progress']);
-          
+
         return {
           assignee: tech.user_id,
           count: tickets?.length || 0,
@@ -641,7 +654,7 @@ export class JobCardsService {
       const tickets = this.getMockTickets(50);
       return tickets.find(t => t.id === id) || null;
     }
-    
+
     try {
       const { data: ticket, error } = await supabase
         .from('service_tickets')
@@ -661,7 +674,7 @@ export class JobCardsService {
 
       // Try to use foreign key relationship first, fall back to separate query
       let ticketWithCreator = ticket;
-      
+
       // If the database supports foreign key relationships, try using them
       try {
         const { data: ticketWithJoin, error: joinError } = await supabase
@@ -673,7 +686,7 @@ export class JobCardsService {
           `)
           .eq('id', id)
           .single();
-          
+
         if (!joinError && ticketWithJoin) {
           ticketWithCreator = ticketWithJoin;
         } else {
@@ -686,7 +699,7 @@ export class JobCardsService {
                 .select('user_id, username, email')
                 .eq('user_id', ticket.created_by)
                 .single();
-                
+
               if (!creatorError) {
                 creator = creatorData;
               }
@@ -710,7 +723,7 @@ export class JobCardsService {
               .select('user_id, username, email')
               .eq('user_id', ticket.created_by)
               .single();
-              
+
             if (!creatorError) {
               creator = creatorData;
             }
@@ -738,7 +751,7 @@ export class JobCardsService {
       const tickets = this.getMockTickets(50);
       return tickets.filter(t => t.assigned_to === technicianId);
     }
-    
+
     try {
       const { data, error } = await supabase
         .from('service_tickets')
@@ -770,11 +783,11 @@ export class JobCardsService {
       }
       return ticket;
     }
-    
+
     try {
       const { data, error } = await supabase
         .from('service_tickets')
-        .update({ 
+        .update({
           status,
           updated_at: new Date().toISOString()
         })
@@ -882,42 +895,65 @@ export class JobCardsService {
   async getTechnicians(): Promise<any[]> {
     if (this.isMockMode()) {
       return [
-        { id: 'tech_001', first_name: 'Rajesh', last_name: 'Kumar', email: 'rajesh.kumar@evwheels.com' },
-        { id: 'tech_002', first_name: 'Priya', last_name: 'Sharma', email: 'priya.sharma@evwheels.com' },
-        { id: 'tech_003', first_name: 'Amit', last_name: 'Patel', email: 'amit.patel@evwheels.com' },
-        { id: 'tech_004', first_name: 'Sneha', last_name: 'Reddy', email: 'sneha.reddy@evwheels.com' },
-        { id: 'tech_005', first_name: 'Vikram', last_name: 'Singh', email: 'vikram.singh@evwheels.com' },
-        { id: 'tech_006', first_name: 'Kavya', last_name: 'Nair', email: 'kavya.nair@evwheels.com' },
+        { id: 'tech_001', first_name: 'Rajesh', last_name: 'Kumar', email: 'rajesh.kumar@evwheels.com', activeTickets: 3 },
+        { id: 'tech_002', first_name: 'Priya', last_name: 'Sharma', email: 'priya.sharma@evwheels.com', activeTickets: 5 },
+        { id: 'tech_003', first_name: 'Amit', last_name: 'Patel', email: 'amit.patel@evwheels.com', activeTickets: 2 },
+        { id: 'tech_004', first_name: 'Sneha', last_name: 'Reddy', email: 'sneha.reddy@evwheels.com', activeTickets: 0 },
+        { id: 'tech_005', first_name: 'Vikram', last_name: 'Singh', email: 'vikram.singh@evwheels.com', activeTickets: 4 },
+        { id: 'tech_006', first_name: 'Kavya', last_name: 'Nair', email: 'kavya.nair@evwheels.com', activeTickets: 1 },
       ];
     }
-    
+
     try {
       // 1. Get users with technician role
       const { data: technicianRoles, error: rolesError } = await supabase
         .from('app_roles')
         .select('user_id')
         .eq('role', 'technician');
-      
+
       if (rolesError) throw rolesError;
       if (!technicianRoles?.length) return [];
-      
+
       const userIds = technicianRoles.map(r => r.user_id);
-      
+
       // 2. Get profiles for those users
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('user_id, username, email, first_name, last_name')
         .in('user_id', userIds)
         .eq('is_active', true);
-      
+
       if (profilesError) throw profilesError;
-      
+
+      // 3. Get active tickets count for these technicians
+      const { data: activeTickets, error: ticketsError } = await supabase
+        .from('service_tickets')
+        .select('assigned_to')
+        .in('assigned_to', userIds)
+        .in('status', ['assigned', 'in_progress']);
+
+      if (ticketsError) {
+        console.error('Error fetching active tickets count:', ticketsError);
+        // Continue without counts if this fails
+      }
+
+      // Calculate counts
+      const ticketCounts: Record<string, number> = {};
+      if (activeTickets) {
+        activeTickets.forEach(ticket => {
+          if (ticket.assigned_to) {
+            ticketCounts[ticket.assigned_to] = (ticketCounts[ticket.assigned_to] || 0) + 1;
+          }
+        });
+      }
+
       // Transform the data to match expected format
       const transformedData = profiles?.map(p => ({
         id: p.user_id,
         first_name: p.first_name || p.username,
         last_name: p.last_name || '',
-        email: p.email
+        email: p.email,
+        activeTickets: ticketCounts[p.user_id] || 0
       }));
 
       return transformedData || [];
@@ -933,7 +969,7 @@ export class JobCardsService {
       // Mock attachments data - return empty for now to avoid confusion
       return [];
     }
-    
+
     try {
       const { data, error } = await supabase
         .from('ticket_attachments')
@@ -971,7 +1007,7 @@ export class JobCardsService {
       // Return a placeholder image for mock mode
       return 'https://via.placeholder.com/300x200/3B82F6/FFFFFF?text=Sample+Image';
     }
-    
+
     try {
       // Determine the storage bucket based on attachment type
       let bucket = 'ticket-attachments';
@@ -980,7 +1016,7 @@ export class JobCardsService {
       } else if (attachmentType === 'audio') {
         bucket = 'media-audio';
       }
-      
+
       const { data, error } = await supabase.storage
         .from(bucket)
         .createSignedUrl(storagePath, 3600); // 1 hour expiry
@@ -1005,7 +1041,7 @@ export class JobCardsService {
         { id: 'cust2', name: 'Priya Sharma', phone: '+91 9876543211', email: 'priya@email.com' },
       ];
     }
-    
+
     try {
       const { data, error } = await supabase
         .from('customers')
@@ -1037,26 +1073,26 @@ export class JobCardsService {
       if (params.routeTo === 'battery' || params.routeTo === 'both') {
         result.battery_case_id = `battery_case_${Date.now()}`;
       }
-      
+
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       return result;
     }
-    
+
     try {
       const result: { vehicle_case_id?: string; battery_case_id?: string } = {};
-      
+
       // Get the original ticket to extract information for cases
       const { data: ticket, error: ticketError } = await supabase
         .from('service_tickets')
         .select('*')
         .eq('id', params.ticketId)
         .single();
-        
+
       if (ticketError) throw ticketError;
       if (!ticket) throw new Error('Ticket not found');
-      
+
       // Create vehicle case if needed
       if (params.routeTo === 'vehicle' || params.routeTo === 'both') {
         // Check if vehicle record exists for this ticket
@@ -1065,11 +1101,11 @@ export class JobCardsService {
           .select('id')
           .eq('service_ticket_id', params.ticketId)
           .maybeSingle(); // Use maybeSingle to handle case where no record exists
-          
+
         if (vehicleRecordError) throw vehicleRecordError;
-        
+
         let vehicleRecordId: string;
-        
+
         if (!existingVehicleRecord) {
           // Try to find existing vehicle record by registration number first
           let existingByRegNo = null;
@@ -1081,11 +1117,11 @@ export class JobCardsService {
               .maybeSingle();
             existingByRegNo = regNoRecord;
           }
-          
+
           if (existingByRegNo) {
             // Use existing vehicle record if found by registration number
             vehicleRecordId = existingByRegNo.id;
-            
+
             // Update the existing record to link to this ticket
             await supabase
               .from('vehicle_records')
@@ -1098,13 +1134,13 @@ export class JobCardsService {
           } else {
             // Create a new vehicle record with unique registration number
             const uniqueRegNo = ticket.vehicle_reg_no || `TRG-${params.ticketId.slice(-8)}-${Date.now().toString().slice(-4)}`;
-            
+
             const { data: newVehicleRecord, error: createVehicleError } = await supabase
               .from('vehicle_records')
               .insert({
                 service_ticket_id: params.ticketId,
                 vehicle_make: ticket.vehicle_make || 'Unknown',
-                vehicle_model: ticket.vehicle_model || 'Unknown', 
+                vehicle_model: ticket.vehicle_model || 'Unknown',
                 vehicle_reg_no: uniqueRegNo,
                 vehicle_year: ticket.vehicle_year,
                 condition_notes: 'Created during triage process',
@@ -1115,14 +1151,14 @@ export class JobCardsService {
               })
               .select('id')
               .single();
-              
+
             if (createVehicleError) throw createVehicleError;
             vehicleRecordId = newVehicleRecord.id;
           }
         } else {
           vehicleRecordId = existingVehicleRecord.id;
         }
-        
+
         // Create vehicle service case
         const { data: vehicleCase, error: vehicleCaseError } = await supabase
           .from('vehicle_cases')
@@ -1134,30 +1170,34 @@ export class JobCardsService {
             status: 'received',
             created_by: ticket.created_by || ticket.updated_by,
             updated_by: ticket.updated_by || ticket.created_by,
+            vehicle_make: ticket.vehicle_make || 'Unknown',
+            vehicle_model: ticket.vehicle_model || 'Unknown',
+            vehicle_reg_no: ticket.vehicle_reg_no || 'Unknown',
+            vehicle_year: ticket.vehicle_year,
           })
           .select('id')
           .single();
-          
+
         if (vehicleCaseError) throw vehicleCaseError;
         result.vehicle_case_id = vehicleCase.id;
-        
+
         // Update ticket to link to vehicle case and record
         const vehicleUpdateData: any = {
           vehicle_case_id: vehicleCase.id,
           customer_bringing: params.routeTo === 'both' ? 'both' : 'vehicle'
         };
-        
+
         // If we created a new vehicle record, link it to the ticket
         if (!existingVehicleRecord) {
           vehicleUpdateData.vehicle_record_id = vehicleRecordId;
         }
-        
+
         await supabase
           .from('service_tickets')
           .update(vehicleUpdateData)
           .eq('id', params.ticketId);
       }
-      
+
       // Create battery cases if needed
       if (params.routeTo === 'battery' || params.routeTo === 'both') {
         // Get existing battery records for this ticket (there can be multiple)
@@ -1165,16 +1205,16 @@ export class JobCardsService {
           .from('battery_records')
           .select('id')
           .eq('service_ticket_id', params.ticketId);
-          
+
         if (batteryRecordError) throw batteryRecordError;
-        
+
         let batteryRecords = existingBatteryRecords || [];
-        
+
         if (batteryRecords.length === 0) {
           // Create a basic battery record if none exists
           // Generate a unique serial number to avoid conflicts
           const uniqueSerialNo = `TRG-BAT-${params.ticketId.slice(-8)}-${Date.now().toString().slice(-4)}`;
-          
+
           const { data: newBatteryRecord, error: createBatteryError } = await supabase
             .from('battery_records')
             .insert({
@@ -1192,11 +1232,11 @@ export class JobCardsService {
             })
             .select('id')
             .single();
-            
+
           if (createBatteryError) throw createBatteryError;
           batteryRecords = [newBatteryRecord];
         }
-        
+
         // Create battery service cases for each battery record
         const batteryCasePromises = batteryRecords.map(async (batteryRecord) => {
           const { data: batteryCase, error: batteryCaseError } = await supabase
@@ -1212,33 +1252,33 @@ export class JobCardsService {
             })
             .select('id')
             .single();
-            
+
           if (batteryCaseError) throw batteryCaseError;
           return batteryCase;
         });
-        
+
         const batteryCases = await Promise.all(batteryCasePromises);
         // Use the first battery case as the primary one for the ticket link
         result.battery_case_id = batteryCases[0].id;
-        
+
         // Update ticket to link to primary battery case
-        const updateData: any = { 
-          battery_case_id: batteryCases[0].id 
+        const updateData: any = {
+          battery_case_id: batteryCases[0].id
         };
-        
+
         // Set customer_bringing based on route type
         if (params.routeTo === 'battery') {
           updateData.customer_bringing = 'battery';
         } else if (params.routeTo === 'both') {
           updateData.customer_bringing = 'both';
         }
-        
+
         await supabase
           .from('service_tickets')
           .update(updateData)
           .eq('id', params.ticketId);
       }
-      
+
       // Update ticket status to 'triaged' with triage info
       await supabase
         .from('service_tickets')
@@ -1249,7 +1289,7 @@ export class JobCardsService {
           updated_at: new Date().toISOString()
         })
         .eq('id', params.ticketId);
-      
+
       return result;
     } catch (error) {
       console.error('Error triaging ticket:', error);
@@ -1294,7 +1334,7 @@ export class JobCardsService {
         },
       ];
     }
-    
+
     try {
       // 1. Get status updates for the ticket
       const { data: updates, error: updatesError } = await supabase
@@ -1302,15 +1342,15 @@ export class JobCardsService {
         .select('*')
         .eq('ticket_id', ticketId)
         .order('created_at', { ascending: true });
-      
+
       if (updatesError) throw updatesError;
       if (!updates?.length) return [];
-      
+
       // 2. Get unique user IDs from the updates
       const userIds = [...new Set(updates
         .map(u => u.created_by)
         .filter(Boolean))];
-      
+
       let profiles = [];
       if (userIds.length > 0) {
         // 3. Get profiles for those users
@@ -1318,7 +1358,7 @@ export class JobCardsService {
           .from('profiles')
           .select('user_id, username, email, first_name, last_name')
           .in('user_id', userIds);
-        
+
         if (profilesError) {
           console.warn('Error fetching profiles for status updates:', profilesError);
           // Continue without profile info rather than failing
@@ -1326,7 +1366,7 @@ export class JobCardsService {
           profiles = profilesData || [];
         }
       }
-      
+
       // 4. Combine updates with profile data
       return updates.map(update => {
         const profile = profiles.find(p => p.user_id === update.created_by);
@@ -1352,7 +1392,7 @@ export class JobCardsService {
       console.log(`Mock: Adding status update for ticket ${params.ticketId}`);
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       return {
         id: `update_${Date.now()}`,
         ticket_id: params.ticketId,
@@ -1364,24 +1404,24 @@ export class JobCardsService {
         is_system_update: params.isSystemUpdate || false,
       };
     }
-    
+
     try {
       // Get current user to set created_by appropriately
       const { data: { user: currentUser } } = await supabase.auth.getUser();
-      
+
       const insertData: any = {
         ticket_id: params.ticketId,
         status: params.status,
         update_text: params.updateText,
         is_system_update: params.isSystemUpdate || false,
       };
-      
+
       // Only set created_by if we have an authenticated user
       // For unauthenticated access (development), leave it null
       if (currentUser) {
         insertData.created_by = currentUser.id;
       }
-      
+
       const { data, error } = await supabase
         .from('ticket_status_updates')
         .insert(insertData)
@@ -1389,7 +1429,7 @@ export class JobCardsService {
         .single();
 
       if (error) throw error;
-      
+
       // Get user profile separately if we have a created_by user
       let profile = null;
       if (data.created_by) {
@@ -1399,7 +1439,7 @@ export class JobCardsService {
             .select('user_id, username, email, first_name, last_name')
             .eq('user_id', data.created_by)
             .single();
-          
+
           if (!profileError) {
             profile = profileData;
           }
@@ -1424,7 +1464,7 @@ export class JobCardsService {
       console.log(`Mock: Deleting status update ${updateId}`);
       return true;
     }
-    
+
     try {
       const { error } = await supabase
         .from('ticket_status_updates')

@@ -3,9 +3,9 @@
 
 export type UserRole = 'admin' | 'front_desk_manager' | 'floor_manager' | 'technician' | 'manager';
 
-export type ServiceTicketStatus = 
+export type ServiceTicketStatus =
   | 'reported'
-  | 'triaged' 
+  | 'triaged'
   | 'assigned'
   | 'in_progress'
   | 'completed'
@@ -47,49 +47,64 @@ export interface ServiceTicket {
   ticket_number: string;
   customer_id: string;
   customer?: Customer;
-  
+
   // Problem description
   customer_complaint: string;
   description?: string | null;
-  
+
   // What customer is bringing for service
   customer_bringing?: CustomerBringingType | null;
-  
+
   // Vehicle information
   vehicle_make?: string | null;
   vehicle_model?: string | null;
   vehicle_reg_no?: string | null;
   vehicle_year?: number | null;
-  
+
   // Status and workflow
   status: ServiceTicketStatus;
   priority?: number | null;
-  
+
   // Dates
   created_at: string;
   updated_at: string;
   closed_at?: string | null;
   due_date?: string | null;
-  
+
   // Triage information
   triaged_at?: string | null;
   triaged_by?: string | null;
   triage_notes?: string | null;
-  
+
   // Metadata
   created_by: string;
   updated_by: string;
-  
+
   // Linked records (INTAKE LAYER)
   vehicle_record_id?: string | null;  // Links to vehicle_records
-  
+
   // Linked cases (SERVICE LAYER) 
   vehicle_case_id?: string | null;    // Links to vehicle_cases
   battery_case_id?: string | null;    // Links to battery_cases
-  
+
+  // Assignment
+  assigned_to?: string | null;
+  assigned_by?: string | null;
+  assigned_at?: string | null;
+
+  // Legacy/Alias fields (for compatibility)
+  symptom?: string;
+  ticketNumber?: string;
+  vehicleRegNo?: string | null;
+  assignedTo?: string | null;
+  assignedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  dueDate?: string | null;
+
   // Note: battery_records[] are fetched via service_ticket_id
   // Note: battery_cases[] are fetched via service_ticket_id
-  
+
   // Location context
   location_id?: string | null;
   location?: {
@@ -203,6 +218,8 @@ export interface TicketFilters {
   customer?: string;
   vehicleReg?: string;
   search?: string;
+  excludeClosed?: boolean;
+  statusGroup?: 'active'; // assigned + in_progress
 }
 
 export interface SortOptions {
@@ -319,6 +336,10 @@ export interface VehicleCase {
   id: string;
   service_ticket_id: string;
   vehicle_record_id?: string | null;  // Links to intake record
+  vehicle_make: string;
+  vehicle_model: string;
+  vehicle_reg_no: string;
+  vehicle_year?: number | null;
   initial_diagnosis?: string | null;   // Notes during diagnosis
   diagnostic_notes?: string | null;    // Detailed diagnostic notes
   repair_notes?: string | null;       // Notes during repair
@@ -367,6 +388,13 @@ export interface BatteryCase {
   id: string;
   service_ticket_id: string;
   battery_record_id: string;           // Links to intake record
+  battery_make?: string;
+  battery_model?: string;
+  serial_number?: string;
+  battery_serial?: string;
+  battery_type?: 'li-ion' | 'lfp' | 'nmc' | 'other';
+  voltage?: number;
+  capacity?: number;
   initial_diagnosis?: string | null;   // Notes during diagnosis
   diagnostic_notes?: string | null;    // Detailed diagnostic notes
   repair_notes?: string | null;       // Notes during repair

@@ -1,52 +1,55 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
-import { ThemedView } from '@/components/themed-view';
+import { LocationSelector } from '@/components/location-selector';
 import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BorderRadius, BrandColors, Colors, Shadows, Spacing, Typography } from '@/constants/design-system';
+import { canBypassLocationFilter, getFeatureAccess } from '@/lib/permissions';
 import { useAuthStore } from '@/stores/authStore';
 import { useLocationStore } from '@/stores/locationStore';
-import { LocationSelector } from '@/components/location-selector';
-import { getFeatureAccess, canBypassLocationFilter } from '@/lib/permissions';
-import { BrandColors, Colors, Typography, Spacing, BorderRadius, Shadows } from '@/constants/design-system';
-import { useQuery } from '@tanstack/react-query';
-import { dataService } from '@/services/dataService';
+import React from 'react';
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 interface ProfileItemProps {
   icon: string;
   title: string;
-  value?: string;
+  subtitle?: string;
   onPress?: () => void;
   showChevron?: boolean;
+  destructive?: boolean;
 }
 
 const ProfileItem: React.FC<ProfileItemProps> = ({
   icon,
   title,
-  value,
+  subtitle,
   onPress,
-  showChevron = false,
+  showChevron = true,
+  destructive = false,
 }) => (
   <TouchableOpacity
     style={styles.profileItem}
     onPress={onPress}
     disabled={!onPress}
+    activeOpacity={onPress ? 0.7 : 1}
   >
-    <View style={styles.profileItemContent}>
-      <IconSymbol name={icon} size={20} color={BrandColors.ink + '80'} />
-      <View style={styles.profileItemText}>
-        <Text style={styles.profileItemTitle}>{title}</Text>
-        {value && <Text style={styles.profileItemValue}>{value}</Text>}
+    <View style={styles.profileItemLeft}>
+      <View style={styles.profileItemIcon}>
+        <IconSymbol name={icon} size={24} color={destructive ? Colors.error[600] : Colors.neutral[900]} />
+      </View>
+      <View style={styles.profileItemContent}>
+        <Text style={[styles.profileItemTitle, destructive && styles.destructiveText]}>{title}</Text>
+        {subtitle && <Text style={styles.profileItemSubtitle}>{subtitle}</Text>}
       </View>
     </View>
-    {showChevron && (
-      <IconSymbol name="chevron.right" size={16} color={BrandColors.ink + '60'} />
+    {showChevron && onPress && (
+      <IconSymbol name="chevron.right" size={20} color={Colors.neutral[400]} />
     )}
   </TouchableOpacity>
 );
@@ -54,16 +57,11 @@ const ProfileItem: React.FC<ProfileItemProps> = ({
 export default function ProfileScreen() {
   const { user, signOut } = useAuthStore();
   const { activeLocation, availableLocations } = useLocationStore();
-  
+
   const featureAccess = user ? getFeatureAccess(user.role) : null;
   const canAccessAllLocations = user ? canBypassLocationFilter(user.role) : false;
 
-  // Fetch quick stats for floor managers
-  const { data: quickStats } = useQuery({
-    queryKey: ['profile-quick-stats', user?.role, activeLocation?.id],
-    queryFn: () => dataService.getDashboardKPIs(user!.role, activeLocation?.id),
-    enabled: !!user && user.role === 'floor_manager',
-  });
+
 
   const handleSignOut = () => {
     Alert.alert(
@@ -84,17 +82,18 @@ export default function ProfileScreen() {
     ? `${user.firstName} ${user.lastName || ''}`.trim()
     : 'User';
 
-  const roleDisplayName = {
+  const roleMap = {
     admin: 'Administrator',
     front_desk_manager: 'Front Desk Manager',
     floor_manager: 'Floor Manager',
     manager: 'Manager',
     technician: 'Technician',
-  }[user?.role || ''] || 'User';
+  };
+  const roleDisplayName = roleMap[user?.role as keyof typeof roleMap] || 'User';
 
   const getPermissionSummary = () => {
     if (!featureAccess) return 'Loading...';
-    
+
     const permissions = [];
     if (featureAccess.canCreateTickets) permissions.push('Create Tickets');
     if (featureAccess.canEditAllTickets) permissions.push('Edit All Tickets');
@@ -102,7 +101,7 @@ export default function ProfileScreen() {
     if (featureAccess.canViewAnalytics) permissions.push('View Analytics');
     if (featureAccess.canManageUsers) permissions.push('Manage Users');
     if (featureAccess.canManageSettings) permissions.push('System Settings');
-    
+
     return permissions.length > 0 ? `${permissions.length} permissions` : 'View Only';
   };
 
@@ -123,48 +122,37 @@ export default function ProfileScreen() {
           <Text style={styles.userEmail}>{user?.email}</Text>
         </View>
 
-        {/* Floor Manager Quick Stats */}
-        {user?.role === 'floor_manager' && quickStats && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Today's Overview</Text>
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{quickStats.totalTickets || 0}</Text>
-                <Text style={styles.statLabel}>Active Tickets</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{quickStats.unassignedTickets || 0}</Text>
-                <Text style={styles.statLabel}>Unassigned</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{quickStats.overdue || 0}</Text>
-                <Text style={styles.statLabel}>Overdue</Text>
-              </View>
-            </View>
-          </View>
-        )}
+
 
         {/* Admin Quick Actions */}
         {user?.role === 'admin' && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Admin Actions</Text>
-            <View style={styles.quickActionsGrid}>
-              <TouchableOpacity style={styles.quickActionCard}>
-                <IconSymbol name="person.3.fill" size={20} color={BrandColors.primary} />
-                <Text style={styles.quickActionText}>User Management</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.quickActionCard}>
-                <IconSymbol name="gear" size={20} color={Colors.warning[600]} />
-                <Text style={styles.quickActionText}>System Settings</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.quickActionCard}>
-                <IconSymbol name="chart.bar.fill" size={20} color={Colors.success[600]} />
-                <Text style={styles.quickActionText}>Analytics</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.quickActionCard}>
-                <IconSymbol name="server.rack" size={20} color={Colors.info[600]} />
-                <Text style={styles.quickActionText}>System Health</Text>
-              </TouchableOpacity>
+            <View style={styles.listContainer}>
+              <ProfileItem
+                icon="person.3.fill"
+                title="User Management"
+                subtitle="Manage system users and roles"
+                onPress={() => { }}
+              />
+              <ProfileItem
+                icon="gear"
+                title="System Settings"
+                subtitle="Configure application settings"
+                onPress={() => { }}
+              />
+              <ProfileItem
+                icon="chart.bar.fill"
+                title="Analytics"
+                subtitle="View system performance"
+                onPress={() => { }}
+              />
+              <ProfileItem
+                icon="server.rack"
+                title="System Health"
+                subtitle="Monitor server status"
+                onPress={() => { }}
+              />
             </View>
           </View>
         )}
@@ -172,34 +160,39 @@ export default function ProfileScreen() {
         {/* Profile Information */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Profile Information</Text>
-          <View style={styles.profileCard}>
+          <View style={styles.listContainer}>
             <ProfileItem
               icon="person"
               title="Full Name"
-              value={userName}
+              subtitle={userName}
+              showChevron={false}
             />
             <ProfileItem
               icon="envelope"
               title="Email"
-              value={user?.email}
+              subtitle={user?.email}
+              showChevron={false}
             />
             <ProfileItem
               icon="briefcase"
               title="Role"
-              value={roleDisplayName}
+              subtitle={roleDisplayName}
+              showChevron={false}
             />
             {user?.id && (
               <ProfileItem
                 icon="number"
                 title="User ID"
-                value={user.id}
+                subtitle={user.id}
+                showChevron={false}
               />
             )}
             {user?.role === 'admin' && (
               <ProfileItem
                 icon="checkmark.shield.fill"
                 title="Admin Level"
-                value="System Administrator"
+                subtitle="System Administrator"
+                showChevron={false}
               />
             )}
           </View>
@@ -208,35 +201,40 @@ export default function ProfileScreen() {
         {/* Location Context */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Location & Access</Text>
-          <View style={styles.profileCard}>
+          <View style={styles.listContainer}>
             {canAccessAllLocations ? (
               <ProfileItem
                 icon="globe"
                 title="Access Level"
-                value="All Locations"
+                subtitle="All Locations"
+                showChevron={false}
               />
             ) : (
               <ProfileItem
                 icon="location.fill"
                 title="Active Location"
-                value={activeLocation?.name || 'No location selected'}
+                subtitle={activeLocation?.name || 'No location selected'}
+                showChevron={false}
               />
             )}
             <ProfileItem
               icon="list.bullet"
               title="Available Locations"
-              value={`${availableLocations.length} location${availableLocations.length !== 1 ? 's' : ''}`}
+              subtitle={`${availableLocations.length} location${availableLocations.length !== 1 ? 's' : ''}`}
+              showChevron={false}
             />
             <ProfileItem
               icon="shield.checkered"
               title="Permissions"
-              value={getPermissionSummary()}
+              subtitle={getPermissionSummary()}
+              showChevron={false}
             />
             {user?.role === 'admin' && (
               <ProfileItem
                 icon="crown.fill"
                 title="Admin Privileges"
-                value="Full system access"
+                subtitle="Full system access"
+                showChevron={false}
               />
             )}
           </View>
@@ -248,25 +246,24 @@ export default function ProfileScreen() {
         {/* Settings */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Settings</Text>
-          <View style={styles.profileCard}>
+          <View style={styles.listContainer}>
             <ProfileItem
               icon="bell"
               title="Notifications"
+              subtitle="Manage notification preferences"
               onPress={() => console.log('Notifications settings')}
-              showChevron
             />
             <ProfileItem
               icon="moon"
               title="Dark Mode"
+              subtitle="Toggle dark/light theme"
               onPress={() => console.log('Dark mode toggle')}
-              showChevron
             />
             <ProfileItem
               icon="globe"
               title="Language"
-              value="English"
+              subtitle="English"
               onPress={() => console.log('Language settings')}
-              showChevron
             />
           </View>
         </View>
@@ -274,34 +271,40 @@ export default function ProfileScreen() {
         {/* Support */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Support</Text>
-          <View style={styles.profileCard}>
+          <View style={styles.listContainer}>
             <ProfileItem
               icon="questionmark.circle"
               title="Help & Support"
+              subtitle="Get help with your queries"
               onPress={() => console.log('Help & Support')}
-              showChevron
             />
             <ProfileItem
               icon="info.circle"
               title="About"
+              subtitle="App version and info"
               onPress={() => console.log('About')}
-              showChevron
             />
             <ProfileItem
               icon="shield.checkered"
               title="Privacy Policy"
+              subtitle="Read our privacy policy"
               onPress={() => console.log('Privacy Policy')}
-              showChevron
             />
           </View>
         </View>
 
         {/* Sign Out */}
         <View style={styles.section}>
-          <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-            <IconSymbol name="arrow.right.square" size={20} color="#EF4444" />
-            <Text style={styles.signOutText}>Sign Out</Text>
-          </TouchableOpacity>
+          <Text style={styles.sectionTitle}>Account</Text>
+          <View style={styles.listContainer}>
+            <ProfileItem
+              icon="arrow.right.square"
+              title="Sign Out"
+              subtitle="Log out of your account"
+              onPress={handleSignOut}
+              destructive
+            />
+          </View>
         </View>
 
         {/* App Version */}
@@ -370,64 +373,56 @@ const styles = StyleSheet.create({
   },
   section: {
     padding: Spacing.lg,
-    paddingBottom: Spacing.sm,
+    paddingBottom: 0,
   },
   sectionTitle: {
     fontSize: Typography.fontSize.lg,
     fontFamily: Typography.fontFamily.bold,
     color: BrandColors.title,
-    marginBottom: Spacing.base,
+    marginBottom: Spacing.md,
   },
-  profileCard: {
+  listContainer: {
     backgroundColor: BrandColors.surface,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: BrandColors.ink + '10',
+    overflow: 'hidden',
     ...Shadows.base,
   },
   profileItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: Spacing.base,
+    justifyContent: 'space-between',
+    padding: Spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: BrandColors.ink + '10',
+    backgroundColor: BrandColors.surface,
   },
-  profileItemContent: {
+  profileItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
-  profileItemText: {
-    marginLeft: Spacing.md,
+  profileItemIcon: {
+    width: 24,
+    alignItems: 'center',
+    marginRight: Spacing.md,
+  },
+  profileItemContent: {
     flex: 1,
   },
   profileItemTitle: {
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.semibold,
     color: BrandColors.ink,
-    marginBottom: 2,
   },
-  profileItemValue: {
+  profileItemSubtitle: {
     fontSize: Typography.fontSize.sm,
     fontFamily: Typography.fontFamily.regular,
     color: BrandColors.ink + '80',
+    marginTop: 2,
   },
-  signOutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: BrandColors.surface,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 2,
-    borderColor: '#EF4444' + '30',
-    padding: Spacing.base,
-    gap: Spacing.sm,
-    ...Shadows.sm,
-  },
-  signOutText: {
-    fontSize: Typography.fontSize.base,
-    fontFamily: Typography.fontFamily.semibold,
+  destructiveText: {
     color: '#EF4444',
   },
   footer: {
@@ -441,59 +436,5 @@ const styles = StyleSheet.create({
   },
   locationSelectorCard: {
     marginTop: Spacing.md,
-  },
-  // Admin Quick Actions
-  quickActionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.md,
-    justifyContent: 'space-between',
-  },
-  quickActionCard: {
-    width: '48%',
-    backgroundColor: BrandColors.surface,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.base,
-    alignItems: 'center',
-    gap: Spacing.sm,
-    borderWidth: 1,
-    borderColor: BrandColors.ink + '10',
-    ...Shadows.sm,
-  },
-  quickActionText: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.semibold,
-    color: BrandColors.title,
-    textAlign: 'center',
-  },
-  // Floor Manager Stats
-  statsContainer: {
-    flexDirection: 'row',
-    backgroundColor: BrandColors.surface,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.base,
-    gap: Spacing.base,
-    borderWidth: 1,
-    borderColor: BrandColors.ink + '10',
-    ...Shadows.base,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-    padding: Spacing.sm,
-    backgroundColor: BrandColors.primary + '10',
-    borderRadius: BorderRadius.md,
-  },
-  statValue: {
-    fontSize: Typography.fontSize['2xl'],
-    fontFamily: Typography.fontFamily.bold,
-    color: BrandColors.primary,
-    marginBottom: 2,
-  },
-  statLabel: {
-    fontSize: Typography.fontSize.xs,
-    fontFamily: Typography.fontFamily.semibold,
-    color: BrandColors.ink + '80',
-    textAlign: 'center',
   },
 });

@@ -1,17 +1,16 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
   FlatList,
+  StyleSheet,
+  Text,
   TextInput,
-  ScrollView,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors, Typography, Spacing } from '@/constants/design-system';
+import { Colors, Spacing, Typography } from '@/constants/design-system';
 import { useMediaHubStore } from '@/stores/mediaHubStore';
 
 interface JobCardSelectorProps {
@@ -28,17 +27,20 @@ export default function JobCardSelector({ onClose, showUnassignOption }: JobCard
     assignToTicket,
     clearSelection,
   } = useMediaHubStore();
-  
+
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredTickets = serviceTickets.filter(ticket => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
-      ticket.ticket_number.toLowerCase().includes(query) ||
-      ticket.customer_complaint.toLowerCase().includes(query)
+      (ticket.ticket_number?.toLowerCase() || '').includes(query) ||
+      (ticket.customer_complaint?.toLowerCase() || '').includes(query) ||
+      (ticket.customer?.name?.toLowerCase() || '').includes(query)
     );
   });
+
+  console.log(`JobCardSelector: ${serviceTickets.length} total tickets, ${filteredTickets.length} filtered tickets`);
 
   const handleTicketSelect = async (ticketId: string | null) => {
     try {
@@ -82,7 +84,7 @@ export default function JobCardSelector({ onClose, showUnassignOption }: JobCard
     }
   };
 
-  const renderTicketItem = ({ item }) => (
+  const renderTicketItem = ({ item }: { item: any }) => (
     <TouchableOpacity
       style={[
         styles.ticketItem,
@@ -92,7 +94,7 @@ export default function JobCardSelector({ onClose, showUnassignOption }: JobCard
     >
       <View style={styles.ticketHeader}>
         <View style={styles.ticketInfo}>
-          <Text style={styles.ticketNumber}>{item.ticket_number}</Text>
+          <Text style={styles.ticketNumber}>{item.ticket_number || 'No Ticket #'}</Text>
           <View style={[
             styles.priorityBadge,
             { backgroundColor: getPriorityColor(item.priority) }
@@ -100,7 +102,7 @@ export default function JobCardSelector({ onClose, showUnassignOption }: JobCard
             <Text style={styles.priorityText}>{getPriorityText(item.priority)}</Text>
           </View>
         </View>
-        
+
         {ticketFilter === item.id && (
           <IconSymbol
             name="checkmark.circle.fill"
@@ -109,14 +111,22 @@ export default function JobCardSelector({ onClose, showUnassignOption }: JobCard
           />
         )}
       </View>
-      
+
       <Text style={styles.ticketComplaint} numberOfLines={2}>
-        {item.customer_complaint}
+        {item.customer_complaint || 'No complaint details'}
       </Text>
-      
-      <Text style={styles.ticketDate}>
-        {new Date(item.created_at).toLocaleDateString()}
-      </Text>
+
+      <View style={styles.ticketFooter}>
+        <View style={styles.customerInfo}>
+          <IconSymbol name="person.circle" size={14} color={Colors.neutral[500]} />
+          <Text style={styles.customerName} numberOfLines={1}>
+            {item.customer?.name || 'Unknown Customer'}
+          </Text>
+        </View>
+        <Text style={styles.ticketDate}>
+          {item.created_at ? new Date(item.created_at).toLocaleDateString() : ''}
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 
@@ -129,7 +139,7 @@ export default function JobCardSelector({ onClose, showUnassignOption }: JobCard
           style={styles.header}
         >
           <Text style={styles.headerTitle}>
-            {selectedItems.length > 0 
+            {selectedItems.length > 0
               ? `Assign ${selectedItems.length} item${selectedItems.length > 1 ? 's' : ''}`
               : 'Select Job Card'
             }
@@ -182,7 +192,7 @@ export default function JobCardSelector({ onClose, showUnassignOption }: JobCard
                 {selectedItems.length > 0 ? 'Unassign from job cards' : 'No job card (unassigned)'}
               </Text>
             </View>
-            
+
             {ticketFilter === null && (
               <IconSymbol
                 name="checkmark.circle.fill"
@@ -199,6 +209,7 @@ export default function JobCardSelector({ onClose, showUnassignOption }: JobCard
           renderItem={renderTicketItem}
           keyExtractor={(item) => item.id}
           style={styles.ticketsList}
+          contentContainerStyle={styles.ticketsListContent}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={() => (
             <View style={styles.emptyState}>
@@ -240,10 +251,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '80%',
+    height: '80%', // Fixed height
     overflow: 'hidden',
   },
-  
+
   // Header
   header: {
     flexDirection: 'row',
@@ -316,7 +327,10 @@ const styles = StyleSheet.create({
   // Tickets List
   ticketsList: {
     flex: 1,
+  },
+  ticketsListContent: {
     paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xl,
   },
   ticketItem: {
     backgroundColor: Colors.white,
@@ -368,6 +382,24 @@ const styles = StyleSheet.create({
     color: Colors.neutral[600],
     marginBottom: Spacing.xs,
     lineHeight: 20,
+  },
+  ticketFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: Spacing.xs,
+  },
+  customerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: Spacing.sm,
+  },
+  customerName: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.neutral[600],
+    marginLeft: 4,
   },
   ticketDate: {
     fontSize: Typography.fontSize.xs,

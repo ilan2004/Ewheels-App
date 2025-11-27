@@ -1,22 +1,29 @@
 import React, { useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
+  View,
 } from 'react-native';
-import { router } from 'expo-router';
 
-import { supabase } from '@/lib/supabase';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
-import { useLocationStore } from '@/stores/locationStore';
+import { ThemedView } from '@/components/themed-view';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import {
+  BorderRadius,
+  BrandColors,
+  Colors,
+  Shadows,
+  Spacing,
+  Typography,
+} from '@/constants/design-system';
+import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
+import { useLocationStore } from '@/stores/locationStore';
 
 interface CreateTechnicianFormProps {
   onSuccess?: () => void;
@@ -40,7 +47,7 @@ export const CreateTechnicianForm: React.FC<CreateTechnicianFormProps> = ({
 
   const createTechnicianDirectly = async () => {
     const { user: currentUser } = useAuthStore.getState();
-    
+
     console.log('Creating technician directly with Supabase...');
 
     try {
@@ -70,11 +77,11 @@ export const CreateTechnicianForm: React.FC<CreateTechnicianFormProps> = ({
       const newUserId = authData.user.id;
       console.log('Created auth user with ID:', newUserId);
       console.log('User email confirmed:', authData.user.email_confirmed_at ? 'Yes' : 'No - will need confirmation');
-      
+
       // Note: Even if email confirmation is required, we can still create profile and role
       // The technician can confirm email later to fully activate their account
       console.log('User email confirmed:', authData.user.email_confirmed_at);
-      
+
       // Note: Even if email is not confirmed, we can still create profile and role
       // The technician can confirm email later if needed
 
@@ -152,7 +159,7 @@ export const CreateTechnicianForm: React.FC<CreateTechnicianFormProps> = ({
       }
 
       console.log('Successfully assigned technician role');
-      
+
       // Success!
       Alert.alert(
         'Success',
@@ -228,13 +235,13 @@ export const CreateTechnicianForm: React.FC<CreateTechnicianFormProps> = ({
       // Success handling is done within createTechnicianDirectly function
     } catch (error: any) {
       console.error('Error creating technician:', error);
-      
+
       // Show the specific error message to help with debugging
       const errorMessage = error.message || 'Failed to create technician';
-      
+
       if (errorMessage.includes('Failed to assign role')) {
         Alert.alert(
-          'Role Assignment Error', 
+          'Role Assignment Error',
           `Cannot assign technician role to the new user.\n\nThis indicates a backend database configuration issue. The server cannot insert the role into the app_roles table.\n\nPlease contact your system administrator to:\n• Check database permissions\n• Verify app_roles table structure\n• Review backend role assignment logic`,
           [{ text: 'OK', style: 'default' }]
         );
@@ -246,7 +253,7 @@ export const CreateTechnicianForm: React.FC<CreateTechnicianFormProps> = ({
         );
       } else {
         Alert.alert(
-          'Error Creating Technician', 
+          'Error Creating Technician',
           errorMessage,
           [{ text: 'OK', style: 'default' }]
         );
@@ -272,7 +279,7 @@ export const CreateTechnicianForm: React.FC<CreateTechnicianFormProps> = ({
         {/* Enhanced Header */}
         <View style={styles.header}>
           <View style={styles.headerIcon}>
-            <IconSymbol name="person.badge.plus" size={28} color="#3B82F6" />
+            <IconSymbol name="person.badge.plus" size={28} color={BrandColors.primary} />
           </View>
           <ThemedText type="title" style={styles.title}>
             Create New Technician
@@ -312,7 +319,7 @@ export const CreateTechnicianForm: React.FC<CreateTechnicianFormProps> = ({
                     autoCapitalize="none"
                     autoCorrect={false}
                     editable={!loading}
-                    placeholderTextColor="#94A3B8"
+                    placeholderTextColor={Colors.neutral[400]}
                   />
                 </View>
                 {errors.username && (
@@ -346,7 +353,7 @@ export const CreateTechnicianForm: React.FC<CreateTechnicianFormProps> = ({
                     autoCapitalize="none"
                     autoCorrect={false}
                     editable={!loading}
-                    placeholderTextColor="#94A3B8"
+                    placeholderTextColor={Colors.neutral[400]}
                   />
                 </View>
                 {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
@@ -376,7 +383,7 @@ export const CreateTechnicianForm: React.FC<CreateTechnicianFormProps> = ({
                     placeholder="Minimum 8 characters"
                     secureTextEntry
                     editable={!loading}
-                    placeholderTextColor="#94A3B8"
+                    placeholderTextColor={Colors.neutral[400]}
                   />
                 </View>
                 {errors.password && (
@@ -393,7 +400,7 @@ export const CreateTechnicianForm: React.FC<CreateTechnicianFormProps> = ({
           <View style={styles.infoCard}>
             <View style={styles.infoHeader}>
               <View style={styles.infoIconContainer}>
-                <IconSymbol name="mappin" size={16} color="#065F46" />
+                <IconSymbol name="mappin" size={16} color={BrandColors.primary} />
               </View>
               <Text style={styles.infoTitle}>Branch Assignment</Text>
             </View>
@@ -430,10 +437,10 @@ export const CreateTechnicianForm: React.FC<CreateTechnicianFormProps> = ({
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
+              <ActivityIndicator color={Colors.white} size="small" />
             ) : (
               <>
-                <IconSymbol name="checkmark" size={18} color="#FFFFFF" />
+                <IconSymbol name="checkmark" size={18} color={Colors.white} />
                 <Text style={[styles.buttonText, styles.submitButtonText]}>
                   Create Technician
                 </Text>
@@ -449,244 +456,206 @@ export const CreateTechnicianForm: React.FC<CreateTechnicianFormProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: BrandColors.surface,
   },
   scrollView: {
     flex: 1,
   },
   header: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 24,
-    paddingTop: 40,
-    paddingBottom: 24,
+    backgroundColor: BrandColors.surface,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing['2xl'],
+    paddingBottom: Spacing.xl,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
+    borderBottomColor: Colors.neutral[200],
+    ...Shadows.sm,
   },
   headerIcon: {
     alignSelf: 'center',
-    marginBottom: 16,
+    marginBottom: Spacing.md,
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: BrandColors.primary + '10',
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontSize: Typography.fontSize['2xl'],
+    fontWeight: Typography.fontWeight.bold as any,
+    color: BrandColors.ink,
     textAlign: 'center',
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#64748B',
-    marginTop: 8,
+    fontSize: Typography.fontSize.base,
+    color: Colors.neutral[500],
+    marginTop: Spacing.sm,
     textAlign: 'center',
     lineHeight: 24,
   },
   content: {
     flex: 1,
-    paddingTop: 24,
+    paddingTop: Spacing.xl,
   },
   formCard: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 5,
+    backgroundColor: Colors.white,
+    marginHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.xl,
+    ...Shadows.md,
   },
   formSection: {
-    marginBottom: 24,
+    marginBottom: Spacing.lg,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1E293B',
-    marginBottom: 16,
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.semibold as any,
+    color: BrandColors.ink,
+    marginBottom: Spacing.lg,
     letterSpacing: -0.3,
   },
   fieldContainer: {
-    marginBottom: 20,
+    marginBottom: Spacing.lg,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold as any,
+    color: Colors.neutral[700],
+    marginBottom: Spacing.sm,
     letterSpacing: 0.1,
   },
   required: {
-    color: '#DC2626',
+    color: Colors.error[500],
   },
   inputContainer: {
     position: 'relative',
   },
   input: {
-    borderWidth: 2,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    backgroundColor: '#FFFFFF',
-    color: '#1E293B',
-    fontWeight: '500',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    borderWidth: 1,
+    borderColor: Colors.neutral[300],
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    fontSize: Typography.fontSize.base,
+    backgroundColor: Colors.white,
+    color: BrandColors.ink,
+    fontWeight: Typography.fontWeight.medium as any,
+    ...Shadows.sm,
   },
   inputFocused: {
-    borderColor: '#3B82F6',
-    shadowColor: '#3B82F6',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    borderColor: BrandColors.primary,
+    ...Shadows.md,
   },
   inputError: {
-    borderColor: '#DC2626',
-    backgroundColor: '#FEF2F2',
+    borderColor: Colors.error[500],
+    backgroundColor: Colors.error[50],
   },
   errorText: {
-    fontSize: 13,
-    color: '#DC2626',
+    fontSize: Typography.fontSize.xs,
+    color: Colors.error[500],
     marginTop: 6,
-    fontWeight: '500',
+    fontWeight: Typography.fontWeight.medium as any,
   },
   helperText: {
-    fontSize: 13,
-    color: '#64748B',
+    fontSize: Typography.fontSize.xs,
+    color: Colors.neutral[500],
     marginTop: 6,
     lineHeight: 18,
   },
   infoCard: {
-    backgroundColor: '#F0FDF4',
-    borderRadius: 16,
-    padding: 20,
-    marginHorizontal: 16,
-    marginTop: 16,
+    backgroundColor: BrandColors.primary + '05',
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.lg,
     borderWidth: 1,
-    borderColor: '#BBF7D0',
-    shadowColor: '#10B981',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderColor: BrandColors.primary + '20',
+    ...Shadows.sm,
   },
   infoHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: Spacing.md,
   },
   infoIconContainer: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#D1FAE5',
+    backgroundColor: BrandColors.primary + '15',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: Spacing.md,
   },
   infoTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#065F46',
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.bold as any,
+    color: BrandColors.primary,
     letterSpacing: -0.2,
   },
   infoText: {
-    fontSize: 14,
-    color: '#374151',
+    fontSize: Typography.fontSize.sm,
+    color: Colors.neutral[700],
     lineHeight: 20,
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
   branchName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#065F46',
-    backgroundColor: '#D1FAE5',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.bold as any,
+    color: BrandColors.primary,
+    backgroundColor: BrandColors.primary + '10',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
     textAlign: 'center',
-    marginVertical: 8,
+    marginVertical: Spacing.sm,
     letterSpacing: -0.2,
   },
   infoSubtext: {
-    fontSize: 13,
-    color: '#6B7280',
+    fontSize: Typography.fontSize.xs,
+    color: Colors.neutral[500],
     lineHeight: 18,
   },
   actions: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 24,
-    gap: 12,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.xl,
+    gap: Spacing.md,
   },
   button: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    gap: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.sm,
+    ...Shadows.sm,
   },
   cancelButton: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#E2E8F0',
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.neutral[300],
   },
   cancelButtonText: {
-    color: '#64748B',
-    fontWeight: '600',
-    fontSize: 16,
+    color: Colors.neutral[600],
+    fontWeight: Typography.fontWeight.semibold as any,
+    fontSize: Typography.fontSize.base,
   },
   submitButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: BrandColors.primary,
   },
   submitButtonDisabled: {
-    backgroundColor: '#94A3B8',
+    backgroundColor: Colors.neutral[400],
     shadowOpacity: 0.05,
   },
   submitButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 16,
+    color: Colors.white,
+    fontWeight: Typography.fontWeight.bold as any,
+    fontSize: Typography.fontSize.base,
     letterSpacing: 0.2,
   },
   buttonText: {
-    fontSize: 16,
+    fontSize: Typography.fontSize.base,
   },
 });

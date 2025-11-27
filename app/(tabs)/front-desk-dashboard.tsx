@@ -1,296 +1,425 @@
+import { useQuery } from '@tanstack/react-query';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import {
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+
+import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors, Typography, Spacing } from '@/constants/design-system';
+import {
+  AssignmentOverviewColors,
+  BorderRadius,
+  BrandColors,
+  Shadows,
+  Spacing,
+  Typography
+} from '@/constants/design-system';
+import { floorManagerService } from '@/services/floorManagerService';
 import { useAuthStore } from '@/stores/authStore';
+import { useLocationStore } from '@/stores/locationStore';
+
+interface QuickStatProps {
+  title: string;
+  value: number | string;
+  color: string;
+  backgroundColor?: string;
+  gradientColors?: string[] | readonly string[];
+  icon: string;
+  onPress?: () => void;
+}
+
+const QuickStat: React.FC<QuickStatProps> = ({
+  title,
+  value,
+  color,
+  backgroundColor,
+  gradientColors,
+  icon,
+  onPress,
+}) => {
+  const cardContent = (
+    <View style={styles.statContent}>
+      <View style={styles.statHeader}>
+        <IconSymbol name={icon as any} size={20} color={color} />
+        <Text style={[styles.statTitle, { color }]}>{title}</Text>
+      </View>
+      <Text style={[styles.statValue, { color }]}>{value}</Text>
+    </View>
+  );
+
+  if (gradientColors) {
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        disabled={!onPress}
+      >
+        <LinearGradient
+          colors={gradientColors as any}
+          style={styles.statCard}
+        >
+          {cardContent}
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  }
+
+  return (
+    <TouchableOpacity
+      style={[styles.statCard, { backgroundColor }]}
+      onPress={onPress}
+      disabled={!onPress}
+    >
+      {cardContent}
+    </TouchableOpacity>
+  );
+};
 
 export default function FrontDeskDashboard() {
   const { user } = useAuthStore();
+  const { activeLocation } = useLocationStore();
 
-  // Mock data for dashboard stats
-  const stats = [
-    {
-      title: 'New Tickets',
-      value: '12',
-      icon: 'doc.text.fill',
-      color: Colors.primary[600],
-      bgColor: Colors.primary[50],
-    },
-    {
-      title: 'In Progress',
-      value: '8',
-      icon: 'clock.fill',
-      color: Colors.warning[600],
-      bgColor: Colors.warning[50],
-    },
-    {
-      title: 'Completed Today',
-      value: '15',
-      icon: 'checkmark.circle.fill',
-      color: Colors.success[600],
-      bgColor: Colors.success[50],
-    },
-    {
-      title: 'Media Files',
-      value: '23',
-      icon: 'photo.fill',
-      color: Colors.info[600],
-      bgColor: Colors.info[50],
-    },
-  ];
+  // Fetch dashboard stats - reusing floor manager service for now as it has similar stats
+  // In a real app, we might want a dedicated frontDeskService
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    error: statsError,
+    refetch: refetchStats,
+  } = useQuery({
+    queryKey: ['front-desk-stats', user?.id, activeLocation?.id],
+    queryFn: () => floorManagerService.getDashboardStats(user!.id, activeLocation?.id),
+    enabled: !!user,
+    refetchInterval: 30000,
+  });
 
-  const quickActions = [
-    {
-      title: 'Create Ticket',
-      icon: 'plus.circle.fill',
-      color: Colors.primary[600],
-      onPress: () => {
-        // Navigate to create ticket
-        console.log('Create ticket');
-      },
-    },
-    {
-      title: 'Capture Photo',
-      icon: 'camera.fill',
-      color: Colors.success[600],
-      onPress: () => {
-        // Navigate to camera
-        console.log('Capture photo');
-      },
-    },
-    {
-      title: 'View Reports',
-      icon: 'chart.bar.fill',
-      color: Colors.info[600],
-      onPress: () => {
-        // Navigate to reports
-        console.log('View reports');
-      },
-    },
-    {
-      title: 'Customer List',
-      icon: 'person.3.fill',
-      color: Colors.warning[600],
-      onPress: () => {
-        // Navigate to customers
-        console.log('Customer list');
-      },
-    },
-  ];
+  const handleRefresh = async () => {
+    await refetchStats();
+  };
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const userName = user?.firstName
+    ? `${user.firstName} ${user.lastName || ''}`.trim()
+    : 'Front Desk Manager';
+
+  if (statsError) {
+    return (
+      <ThemedView style={styles.errorContainer}>
+        <Text style={styles.errorText}>Failed to load dashboard</Text>
+        <TouchableOpacity onPress={handleRefresh} style={styles.retryButton}>
+          <Text style={styles.retryText}>Retry</Text>
+        </TouchableOpacity>
+      </ThemedView>
+    );
+  }
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
-        <Text style={styles.welcomeText}>Welcome back,</Text>
-        <Text style={styles.nameText}>
-          {user?.firstName || 'Front Desk Manager'}
-        </Text>
-        <Text style={styles.roleText}>Front Desk Manager</Text>
-      </View>
-
-      {/* Stats Cards */}
-      <View style={styles.statsContainer}>
-        <Text style={styles.sectionTitle}>Today's Overview</Text>
-        <View style={styles.statsGrid}>
-          {stats.map((stat, index) => (
-            <View key={index} style={[styles.statCard, { backgroundColor: stat.bgColor }]}>
-              <IconSymbol
-                name={stat.icon}
-                size={24}
-                color={stat.color}
-                style={styles.statIcon}
-              />
-              <Text style={[styles.statValue, { color: stat.color }]}>
-                {stat.value}
+    <ThemedView style={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={statsLoading} onRefresh={handleRefresh} />
+        }
+      >
+        {/* Header Card */}
+        <View style={styles.headerCard}>
+          <View style={styles.headerContent}>
+            <View style={styles.greetingSection}>
+              <Text style={styles.greeting}>
+                {getGreeting()}, {userName}!
               </Text>
-              <Text style={styles.statTitle}>{stat.title}</Text>
+              <Text style={styles.subtitle}>
+                Front Desk Dashboard
+              </Text>
+              {activeLocation && (
+                <View style={styles.locationRow}>
+                  <IconSymbol name="location" size={14} color={BrandColors.title} />
+                  <Text style={styles.location}>
+                    {activeLocation.name}
+                  </Text>
+                </View>
+              )}
             </View>
-          ))}
-        </View>
-      </View>
-
-      {/* Quick Actions */}
-      <View style={styles.actionsContainer}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.actionsGrid}>
-          {quickActions.map((action, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.actionButton}
-              onPress={action.onPress}
-              activeOpacity={0.8}
-            >
-              <IconSymbol
-                name={action.icon}
-                size={28}
-                color={action.color}
-                style={styles.actionIcon}
-              />
-              <Text style={styles.actionTitle}>{action.title}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      {/* Recent Activity */}
-      <View style={styles.activityContainer}>
-        <Text style={styles.sectionTitle}>Recent Activity</Text>
-        <View style={styles.activityList}>
-          {[
-            { time: '10:30 AM', action: 'New ticket created #TK-001', type: 'create' },
-            { time: '10:15 AM', action: 'Photo uploaded for ticket #TK-002', type: 'media' },
-            { time: '10:00 AM', action: 'Customer John Doe checked in', type: 'customer' },
-            { time: '09:45 AM', action: 'Ticket #TK-003 completed', type: 'complete' },
-          ].map((activity, index) => (
-            <View key={index} style={styles.activityItem}>
-              <IconSymbol
-                name={
-                  activity.type === 'create' ? 'plus.circle.fill' :
-                  activity.type === 'media' ? 'photo.fill' :
-                  activity.type === 'customer' ? 'person.fill' :
-                  'checkmark.circle.fill'
-                }
-                size={16}
-                color={Colors.neutral[600]}
-              />
-              <View style={styles.activityContent}>
-                <Text style={styles.activityAction}>{activity.action}</Text>
-                <Text style={styles.activityTime}>{activity.time}</Text>
+            <View style={styles.headerStats}>
+              <View style={styles.quickStatItem}>
+                <Text style={styles.quickStatValue}>{stats?.inProgressTickets || 0}</Text>
+                <Text style={styles.quickStatLabel}>Active</Text>
+              </View>
+              <View style={styles.quickStatItem}>
+                <Text style={styles.quickStatValue}>{stats?.dueToday || 0}</Text>
+                <Text style={styles.quickStatLabel}>Due Today</Text>
               </View>
             </View>
-          ))}
+          </View>
         </View>
-      </View>
-    </ScrollView>
+
+        {/* Quick Stats / KPI Overview */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            Overview
+          </Text>
+          <View style={styles.statsGrid}>
+            <QuickStat
+              title="Unassigned"
+              value={stats?.unassignedTickets || 0}
+              color={AssignmentOverviewColors.unassigned.text}
+              gradientColors={[...AssignmentOverviewColors.unassigned.gradient]}
+              icon="exclamationmark.triangle"
+              onPress={() => router.push('/jobcards?filter=unassigned')}
+            />
+            <QuickStat
+              title="In Progress"
+              value={stats?.inProgressTickets || 0}
+              color={AssignmentOverviewColors.in_progress.text}
+              gradientColors={[...AssignmentOverviewColors.in_progress.gradient]}
+              icon="gearshape.2"
+              onPress={() => router.push('/jobcards?filter=in_progress')}
+            />
+            <QuickStat
+              title="Due Today"
+              value={stats?.dueToday || 0}
+              color={AssignmentOverviewColors.due_today.text}
+              gradientColors={[...AssignmentOverviewColors.due_today.gradient]}
+              icon="clock"
+              onPress={() => router.push('/jobcards?filter=today')}
+            />
+            <QuickStat
+              title="Overdue"
+              value={stats?.overdue || 0}
+              color={AssignmentOverviewColors.overdue.text}
+              gradientColors={[...AssignmentOverviewColors.overdue.gradient]}
+              icon="clock.badge.exclamationmark"
+              onPress={() => router.push('/jobcards?filter=overdue')}
+            />
+          </View>
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            Quick Actions
+          </Text>
+          <View style={styles.actionsGrid}>
+            {/* Create Job Card Button */}
+            <TouchableOpacity
+              style={[styles.actionCard, styles.primaryActionCard]}
+              onPress={() => router.push('/jobcards')} // Navigating to jobcards list as create might be there or modal
+            >
+              <IconSymbol name="doc.text.fill.viewfinder" size={28} color={BrandColors.primary} />
+              <Text style={styles.actionTitle}>Create Job Card</Text>
+              <Text style={styles.actionSubtitle}>New service ticket</Text>
+            </TouchableOpacity>
+
+            {/* Create Invoice Button */}
+            <TouchableOpacity
+              style={[styles.actionCard, styles.greenActionCard]}
+              onPress={() => router.push('/invoices/create')}
+            >
+              <IconSymbol name="doc.text" size={28} color={BrandColors.title} />
+              <Text style={styles.actionTitle}>Create Invoice</Text>
+              <Text style={styles.actionSubtitle}>Bill a customer</Text>
+            </TouchableOpacity>
+
+            {/* Check This Month Report Button */}
+            <TouchableOpacity
+              style={[styles.actionCard, styles.blueActionCard]}
+              onPress={() => router.push('/financial')} // Assuming reports are in financial or similar
+            >
+              <IconSymbol name="chart.bar.fill" size={28} color="#0284C7" />
+              <Text style={styles.actionTitle}>Check Reports</Text>
+              <Text style={styles.actionSubtitle}>This month's stats</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.neutral[50],
+    backgroundColor: BrandColors.surface,
   },
-  header: {
-    padding: Spacing.lg,
-    paddingBottom: Spacing.base,
+  scrollView: {
+    flex: 1,
   },
-  welcomeText: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.neutral[600],
-    fontFamily: Typography.fontFamily.regular,
+  scrollContent: {
+    paddingBottom: Spacing['2xl'],
   },
-  nameText: {
-    fontSize: Typography.fontSize.xl2,
-    color: Colors.neutral[900],
-    fontFamily: Typography.fontFamily.bold,
-    marginTop: Spacing.xs,
+  headerCard: {
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: BrandColors.ink + '10',
+    margin: Spacing.lg,
+    marginBottom: Spacing.md,
+    ...Shadows.sm,
   },
-  roleText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.primary[600],
-    fontFamily: Typography.fontFamily.medium,
-    marginTop: Spacing.xs,
-  },
-  sectionTitle: {
-    fontSize: Typography.fontSize.lg,
-    color: Colors.neutral[900],
-    fontFamily: Typography.fontFamily.semibold,
-    marginBottom: Spacing.base,
-  },
-  statsContainer: {
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-  },
-  statsGrid: {
+  headerContent: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: Spacing.base,
+  },
+  greetingSection: {
+    flex: 1,
+  },
+  greeting: {
+    fontSize: Typography.fontSize.xl,
+    fontFamily: Typography.fontFamily.bold,
+    color: BrandColors.title,
+    marginBottom: 2,
+  },
+  subtitle: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '80',
+    marginBottom: Spacing.xs,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  location: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.medium,
+    color: BrandColors.title,
+  },
+  headerStats: {
+    flexDirection: 'row',
     gap: Spacing.base,
   },
-  statCard: {
-    flex: 1,
-    minWidth: '45%',
-    padding: Spacing.base,
-    borderRadius: 12,
+  quickStatItem: {
     alignItems: 'center',
-    minHeight: 100,
-    justifyContent: 'center',
   },
-  statIcon: {
-    marginBottom: Spacing.xs,
-  },
-  statValue: {
-    fontSize: Typography.fontSize.xl2,
+  quickStatValue: {
+    fontSize: Typography.fontSize.lg,
     fontFamily: Typography.fontFamily.bold,
-    marginBottom: Spacing.xs,
+    color: BrandColors.primary,
+  },
+  quickStatLabel: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.medium,
+    color: BrandColors.ink + '60',
+  },
+  section: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.base,
+  },
+  sectionTitle: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.title,
+    marginBottom: Spacing.base,
+  },
+  statsGrid: {
+    gap: Spacing.md,
+  },
+  statCard: {
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: BrandColors.ink + '10',
+    padding: Spacing.base,
+    ...Shadows.sm,
+  },
+  statContent: {
+    gap: Spacing.sm,
+  },
+  statHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
   },
   statTitle: {
     fontSize: Typography.fontSize.sm,
-    color: Colors.neutral[600],
     fontFamily: Typography.fontFamily.medium,
-    textAlign: 'center',
+    color: BrandColors.ink + '80',
   },
-  actionsContainer: {
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
+  statValue: {
+    fontSize: Typography.fontSize['2xl'],
+    fontFamily: Typography.fontFamily.bold,
   },
   actionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.base,
+    gap: Spacing.md,
   },
-  actionButton: {
+  actionCard: {
     flex: 1,
-    minWidth: '45%',
-    backgroundColor: Colors.white,
-    padding: Spacing.base,
-    borderRadius: 12,
+    minWidth: '48%', // Make them take up about half width, wrapping if needed
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: BrandColors.ink + '10',
+    padding: Spacing.lg,
     alignItems: 'center',
-    minHeight: 80,
-    justifyContent: 'center',
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    ...Shadows.sm,
   },
-  actionIcon: {
-    marginBottom: Spacing.xs,
+  primaryActionCard: {
+    borderColor: BrandColors.primary + '20',
+    backgroundColor: BrandColors.primary + '05',
+  },
+  greenActionCard: {
+    borderColor: BrandColors.title + '20',
+    backgroundColor: BrandColors.title + '05',
+  },
+  blueActionCard: {
+    borderColor: '#0284C7' + '20',
+    backgroundColor: '#0284C7' + '05',
   },
   actionTitle: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.neutral[700],
-    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.ink,
+    marginTop: Spacing.sm,
     textAlign: 'center',
   },
-  activityContainer: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.lg,
-  },
-  activityList: {
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: Spacing.base,
-  },
-  activityItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: Spacing.base,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.neutral[100],
-  },
-  activityContent: {
-    flex: 1,
-    marginLeft: Spacing.base,
-  },
-  activityAction: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.neutral[900],
-    fontFamily: Typography.fontFamily.medium,
-  },
-  activityTime: {
+  actionSubtitle: {
     fontSize: Typography.fontSize.xs,
-    color: Colors.neutral[500],
     fontFamily: Typography.fontFamily.regular,
-    marginTop: 2,
+    color: BrandColors.ink + '80',
+    marginTop: Spacing.xs,
+    textAlign: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.lg,
+  },
+  errorText: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.medium,
+    color: '#EF4444',
+    marginBottom: Spacing.base,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: BrandColors.primary,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    ...Shadows.sm,
+  },
+  retryText: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.surface,
   },
 });

@@ -1,80 +1,64 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { CameraType, CameraView, FlashMode, useCameraPermissions } from 'expo-camera';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as MediaLibrary from 'expo-media-library';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
+  ActivityIndicator,
   Alert,
   Dimensions,
   Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
-import * as MediaLibrary from 'expo-media-library';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors, Typography, Spacing, BrandColors } from '@/constants/design-system';
-import { useMediaHubStore } from '@/stores/mediaHubStore';
+import { BorderRadius, BrandColors, Colors, Shadows, Spacing, Typography } from '@/constants/design-system';
 import { useAuthStore } from '@/stores/authStore';
+import { useMediaHubStore } from '@/stores/mediaHubStore';
 import JobCardSelector from './JobCardSelector';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 export default function CaptureSection() {
   const { user } = useAuthStore();
-  const { createMediaItem, uploadToSupabase, ticketFilter } = useMediaHubStore();
-  
-  const [facing, setFacing] = useState<CameraType>('back');
+  const { createMediaItem, uploadToSupabase, ticketFilter, assignMediaToTicket } = useMediaHubStore();
+  const router = useRouter();
+
   const [permission, requestPermission] = useCameraPermissions();
-  const [mediaLibraryPermission, requestMediaLibraryPermission] = MediaLibrary.usePermissions();
+  const [facing, setFacing] = useState<CameraType>('back');
+  const [flash, setFlash] = useState<FlashMode>('off');
   const [isRecording, setIsRecording] = useState(false);
-  const [flashMode, setFlashMode] = useState<'off' | 'on'>('off');
+  const [isAssigning, setIsAssigning] = useState(false);
   const [showJobCardSelector, setShowJobCardSelector] = useState(false);
-  const [captureMode, setCaptureMode] = useState<'photo' | 'video'>('photo');
-  
+
   const cameraRef = useRef<CameraView>(null);
 
   useEffect(() => {
-    if (!permission?.granted) {
+    if (!permission) {
       requestPermission();
     }
-    if (!mediaLibraryPermission?.granted) {
-      requestMediaLibraryPermission();
-    }
-  }, [permission, mediaLibraryPermission]);
+  }, [permission]);
 
   if (!permission) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading camera...</Text>
-      </View>
-    );
+    return <View style={styles.container} />;
   }
 
   if (!permission.granted) {
     return (
       <View style={styles.permissionContainer}>
-        <LinearGradient
-          colors={[Colors.primary[500], Colors.primary[600]]}
-          style={styles.permissionCard}
-        >
-          <IconSymbol
-            name="camera.fill"
-            size={64}
-            color={Colors.white}
-            style={styles.permissionIcon}
-          />
+        <View style={styles.permissionCard}>
+          <IconSymbol name="camera.fill" size={64} color={BrandColors.primary} style={styles.permissionIcon} />
           <Text style={styles.permissionTitle}>Camera Access Required</Text>
           <Text style={styles.permissionMessage}>
             We need access to your camera to capture photos and videos for job cards.
           </Text>
-          <TouchableOpacity
-            style={styles.permissionButton}
-            onPress={requestPermission}
-          >
-            <Text style={styles.permissionButtonText}>Grant Camera Access</Text>
+          <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
+            <Text style={styles.permissionButtonText}>Grant Access</Text>
           </TouchableOpacity>
-        </LinearGradient>
+        </View>
       </View>
     );
   }
@@ -84,101 +68,87 @@ export default function CaptureSection() {
   };
 
   const toggleFlash = () => {
-    setFlashMode(current => (current === 'off' ? 'on' : 'off'));
+    setFlash(current => (current === 'off' ? 'on' : current === 'on' ? 'auto' : 'off'));
   };
 
-  const handleCapture = async (uri: string, mediaType: 'image' | 'video', metadata?: any) => {
+  const handleCapture = async (uri: string, type: 'image' | 'video') => {
     if (!user?.id) return;
 
     try {
-      // Save to media library if permission granted
-      if (mediaLibraryPermission?.granted) {
-        try {
-          await MediaLibrary.saveToLibraryAsync(uri);
-        } catch (saveError) {
-          console.warn('Failed to save to media library:', saveError);
-        }
-      }
+      // 1. Save to local library
+      const asset = await MediaLibrary.createAssetAsync(uri);
 
-      // Create media item in our system
-      const fileName = `${mediaType}_${Date.now()}.${mediaType === 'image' ? 'jpg' : 'mp4'}`;
-      
+      // 2. Create media item
+      const fileName = asset.filename || `capture_${Date.now()}.${type === 'image' ? 'jpg' : 'mp4'}`;
+
       const mediaItem = await createMediaItem({
         userId: user.id,
-        mediaType,
+        mediaType: type,
         fileName,
-        localUri: uri,
-        ticketId: ticketFilter || undefined,
-        assignedAt: ticketFilter ? new Date().toISOString() : undefined,
-        metadata: {
-          captureMode,
-          facing,
-          flashMode,
-          ...metadata,
-        },
+        localUri: asset.uri,
+        durationSeconds: type === 'video' ? asset.duration : undefined,
+        width: asset.width,
+        height: asset.height,
+        ticketId: undefined,
+        assignedAt: undefined,
       });
 
-      // Upload to Supabase in background
-      uploadToSupabase(mediaItem).catch(error => {
-        console.error('Upload failed:', error);
-      });
+      // 3. Handle upload and assignment
+      if (ticketFilter) {
+        // Assignment will handle the upload internally
+        Alert.alert('Captured!', 'Assigning media to job card...');
 
-      Alert.alert(
-        `${mediaType === 'image' ? 'Photo' : 'Video'} Captured`,
-        `${mediaType === 'image' ? 'Photo' : 'Video'} saved successfully!${ticketFilter ? ` Assigned to current job card.` : ''}`,
-        [{ text: 'OK' }]
-      );
+        setIsAssigning(true);
+
+        // Assignment will wait for/trigger upload as needed
+        assignMediaToTicket([mediaItem.id], ticketFilter)
+          .then(() => {
+            Alert.alert('Success', 'Media assigned to job card!');
+          })
+          .catch((error) => {
+            console.error('Assignment failed:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Failed to assign to job card';
+            Alert.alert('Assignment Failed', errorMessage);
+          })
+          .finally(() => {
+            setIsAssigning(false);
+          });
+      } else {
+        // Just upload in background
+        uploadToSupabase(mediaItem).catch(console.error);
+        Alert.alert('Saved', 'Media saved to library and uploading in background.');
+      }
 
     } catch (error) {
-      console.error('Error handling capture:', error);
-      Alert.alert('Error', `Failed to save ${mediaType}. Please try again.`);
+      console.error('Capture handling failed:', error);
+      Alert.alert('Error', 'Failed to save media.');
     }
   };
 
   const takePicture = async () => {
-    if (cameraRef.current) {
-      try {
-        const photo = await cameraRef.current.takePictureAsync({
-          quality: 0.8,
-          base64: false,
-          exif: true,
-        });
-        
-        if (photo) {
-          await handleCapture(photo.uri, 'image', {
-            width: photo.width,
-            height: photo.height,
-            exif: photo.exif,
-          });
-        }
-      } catch (error) {
-        console.error('Error taking picture:', error);
-        Alert.alert('Error', 'Failed to capture photo. Please try again.');
+    if (!cameraRef.current) return;
+    try {
+      const photo = await cameraRef.current.takePictureAsync();
+      if (photo) {
+        await handleCapture(photo.uri, 'image');
       }
+    } catch (error) {
+      console.error('Failed to take picture:', error);
     }
   };
 
   const startRecording = async () => {
-    if (cameraRef.current && !isRecording) {
-      try {
-        setIsRecording(true);
-        const video = await cameraRef.current.recordAsync({
-          maxDuration: 60,
-          mute: false,
-        });
-        
-        setIsRecording(false);
-        
-        if (video) {
-          await handleCapture(video.uri, 'video', {
-            duration: video.duration,
-          });
-        }
-      } catch (error) {
-        console.error('Error recording video:', error);
-        setIsRecording(false);
-        Alert.alert('Error', 'Failed to record video. Please try again.');
+    if (!cameraRef.current || isRecording) return;
+    try {
+      setIsRecording(true);
+      const video = await cameraRef.current.recordAsync();
+      if (video) {
+        await handleCapture(video.uri, 'video');
       }
+    } catch (error) {
+      console.error('Failed to record video:', error);
+    } finally {
+      setIsRecording(false);
     }
   };
 
@@ -191,147 +161,74 @@ export default function CaptureSection() {
   return (
     <View style={styles.container}>
       <CameraView
-        ref={cameraRef}
         style={styles.camera}
         facing={facing}
-        flash={flashMode}
-        mode={captureMode}
+        flash={flash}
+        ref={cameraRef}
+        mode="picture"
       >
-        {/* Top Controls */}
-        <View style={styles.topControls}>
-          <TouchableOpacity
-            style={styles.controlButton}
-            onPress={toggleFlash}
-          >
+        <LinearGradient
+          colors={['rgba(0,0,0,0.6)', 'transparent']}
+          style={styles.topControls}
+        >
+          <TouchableOpacity style={styles.controlButton} onPress={toggleFlash}>
             <IconSymbol
-              name={flashMode === 'on' ? 'bolt.fill' : 'bolt.slash.fill'}
-              size={24}
-              color={flashMode === 'on' ? Colors.warning[500] : Colors.white}
-            />
-          </TouchableOpacity>
-          
-          <View style={styles.modeToggle}>
-            <TouchableOpacity
-              style={[
-                styles.modeButton,
-                captureMode === 'photo' && styles.modeButtonActive
-              ]}
-              onPress={() => setCaptureMode('photo')}
-            >
-              <Text style={[
-                styles.modeText,
-                captureMode === 'photo' && styles.modeTextActive
-              ]}>
-                Photo
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.modeButton,
-                captureMode === 'video' && styles.modeButtonActive
-              ]}
-              onPress={() => setCaptureMode('video')}
-            >
-              <Text style={[
-                styles.modeText,
-                captureMode === 'video' && styles.modeTextActive
-              ]}>
-                Video
-              </Text>
-            </TouchableOpacity>
-          </View>
-          
-          <TouchableOpacity
-            style={styles.controlButton}
-            onPress={toggleCameraFacing}
-          >
-            <IconSymbol
-              name="arrow.triangle.2.circlepath.camera.fill"
+              name={flash === 'on' ? 'bolt.fill' : flash === 'auto' ? 'bolt.badge.a.fill' : 'bolt.slash.fill'}
               size={24}
               color={Colors.white}
             />
           </TouchableOpacity>
-        </View>
 
-        {/* Recording Indicator */}
-        {isRecording && (
-          <View style={styles.recordingIndicator}>
-            <View style={styles.recordingDot} />
-            <Text style={styles.recordingText}>REC</Text>
-          </View>
-        )}
-
-        {/* Bottom Controls */}
-        <View style={styles.bottomControls}>
-          {/* Job Card Selector Button */}
           <TouchableOpacity
-            style={[styles.jobCardButton, ticketFilter && styles.jobCardButtonActive]}
+            style={[styles.controlButton, ticketFilter && styles.activeTicketButton]}
             onPress={() => setShowJobCardSelector(true)}
           >
             <IconSymbol
-              name={ticketFilter ? 'checkmark.circle.fill' : 'plus.circle.fill'}
-              size={20}
-              color={Colors.white}
+              name={ticketFilter ? 'checkmark.circle.fill' : 'doc.text.magnifyingglass'}
+              size={24}
+              color={ticketFilter ? Colors.success[400] : Colors.white}
             />
           </TouchableOpacity>
 
-          {/* Capture Button */}
-          <TouchableOpacity
-            style={[
-              styles.captureButton,
-              captureMode === 'video' && styles.captureButtonVideo,
-              isRecording && styles.captureButtonRecording
-            ]}
-            onPress={captureMode === 'photo' ? takePicture : (isRecording ? stopRecording : startRecording)}
-          >
-            <View style={[
-              styles.captureButtonInner,
-              captureMode === 'video' && styles.captureButtonInnerVideo,
-              isRecording && styles.captureButtonInnerRecording
-            ]}>
-              {captureMode === 'photo' ? (
-                <IconSymbol
-                  name="camera.fill"
-                  size={32}
-                  color={Colors.primary[600]}
-                />
-              ) : (
-                <IconSymbol
-                  name={isRecording ? 'stop.fill' : 'video.fill'}
-                  size={28}
-                  color={Colors.white}
-                />
-              )}
-            </View>
+          <TouchableOpacity style={styles.controlButton} onPress={toggleCameraFacing}>
+            <IconSymbol name="camera.rotate.fill" size={24} color={Colors.white} />
           </TouchableOpacity>
+        </LinearGradient>
 
-          {/* Gallery Preview Button */}
+        <View style={styles.bottomControls}>
           <TouchableOpacity
             style={styles.galleryButton}
             onPress={() => useMediaHubStore.getState().setActiveTab('library')}
           >
-            <IconSymbol
-              name="photo.on.rectangle"
-              size={20}
-              color={Colors.white}
-            />
+            <IconSymbol name="photo.on.rectangle" size={24} color={Colors.white} />
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.captureButtonOuter}
+            onPress={takePicture}
+            onLongPress={startRecording}
+            onPressOut={stopRecording}
+          >
+            <View style={[
+              styles.captureButtonInner,
+              isRecording && styles.captureButtonRecording
+            ]} />
+          </TouchableOpacity>
+
+          <View style={styles.placeholderButton} />
         </View>
+
+        {isAssigning && (
+          <View style={styles.loadingOverlay}>
+            <View style={styles.loadingCard}>
+              <ActivityIndicator size="large" color={BrandColors.primary} style={styles.loadingIcon} />
+              <Text style={styles.loadingTitle}>Assigning...</Text>
+              <Text style={styles.loadingSubtitle}>Linking to job card</Text>
+            </View>
+          </View>
+        )}
       </CameraView>
 
-      {/* Instructions */}
-      <View style={styles.instructionsContainer}>
-        <Text style={styles.instructionsText}>
-          {isRecording 
-            ? 'Recording... Tap to stop' 
-            : captureMode === 'photo'
-            ? 'Tap circle to take photo'
-            : 'Tap circle to start recording'
-          }
-        </Text>
-      </View>
-
-      {/* Job Card Selector Modal */}
       <Modal
         visible={showJobCardSelector}
         transparent
@@ -352,17 +249,72 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.black,
   },
-  loadingContainer: {
+  camera: {
     flex: 1,
+  },
+  topControls: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 60,
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.xl,
+  },
+  controlButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.3)',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.neutral[900],
   },
-  loadingText: {
-    color: Colors.white,
-    fontSize: Typography.fontSize.lg,
-    fontFamily: Typography.fontFamily.medium,
+  activeTicketButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderWidth: 1,
+    borderColor: Colors.success[400],
   },
+  bottomControls: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingBottom: 50,
+    paddingHorizontal: Spacing.xl,
+  },
+  captureButtonOuter: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 4,
+    borderColor: Colors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  captureButtonInner: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: Colors.white,
+  },
+  captureButtonRecording: {
+    backgroundColor: Colors.error[500],
+    transform: [{ scale: 0.8 }],
+  },
+  galleryButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderButton: {
+    width: 50,
+  },
+
+  // Permission styles
   permissionContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -371,14 +323,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
   },
   permissionCard: {
-    borderRadius: 16,
+    width: '100%',
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.xl,
     padding: Spacing.xl,
     alignItems: 'center',
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    borderWidth: 1,
+    borderColor: BrandColors.ink + '10',
+    ...Shadows.md,
   },
   permissionIcon: {
     marginBottom: Spacing.lg,
@@ -386,169 +338,59 @@ const styles = StyleSheet.create({
   permissionTitle: {
     fontSize: Typography.fontSize.xl,
     fontFamily: Typography.fontFamily.bold,
-    color: Colors.white,
+    color: BrandColors.title,
     marginBottom: Spacing.base,
     textAlign: 'center',
   },
   permissionMessage: {
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.regular,
-    color: Colors.primary[100],
+    color: BrandColors.ink + '80',
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: Spacing.xl,
   },
   permissionButton: {
-    backgroundColor: Colors.white,
+    backgroundColor: BrandColors.primary,
     paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.base,
-    borderRadius: 25,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.full,
   },
   permissionButtonText: {
-    color: Colors.primary[600],
+    color: Colors.white,
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.semibold,
   },
-  camera: {
-    flex: 1,
-  },
-  topControls: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: 60,
-    paddingBottom: Spacing.base,
-  },
-  controlButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+
+  // Loading Overlay
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1000,
   },
-  modeToggle: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 20,
-    padding: 2,
-  },
-  modeButton: {
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.xs,
-    borderRadius: 16,
-  },
-  modeButtonActive: {
-    backgroundColor: Colors.white,
-  },
-  modeText: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.medium,
-    color: Colors.white,
-  },
-  modeTextActive: {
-    color: Colors.black,
-  },
-  recordingIndicator: {
-    position: 'absolute',
-    top: 120,
-    left: Spacing.lg,
-    flexDirection: 'row',
+  loadingCard: {
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.xl,
     alignItems: 'center',
-    backgroundColor: Colors.danger[500],
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.xs,
-    borderRadius: 12,
+    ...Shadows.lg,
+    width: 200,
   },
-  recordingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.white,
-    marginRight: Spacing.xs,
+  loadingIcon: {
+    marginBottom: Spacing.md,
   },
-  recordingText: {
-    color: Colors.white,
-    fontSize: Typography.fontSize.sm,
+  loadingTitle: {
+    fontSize: Typography.fontSize.lg,
     fontFamily: Typography.fontFamily.bold,
+    color: BrandColors.title,
+    marginBottom: Spacing.xs,
   },
-  bottomControls: {
-    position: 'absolute',
-    bottom: 100,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing.lg,
-  },
-  jobCardButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  jobCardButtonActive: {
-    backgroundColor: Colors.success[500],
-  },
-  captureButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  captureButtonVideo: {
-    backgroundColor: 'rgba(239, 68, 68, 0.3)',
-  },
-  captureButtonRecording: {
-    backgroundColor: Colors.danger[500],
-  },
-  captureButtonInner: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: Colors.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  captureButtonInnerVideo: {
-    backgroundColor: Colors.danger[500],
-  },
-  captureButtonInnerRecording: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: Colors.white,
-  },
-  galleryButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  instructionsContainer: {
-    position: 'absolute',
-    bottom: 20,
-    left: 0,
-    right: 0,
-    paddingHorizontal: Spacing.lg,
-  },
-  instructionsText: {
-    color: Colors.white,
+  loadingSubtitle: {
     fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.medium,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '60',
     textAlign: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.xs,
-    borderRadius: 8,
   },
 });

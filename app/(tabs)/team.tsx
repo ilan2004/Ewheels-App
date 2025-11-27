@@ -1,31 +1,30 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-  ActivityIndicator,
-  TextInput,
-} from 'react-native';
+import { useAuthStore } from '@/stores/authStore';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { useAuthStore } from '@/stores/authStore';
+import React, { useState } from 'react';
+import {
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { jobCardsService } from '@/services/jobCardsService';
-import { HeroImageCard, ImageCard } from '@/components/image-card';
-import { 
+import {
+  BorderRadius,
   BrandColors,
   Colors,
-  Typography,
-  Spacing,
-  BorderRadius,
+  ComponentStyles,
   Shadows,
-  ComponentStyles
+  Spacing,
+  Typography
 } from '@/constants/design-system';
+import { jobCardsService } from '@/services/jobCardsService';
 
 interface Technician {
   id: string;
@@ -42,31 +41,29 @@ interface TechnicianCardProps {
 
 const TechnicianCard: React.FC<TechnicianCardProps> = ({ technician, onPress }) => {
   const fullName = `${technician.first_name} ${technician.last_name}`.trim();
-  const initials = `${technician.first_name?.[0] || ''}${technician.last_name?.[0] || ''}`.toUpperCase();
   const activeTickets = technician.activeTickets || 0;
-  
+
   return (
-    <TouchableOpacity style={styles.technicianCard} onPress={onPress}>
-      <View style={styles.technicianHeader}>
-        <View style={styles.technicianInfo}>
-          <ImageCard
-            source={require('@/assets/images/custom/technician-profile.png')}
-            size="sm"
-            style={styles.technicianAvatar}
-          />
-          <View style={styles.technicianDetails}>
-            <Text style={styles.technicianName}>{fullName || 'Unknown Technician'}</Text>
-            <Text style={styles.technicianEmail}>{technician.email || 'No email'}</Text>
-          </View>
-        </View>
-        <View style={styles.technicianStats}>
-          <Text style={styles.activeTasksCount}>
-            {activeTickets}
-          </Text>
-          <Text style={styles.activeTasksLabel}>
-            Active Tasks
+    <TouchableOpacity
+      style={styles.technicianCard}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={styles.cardContent}>
+        <View style={styles.technicianAvatar}>
+          <Text style={styles.technicianInitials}>
+            {technician.first_name?.[0] || ''}{technician.last_name?.[0] || ''}
           </Text>
         </View>
+
+        <View style={styles.technicianDetails}>
+          <Text style={styles.technicianName}>{fullName || 'Unknown Technician'}</Text>
+          <Text style={styles.technicianSubtitle}>
+            {activeTickets} Active Task{activeTickets !== 1 ? 's' : ''}
+          </Text>
+        </View>
+
+        <IconSymbol name="chevron.right" size={20} color={Colors.neutral[400]} />
       </View>
     </TouchableOpacity>
   );
@@ -77,7 +74,7 @@ export default function TeamScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'analytics'>('list');
-  
+
   // Fetch technicians list
   const {
     data: technicians,
@@ -88,11 +85,7 @@ export default function TeamScreen() {
     queryKey: ['technicians-list'],
     queryFn: async () => {
       const data = await jobCardsService.getTechnicians();
-      // Add active tickets count (mock for now)
-      return data.map((tech, index) => ({
-        ...tech,
-        activeTickets: [3, 6, 2, 8, 4, 1][index % 6] || 0,
-      }));
+      return data;
     },
     refetchInterval: 60000,
   });
@@ -105,12 +98,22 @@ export default function TeamScreen() {
     router.push(`/technician-details/${technicianId}`);
   };
 
-  // Filter technicians based on search query
+  // Filter technicians based on search query and active filter
+  const [activeFilter, setActiveFilter] = useState<'all' | 'available' | 'overloaded'>('all');
+
   const filteredTechnicians = technicians?.filter((technician) => {
     const fullName = `${technician.first_name} ${technician.last_name}`.toLowerCase();
     const email = technician.email?.toLowerCase() || '';
     const query = searchQuery.toLowerCase();
-    return fullName.includes(query) || email.includes(query);
+    const matchesSearch = fullName.includes(query) || email.includes(query);
+
+    if (!matchesSearch) return false;
+
+    const activeTickets = technician.activeTickets || 0;
+    if (activeFilter === 'available') return activeTickets < 6;
+    if (activeFilter === 'overloaded') return activeTickets >= 8;
+
+    return true;
   }) || [];
 
   // Loading state
@@ -141,8 +144,6 @@ export default function TeamScreen() {
   const stats = {
     totalTechnicians: technicians?.length || 0,
     totalTasks: technicians?.reduce((sum, tech) => sum + (tech.activeTickets || 0), 0) || 0,
-    available: technicians?.filter(tech => (tech.activeTickets || 0) < 6).length || 0,
-    overloaded: technicians?.filter(tech => (tech.activeTickets || 0) >= 8).length || 0,
   };
 
   return (
@@ -165,18 +166,6 @@ export default function TeamScreen() {
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{stats.totalTasks}</Text>
               <Text style={styles.statLabel}>Active Tasks</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: stats.available > 0 ? Colors.success[500] : Colors.error[500] }]}>
-                {stats.available}
-              </Text>
-              <Text style={styles.statLabel}>Available</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: stats.overloaded > 0 ? Colors.error[500] : Colors.success[500] }]}>
-                {stats.overloaded}
-              </Text>
-              <Text style={styles.statLabel}>Overloaded</Text>
             </View>
           </View>
         </View>
@@ -207,7 +196,7 @@ export default function TeamScreen() {
         <View style={styles.searchSection}>
           <View style={styles.searchContainer}>
             <View style={styles.searchInputContainer}>
-              <IconSymbol name="magnifyingglass" size={20} color={Colors.neutral[500]} />
+              <IconSymbol name="doc.text.magnifyingglass" size={20} color={Colors.neutral[500]} />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search technicians..."
@@ -221,14 +210,42 @@ export default function TeamScreen() {
                 </TouchableOpacity>
               )}
             </View>
-            <TouchableOpacity 
-              style={styles.filterButton}
+            <TouchableOpacity
+              style={[styles.filterButton, showFilters && styles.filterButtonActive]}
               onPress={() => setShowFilters(!showFilters)}
             >
-              <IconSymbol name="line.3.horizontal.decrease.circle" size={24} color={Colors.neutral[600]} />
+              <IconSymbol
+                name="line.3.horizontal.decrease.circle"
+                size={24}
+                color={showFilters ? BrandColors.primary : Colors.neutral[600]}
+              />
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Filter Options */}
+        {showFilters && (
+          <View style={styles.filterOptions}>
+            <TouchableOpacity
+              style={[styles.filterChip, activeFilter === 'all' && styles.filterChipActive]}
+              onPress={() => setActiveFilter('all')}
+            >
+              <Text style={[styles.filterChipText, activeFilter === 'all' && styles.filterChipTextActive]}>All</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterChip, activeFilter === 'available' && styles.filterChipActive]}
+              onPress={() => setActiveFilter('available')}
+            >
+              <Text style={[styles.filterChipText, activeFilter === 'available' && styles.filterChipTextActive]}>Available</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterChip, activeFilter === 'overloaded' && styles.filterChipActive]}
+              onPress={() => setActiveFilter('overloaded')}
+            >
+              <Text style={[styles.filterChipText, activeFilter === 'overloaded' && styles.filterChipTextActive]}>Overloaded</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Content based on view mode */}
         {viewMode === 'analytics' && user?.role === 'admin' ? (
@@ -238,7 +255,7 @@ export default function TeamScreen() {
                 Performance Analytics
               </ThemedText>
             </View>
-            
+
             {/* Performance Metrics */}
             <View style={styles.performanceGrid}>
               <View style={styles.performanceCard}>
@@ -299,33 +316,33 @@ export default function TeamScreen() {
               )}
             </View>
 
-          {filteredTechnicians.length > 0 ? (
-            <View style={styles.techniciansList}>
-              {filteredTechnicians.map((technician) => (
-                <TechnicianCard
-                  key={technician.id}
-                  technician={technician}
-                  onPress={() => handleTechnicianPress(technician.id)}
-                />
-              ))}
-            </View>
-          ) : searchQuery ? (
-            <View style={styles.emptyContainer}>
-              <IconSymbol name="magnifyingglass" size={64} color={Colors.neutral[400]} />
-              <Text style={styles.emptyTitle}>No results found</Text>
-              <Text style={styles.emptySubtitle}>
-                Try adjusting your search criteria
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.emptyContainer}>
-              <IconSymbol name="person.3" size={64} color={Colors.neutral[400]} />
-              <Text style={styles.emptyTitle}>No technicians found</Text>
-              <Text style={styles.emptySubtitle}>
-                No team members are currently available
-              </Text>
-            </View>
-          )}
+            {filteredTechnicians.length > 0 ? (
+              <View style={styles.techniciansList}>
+                {filteredTechnicians.map((technician) => (
+                  <TechnicianCard
+                    key={technician.id}
+                    technician={technician}
+                    onPress={() => handleTechnicianPress(technician.id)}
+                  />
+                ))}
+              </View>
+            ) : searchQuery || activeFilter !== 'all' ? (
+              <View style={styles.emptyContainer}>
+                <IconSymbol name="doc.text.magnifyingglass" size={64} color={Colors.neutral[400]} />
+                <Text style={styles.emptyTitle}>No results found</Text>
+                <Text style={styles.emptySubtitle}>
+                  Try adjusting your search or filter criteria
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.emptyContainer}>
+                <IconSymbol name="person.3" size={64} color={Colors.neutral[400]} />
+                <Text style={styles.emptyTitle}>No technicians found</Text>
+                <Text style={styles.emptySubtitle}>
+                  No team members are currently available
+                </Text>
+              </View>
+            )}
           </View>
         )}
       </ScrollView>
@@ -337,7 +354,7 @@ const styles = StyleSheet.create({
   // Container styles
   container: {
     flex: 1,
-    backgroundColor: Colors.neutral[50],
+    backgroundColor: BrandColors.surface,
   },
   scrollView: {
     flex: 1,
@@ -345,27 +362,27 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 20,
   },
-  
+
   // Loading states
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.neutral[50],
+    backgroundColor: BrandColors.surface,
   },
   loadingText: {
     marginTop: Spacing.sm,
     fontSize: Typography.fontSize.base,
     color: Colors.neutral[500],
   },
-  
+
   // Error states
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.lg,
-    backgroundColor: Colors.neutral[50],
+    backgroundColor: BrandColors.surface,
   },
   errorText: {
     fontSize: Typography.fontSize.lg,
@@ -389,8 +406,7 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.semibold as any,
     fontSize: Typography.fontSize.base,
   },
-  
-  
+
   // Stats section
   statsSection: {
     padding: Spacing.lg,
@@ -416,7 +432,7 @@ const styles = StyleSheet.create({
     color: Colors.neutral[500],
     marginTop: Spacing.xs,
   },
-  
+
   // Search section
   searchSection: {
     padding: Spacing.lg,
@@ -449,7 +465,41 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     ...Shadows.base,
   },
-  
+  filterButtonActive: {
+    backgroundColor: BrandColors.primary + '10',
+    borderColor: BrandColors.primary,
+    borderWidth: 1,
+  },
+
+  // Filter Options
+  filterOptions: {
+    flexDirection: 'row',
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    gap: Spacing.sm,
+  },
+  filterChip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.neutral[200],
+  },
+  filterChipActive: {
+    backgroundColor: BrandColors.primary,
+    borderColor: BrandColors.primary,
+  },
+  filterChipText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.neutral[600],
+    fontWeight: Typography.fontWeight.medium as any,
+  },
+  filterChipTextActive: {
+    color: Colors.white,
+    fontWeight: Typography.fontWeight.semibold as any,
+  },
+
   // List section
   listSection: {
     padding: Spacing.lg,
@@ -477,67 +527,51 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.semibold as any,
   },
-  
+
   // Technicians list
   techniciansList: {
     gap: Spacing.md,
   },
   technicianCard: {
-    ...ComponentStyles.card,
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.lg,
+    ...Shadows.sm,
+    overflow: 'hidden',
   },
-  technicianHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
-  technicianInfo: {
+  cardContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: Spacing.lg,
     gap: Spacing.md,
-    flex: 1,
   },
   technicianAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: BrandColors.primary,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: BrandColors.primary + '10', // 10% opacity
     justifyContent: 'center',
     alignItems: 'center',
   },
   technicianInitials: {
-    color: Colors.white,
-    fontSize: Typography.fontSize.base,
+    color: BrandColors.primary,
+    fontSize: Typography.fontSize.lg,
     fontWeight: Typography.fontWeight.bold as any,
   },
   technicianDetails: {
     flex: 1,
+    justifyContent: 'center',
   },
   technicianName: {
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.semibold as any,
     color: BrandColors.ink,
+    marginBottom: 2,
   },
-  technicianEmail: {
-    fontSize: Typography.fontSize.xs,
+  technicianSubtitle: {
+    fontSize: Typography.fontSize.sm,
     color: Colors.neutral[500],
-    marginTop: Spacing.xs,
   },
-  technicianStats: {
-    alignItems: 'flex-end',
-  },
-  activeTasksCount: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.bold as any,
-    color: BrandColors.primary,
-    marginBottom: Spacing.xs,
-  },
-  activeTasksLabel: {
-    fontSize: 11,
-    color: Colors.neutral[500],
-    fontWeight: Typography.fontWeight.medium as any,
-  },
-  
+
   // View Mode Toggle
   viewModeSection: {
     padding: Spacing.lg,
@@ -572,7 +606,7 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontFamily: Typography.fontFamily.semibold,
   },
-  
+
   // Analytics Section
   analyticsSection: {
     padding: Spacing.lg,

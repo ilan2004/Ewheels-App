@@ -1,36 +1,36 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-  TextInput,
   Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { router } from 'expo-router';
 
-import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { useAuthStore } from '@/stores/authStore';
 import { batteriesService } from '@/services/batteriesService';
-import { BatteryRecord } from '@/types';
+import { useAuthStore } from '@/stores/authStore';
+import { BatteryCase } from '@/types';
 
 interface BatteryCardProps {
-  battery: BatteryRecord;
+  battery: BatteryCase;
   onPress: () => void;
   onStatusUpdate: (id: string, status: string, notes?: string) => void;
   onRunDiagnostics: (id: string) => void;
 }
 
-const BatteryCard: React.FC<BatteryCardProps> = ({ 
-  battery, 
-  onPress, 
-  onStatusUpdate, 
-  onRunDiagnostics 
+const BatteryCard: React.FC<BatteryCardProps> = ({
+  battery,
+  onPress,
+  onStatusUpdate,
+  onRunDiagnostics
 }) => {
   const [showActions, setShowActions] = useState(false);
   const [notes, setNotes] = useState('');
@@ -58,7 +58,7 @@ const BatteryCard: React.FC<BatteryCardProps> = ({
   };
 
   const getBMSStatusColor = () => {
-    switch (battery.bms_status) {
+    switch (battery.bms_status || 'unknown') {
       case 'ok': return '#10B981';
       case 'faulty': return '#EF4444';
       case 'replaced': return '#3B82F6';
@@ -68,6 +68,7 @@ const BatteryCard: React.FC<BatteryCardProps> = ({
   };
 
   const getVoltageHealthColor = (voltage: number) => {
+    if (!battery.voltage) return '#6B7280';
     const healthPercentage = (voltage / battery.voltage) * 100;
     if (healthPercentage >= 90) return '#10B981';
     if (healthPercentage >= 80) return '#F59E0B';
@@ -88,7 +89,7 @@ const BatteryCard: React.FC<BatteryCardProps> = ({
 
   const handleStatusUpdate = () => {
     if (!nextAction) return;
-    
+
     Alert.alert(
       'Update Status',
       `Mark this battery as ${nextAction.label.toLowerCase()}?`,
@@ -124,15 +125,15 @@ const BatteryCard: React.FC<BatteryCardProps> = ({
     <TouchableOpacity style={styles.batteryCard} onPress={onPress}>
       <View style={styles.batteryHeader}>
         <View style={styles.batteryTitleRow}>
-          <IconSymbol 
-            name="battery.100" 
-            size={20} 
-            color={getStatusColor()} 
+          <IconSymbol
+            name={getStatusIcon()}
+            size={20}
+            color={getStatusColor()}
           />
           <View style={styles.batteryInfo}>
             <Text style={styles.batterySerial}>{battery.battery_serial}</Text>
             <Text style={styles.batteryDetails}>
-              {battery.battery_make} {battery.battery_model} • {battery.voltage}V
+              {battery.battery_make} {battery.battery_model} • {battery.voltage || 0}V
             </Text>
           </View>
         </View>
@@ -148,16 +149,16 @@ const BatteryCard: React.FC<BatteryCardProps> = ({
         <View style={styles.specRow}>
           <View style={styles.specItem}>
             <Text style={styles.specLabel}>Type</Text>
-            <Text style={styles.specValue}>{battery.battery_type.toUpperCase()}</Text>
+            <Text style={styles.specValue}>{(battery.battery_type || 'Unknown').toUpperCase()}</Text>
           </View>
           <View style={styles.specItem}>
             <Text style={styles.specLabel}>Capacity</Text>
-            <Text style={styles.specValue}>{battery.capacity}Ah</Text>
+            <Text style={styles.specValue}>{battery.capacity || 0}Ah</Text>
           </View>
           <View style={styles.specItem}>
             <Text style={styles.specLabel}>BMS</Text>
             <Text style={[styles.specValue, { color: getBMSStatusColor() }]}>
-              {battery.bms_status.toUpperCase()}
+              {(battery.bms_status || 'unknown').toUpperCase()}
             </Text>
           </View>
         </View>
@@ -228,16 +229,6 @@ const BatteryCard: React.FC<BatteryCardProps> = ({
 
       {/* Action Buttons */}
       <View style={styles.actionSection}>
-        {battery.status === 'received' && (
-          <TouchableOpacity
-            style={[styles.diagnosticButton, { backgroundColor: '#3B82F6' }]}
-            onPress={handleRunDiagnostics}
-          >
-            <IconSymbol name="waveform.path.ecg" size={16} color="#FFFFFF" />
-            <Text style={styles.actionButtonText}>Run Diagnostics</Text>
-          </TouchableOpacity>
-        )}
-        
         {nextAction && (
           <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: getStatusColor() }]}
@@ -344,7 +335,10 @@ export default function TechnicianBatteriesScreen() {
   };
 
   const handleBatteryPress = (batteryId: string) => {
-    router.push(`/batteries/${batteryId}`);
+    const battery = batteries?.find(b => b.id === batteryId);
+    if (battery?.service_ticket_id) {
+      router.push(`/jobcards/${battery.service_ticket_id}`);
+    }
   };
 
   const handleStatusUpdate = (id: string, status: string, notes?: string) => {
