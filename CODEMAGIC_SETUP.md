@@ -57,7 +57,17 @@ Follow the detailed guide: **[ANDROID_SIGNING_SETUP.md](file:///e:/All%20Softwar
 
 4. **Update `android/app/build.gradle`** to use signing config (see full guide)
 
-## Step 3: Update Configuration
+## Step 3: Configure App Environment Variables
+
+Your app needs Supabase and API configuration. Add these to a new group (e.g., `app_config`) or the existing group in Codemagic:
+
+| Variable Name | Description | Secure? |
+|--------------|-------------|---------|
+| `EXPO_PUBLIC_SUPABASE_URL` | Your Supabase Project URL | ❌ No |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase Anon Key | ✅ Yes |
+| `EXPO_PUBLIC_API_URL` | `https://ev-wheels.vercel.app` (already in yaml, but can override here) | ❌ No |
+
+## Step 4: Update Configuration
 
 Before triggering builds, update the following in `codemagic.yaml`:
 
