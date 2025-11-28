@@ -10,7 +10,7 @@ workflows:
         - android_signing
       vars:
         # App configuration
-        EXPO_PUBLIC_API_URL: https://your-api-url.com
+        EXPO_PUBLIC_API_URL: https://ev-wheels.vercel.app
         NODE_VERSION: 20.18.0
       node: $NODE_VERSION
       java: 17
@@ -50,7 +50,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - your-email@example.com
+          - ilanusman03@gmail.com
         notify:
           success: true
           failure: true
@@ -64,7 +64,7 @@ workflows:
       groups:
         - android_signing
       vars:
-        EXPO_PUBLIC_API_URL: https://your-api-url.com
+        EXPO_PUBLIC_API_URL: https://ev-wheels.vercel.app
         NODE_VERSION: 20.18.0
       node: $NODE_VERSION
       java: 17
@@ -102,6 +102,7 @@ workflows:
 
       - name: Build Android Release APK
         script: |
+          export CM_KEYSTORE_PATH="$CM_BUILD_DIR/keystore.jks"
           cd android
           ./gradlew assembleRelease
 
@@ -130,7 +131,7 @@ workflows:
         - android_signing
         - google_play_credentials
       vars:
-        EXPO_PUBLIC_API_URL: https://your-production-api-url.com
+        EXPO_PUBLIC_API_URL: https://ev-wheels.vercel.app
         NODE_VERSION: 20.18.0
       node: $NODE_VERSION
       java: 17
@@ -166,6 +167,7 @@ workflows:
 
       - name: Build Android App Bundle (AAB)
         script: |
+          export CM_KEYSTORE_PATH="$CM_BUILD_DIR/keystore.jks"
           cd android
           ./gradlew bundleRelease
 

@@ -62,59 +62,13 @@ The base64 string is now in your clipboard.
 | `CM_KEY_ALIAS` | `evwheels-key` (or your alias) | ❌ No |
 | `CM_KEY_PASSWORD` | Your key password | ✅ Yes |
 
-## Step 4: Update gradle.properties
+## Step 4: That's It!
 
-The workflow needs to reference these signing credentials. Create or update `android/gradle.properties`:
+I've added a **Config Plugin** (`plugins/withAndroidSigning.js`) to your project that automatically configures `build.gradle` to use these variables.
 
-```properties
-# Signing configuration
-KEYSTORE_PATH=../keystore.jks
-KEYSTORE_PASSWORD=${CM_KEYSTORE_PASSWORD}
-KEY_ALIAS=${CM_KEY_ALIAS}
-KEY_PASSWORD=${CM_KEY_PASSWORD}
-```
+You **DO NOT** need to manually edit `gradle.properties` or `build.gradle`.
 
-## Step 5: Update build.gradle
-
-Update `android/app/build.gradle` to use the signing configuration:
-
-```gradle
-android {
-    // ... other config
-
-    signingConfigs {
-        release {
-            if (project.hasProperty('KEYSTORE_PATH')) {
-                storeFile file(KEYSTORE_PATH)
-                storePassword KEYSTORE_PASSWORD
-                keyAlias KEY_ALIAS
-                keyPassword KEY_PASSWORD
-            }
-        }
-        debug {
-            if (project.hasProperty('KEYSTORE_PATH')) {
-                storeFile file(KEYSTORE_PATH)
-                storePassword KEYSTORE_PASSWORD
-                keyAlias KEY_ALIAS
-                keyPassword KEY_PASSWORD
-            }
-        }
-    }
-
-    buildTypes {
-        release {
-            signingConfig signingConfigs.release
-            // ... other release config
-        }
-        debug {
-            signingConfig signingConfigs.debug
-            // ... other debug config
-        }
-    }
-}
-```
-
-## Step 6: Test Locally (Optional)
+## Step 5: Test Locally (Optional)
 
 Before pushing to Codemagic, test the build locally:
 
@@ -126,6 +80,7 @@ npx expo prebuild --platform android --clean
 cp evwheels-keystore.jks ./keystore.jks
 
 # Set environment variables
+export CM_KEYSTORE_PATH="$(pwd)/keystore.jks"
 export CM_KEYSTORE_PASSWORD="your-password"
 export CM_KEY_ALIAS="evwheels-key"
 export CM_KEY_PASSWORD="your-key-password"

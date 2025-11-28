@@ -47,7 +47,8 @@
         }
       ],
       "expo-audio",
-      "expo-asset"
+      "expo-asset",
+      "./plugins/withAndroidSigning"
     ],
     "experiments": {
       "typedRoutes": true
