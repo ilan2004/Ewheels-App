@@ -234,29 +234,31 @@ const BatteryCard: React.FC<BatteryCardProps> = ({
       {/* Action Buttons */}
       <View style={styles.actionSection}>
         {nextAction && (
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: getStatusColor(), flex: 1 }]}
-            onPress={() => {
-              if (battery.status === 'received') {
-                onPress(); // Just navigate for "View Battery Case"
-              } else {
-                setShowActions(!showActions);
-              }
-            }}
-          >
-            <IconSymbol name={nextAction.icon as any} size={16} color="#FFFFFF" />
-            <Text style={styles.actionButtonText}>{nextAction.label}</Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: getStatusColor(), flex: 1 }]}
+              onPress={() => {
+                if (battery.status === 'received') {
+                  onPress(); // Just navigate for "View Battery Case"
+                } else {
+                  setShowActions(!showActions);
+                }
+              }}
+            >
+              <IconSymbol name={nextAction.icon as any} size={16} color="#FFFFFF" />
+              <Text style={styles.actionButtonText}>{nextAction.label}</Text>
+            </TouchableOpacity>
 
-          {battery.status === 'in_progress' && (
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: Colors.neutral[600], flex: 1 }]}
-            onPress={onPress}
-          >
-            <IconSymbol name="pencil.circle" size={16} color="#FFFFFF" />
-            <Text style={styles.actionButtonText}>Update Status</Text>
-          </TouchableOpacity>
-        )}
+            {battery.status === 'in_progress' && (
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: Colors.neutral[600], flex: 1 }]}
+                onPress={onPress}
+              >
+                <IconSymbol name="pencil.circle" size={16} color="#FFFFFF" />
+                <Text style={styles.actionButtonText}>Update Status</Text>
+              </TouchableOpacity>
+            )}
+          </>
         )}
       </View>
 

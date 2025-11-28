@@ -1,6 +1,6 @@
-import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
 import { User, UserRole } from '@/types';
+import { create } from 'zustand';
 import { useLocationStore } from './locationStore';
 
 interface AuthStore {
@@ -27,12 +27,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   signIn: async (email: string, password: string, selectedLocationId?: string) => {
     try {
       set({ loading: true });
-      
+
       // Demo credentials only in mock mode
       if (process.env.EXPO_PUBLIC_USE_MOCK_API === 'true' && email.includes('@evwheels.com')) {
         // Create a mock user for development with consistent IDs for technicians
         let userId = 'mock-user-id-' + Date.now();
-        
+
         // Use consistent tech IDs for technicians to match mock ticket assignments
         if (email.includes('tech1')) userId = 'tech_001';
         else if (email.includes('tech2')) userId = 'tech_002';
@@ -41,27 +41,27 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           const techNum = email.match(/tech(\d+)/)![1];
           userId = `tech_${techNum.padStart(3, '0')}`;
         }
-        
+
         const mockUser: User = {
           id: userId,
           email: email,
-          firstName: email.includes('floormanager') ? 'Floor' : 
-                    email.includes('manager') ? 'Front Desk' : 
-                    email.includes('tech') ? 'Tech' : 'Admin',
-          lastName: email.includes('floormanager') ? 'Manager' : 
-                   email.includes('manager') ? 'Manager' : 
-                   email.includes('tech') ? 'User' : 'User',
+          firstName: email.includes('floormanager') ? 'Floor' :
+            email.includes('manager') ? 'Front Desk' :
+              email.includes('tech') ? 'Tech' : 'Admin',
+          lastName: email.includes('floormanager') ? 'Manager' :
+            email.includes('manager') ? 'Manager' :
+              email.includes('tech') ? 'User' : 'User',
           role: email.includes('floormanager') ? 'floor_manager' :
-                email.includes('manager') ? 'front_desk_manager' : 
-                email.includes('tech') ? 'technician' : 'admin',
+            email.includes('manager') ? 'front_desk_manager' :
+              email.includes('tech') ? 'technician' : 'admin',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
-        
+
         set({ user: mockUser, loading: false });
         return;
       }
-      
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -97,7 +97,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
             email: data.user.email || '',
             role: 'admin', // Default role - you can change this
           };
-          
+
           const userWithRole: User = {
             id: data.user.id,
             email: data.user.email!,
@@ -109,14 +109,14 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           };
 
           set({ user: userWithRole, loading: false });
-          
+
           // Initialize location data
           try {
             await useLocationStore.getState().initializeLocation(data.user.id);
           } catch (error) {
             console.warn('Failed to initialize location data:', error);
           }
-          
+
           return;
         }
 
@@ -133,8 +133,25 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           updatedAt: profile.updated_at || new Date().toISOString(),
         };
 
+        // Verify branch access if a location was selected
+        // Admins can access all branches
+        if (selectedLocationId && roleData.role !== 'admin') {
+          const { data: userLocation, error: locationError } = await supabase
+            .from('user_locations')
+            .select('location_id')
+            .eq('user_id', data.user.id)
+            .eq('location_id', selectedLocationId)
+            .single();
+
+          if (locationError || !userLocation) {
+            // User is not assigned to this branch
+            await supabase.auth.signOut();
+            throw new Error('You do not have access to this branch.');
+          }
+        }
+
         set({ user: userWithRole, loading: false });
-        
+
         // Initialize location data after successful login
         try {
           await useLocationStore.getState().initializeLocation(data.user.id);
@@ -152,14 +169,14 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     try {
       set({ loading: true });
       const { error } = await supabase.auth.signOut();
-      
+
       if (error) {
         throw error;
       }
 
       // Clear location data on sign out
       useLocationStore.getState().clearLocationData();
-      
+
       set({ user: null, loading: false });
     } catch (error) {
       set({ loading: false });
@@ -170,10 +187,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   checkAuthState: async () => {
     try {
       set({ loading: true });
-      
+
       // In development mode, just set initialized to true if no session
       const { data: { session }, error } = await supabase.auth.getSession();
-      
+
       if (error) {
         console.warn('Supabase connection error (development mode):', error.message);
         set({ user: null, loading: false, initialized: true });
@@ -206,7 +223,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
             email: session.user.email || '',
             role: 'admin', // Default role - you can change this
           };
-          
+
           const userWithRole: User = {
             id: session.user.id,
             email: session.user.email!,
@@ -218,14 +235,14 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           };
 
           set({ user: userWithRole, loading: false, initialized: true });
-          
+
           // Initialize location data
           try {
             await useLocationStore.getState().initializeLocation(session.user.id);
           } catch (error) {
             console.warn('Failed to initialize location data:', error);
           }
-          
+
           return;
         }
 
@@ -243,7 +260,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         };
 
         set({ user: userWithRole, loading: false, initialized: true });
-        
+
         // Initialize location data
         try {
           await useLocationStore.getState().initializeLocation(session.user.id);
@@ -264,7 +281,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 try {
   supabase.auth.onAuthStateChange((event, session) => {
     const { checkAuthState } = useAuthStore.getState();
-    
+
     if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
       checkAuthState();
     }
