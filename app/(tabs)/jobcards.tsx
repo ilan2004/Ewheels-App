@@ -626,22 +626,23 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: Platform.OS === 'ios' ? 60 : 40, // Account for status bar and some extra space
+    paddingTop: Platform.OS === 'ios' ? 60 : 16, // Reduced from 40 for Android
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.md,
+    paddingBottom: Spacing.sm, // Reduced from md
     backgroundColor: BrandColors.surface,
     gap: Spacing.md,
   },
   searchContainerWithFilter: {
-    paddingTop: Spacing.md, // Reduce top padding when filter indicator is present
+    paddingTop: Spacing.sm, // Reduced top padding when filter indicator is present
   },
   searchBar: {
     ...ComponentStyles.input,
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
-    paddingVertical: Spacing.base,
+    gap: Spacing.sm, // Reduced gap
+    paddingVertical: Platform.OS === 'android' ? 8 : Spacing.base, // Reduced vertical padding for Android
+    height: 44, // Explicit height constraint
   },
   searchFilterButton: {
     padding: Spacing.md,

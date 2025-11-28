@@ -216,9 +216,11 @@ export default function FrontDeskDashboard() {
             {/* Create Job Card Button */}
             <TouchableOpacity
               style={[styles.actionCard, styles.primaryActionCard]}
-              onPress={() => router.push('/jobcards')} // Navigating to jobcards list as create might be there or modal
+              onPress={() => router.push('/jobcards')}
             >
-              <IconSymbol name="doc.text.fill.viewfinder" size={28} color={BrandColors.primary} />
+              <View style={[styles.iconContainer, styles.primaryIconContainer]}>
+                <IconSymbol name="doc.text.fill.viewfinder" size={28} color={BrandColors.primary} />
+              </View>
               <Text style={styles.actionTitle}>Create Job Card</Text>
               <Text style={styles.actionSubtitle}>New service ticket</Text>
             </TouchableOpacity>
@@ -228,7 +230,9 @@ export default function FrontDeskDashboard() {
               style={[styles.actionCard, styles.greenActionCard]}
               onPress={() => router.push('/invoices/create')}
             >
-              <IconSymbol name="doc.text" size={28} color={BrandColors.title} />
+              <View style={[styles.iconContainer, styles.greenIconContainer]}>
+                <IconSymbol name="doc.text" size={28} color={BrandColors.title} />
+              </View>
               <Text style={styles.actionTitle}>Create Invoice</Text>
               <Text style={styles.actionSubtitle}>Bill a customer</Text>
             </TouchableOpacity>
@@ -236,9 +240,11 @@ export default function FrontDeskDashboard() {
             {/* Check This Month Report Button */}
             <TouchableOpacity
               style={[styles.actionCard, styles.blueActionCard]}
-              onPress={() => router.push('/financial')} // Assuming reports are in financial or similar
+              onPress={() => router.push('/financial')}
             >
-              <IconSymbol name="chart.bar.fill" size={28} color="#0284C7" />
+              <View style={[styles.iconContainer, styles.blueIconContainer]}>
+                <IconSymbol name="chart.bar.fill" size={28} color="#0284C7" />
+              </View>
               <Text style={styles.actionTitle}>Check Reports</Text>
               <Text style={styles.actionSubtitle}>This month's stats</Text>
             </TouchableOpacity>
@@ -362,39 +368,56 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     flex: 1,
-    minWidth: '47%', // Slightly reduced to ensure consistent wrapping on Android
+    minWidth: '47%',
     backgroundColor: BrandColors.surface,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: BrandColors.ink + '10',
     padding: Spacing.lg,
     alignItems: 'center',
-    ...Shadows.base, // Increased shadow for better visibility on Android
+    // Removed shadow for cleaner "flat" look on Android
   },
   primaryActionCard: {
-    borderColor: BrandColors.primary + '20',
-    backgroundColor: BrandColors.primary + '05',
+    borderColor: BrandColors.primary + '30', // Stronger border
+    backgroundColor: BrandColors.surface,
   },
   greenActionCard: {
-    borderColor: BrandColors.title + '20',
-    backgroundColor: BrandColors.title + '05',
+    borderColor: BrandColors.title + '30',
+    backgroundColor: BrandColors.surface,
   },
   blueActionCard: {
-    borderColor: '#0284C7' + '20',
-    backgroundColor: '#0284C7' + '05',
+    borderColor: '#0284C7' + '30',
+    backgroundColor: BrandColors.surface,
+  },
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  primaryIconContainer: {
+    backgroundColor: BrandColors.primary + '10',
+  },
+  greenIconContainer: {
+    backgroundColor: BrandColors.title + '10',
+  },
+  blueIconContainer: {
+    backgroundColor: '#0284C7' + '10',
   },
   actionTitle: {
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.semibold,
     color: BrandColors.ink,
-    marginTop: Spacing.sm,
+    marginTop: Spacing.xs,
     textAlign: 'center',
   },
   actionSubtitle: {
     fontSize: Typography.fontSize.xs,
     fontFamily: Typography.fontFamily.regular,
-    color: BrandColors.ink + '80',
-    marginTop: Spacing.xs,
+    color: BrandColors.ink + '60',
+    marginTop: 2,
     textAlign: 'center',
   },
   errorContainer: {

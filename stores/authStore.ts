@@ -10,7 +10,7 @@ interface AuthStore {
   setUser: (user: User | null) => void;
   setLoading: (loading: boolean) => void;
   setInitialized: (initialized: boolean) => void;
-  signIn: (email: string, password: string, selectedLocationId?: string) => Promise<void>;
+  signIn: (identifier: string, password: string, selectedLocationId?: string) => Promise<void>;
   signOut: () => Promise<void>;
   checkAuthState: () => Promise<void>;
 }
@@ -24,9 +24,29 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   setLoading: (loading) => set({ loading }),
   setInitialized: (initialized) => set({ initialized }),
 
-  signIn: async (email: string, password: string, selectedLocationId?: string) => {
+  signIn: async (identifier: string, password: string, selectedLocationId?: string) => {
     try {
       set({ loading: true });
+
+      let email = identifier;
+
+      // Check if identifier is an email
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
+
+      if (!isEmail) {
+        // It's a username, try to find the email
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('username', identifier)
+          .single();
+
+        if (profileError || !profile?.email) {
+          throw new Error('Username not found. Please check your username or use your email.');
+        }
+
+        email = profile.email;
+      }
 
       // Demo credentials only in mock mode
       if (process.env.EXPO_PUBLIC_USE_MOCK_API === 'true' && email.includes('@evwheels.com')) {

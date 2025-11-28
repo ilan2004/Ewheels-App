@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Modal,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -552,7 +553,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: Spacing.lg,
-    paddingBottom: Spacing.md,
+    paddingTop: Platform.OS === 'ios' ? Spacing.lg : 16, // Reduced top padding for Android
+    paddingBottom: Spacing.sm, // Reduced from md
     backgroundColor: BrandColors.surface,
     gap: Spacing.md,
   },
@@ -563,8 +565,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF', // White
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-    gap: Spacing.md,
+    paddingVertical: Platform.OS === 'android' ? 8 : Spacing.md, // Reduced vertical padding for Android
+    gap: Spacing.sm, // Reduced gap
+    height: 44, // Explicit height constraint
   },
   searchFilterButton: {
     padding: Spacing.md,

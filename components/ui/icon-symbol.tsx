@@ -89,7 +89,6 @@ const MAPPING = {
   'arrow.clockwise': 'refresh',
   'plus': 'add',
 
-  'arrow.down.circle.fill': 'cloud-download',
   'textformat': 'text-fields',
 
   // Media & Camera
@@ -118,7 +117,25 @@ const MAPPING = {
   'stethoscope': 'medical-services',
   'flag.fill': 'flag',
   'info.circle.fill': 'info',
-  'calendar.badge.checkmark': 'event-available',
+  // Job Card Details
+  'phone.fill': 'phone',
+  'shippingbox': 'inventory',
+  'building.2': 'business',
+  'car.2': 'directions-car',
+  'barcode': 'qr-code',
+  'wrench.and.screwdriver': 'build',
+  'calendar.badge.clock': 'event-busy',
+  'battery.50': 'battery-std',
+  'bolt.circle': 'electric-bolt',
+  'bolt.fill': 'flash-on',
+  'circle.grid.3x3': 'grid-on',
+  'person.badge.clock': 'perm-contact-calendar',
+  'person.badge.plus': 'person-add',
+  'arrow.forward.circle': 'arrow-forward',
+  'arrow.forward': 'arrow-forward',
+  'eye.fill': 'visibility',
+  'arrow.triangle.2.circlepath': 'loop',
+  'person.crop.circle': 'account-circle',
 } as IconMapping;
 
 /**

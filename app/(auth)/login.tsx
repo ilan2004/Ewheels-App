@@ -1,32 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BorderRadius, BrandColors, Colors, ComponentStyles, Shadows, Spacing, Typography } from '@/constants/design-system';
+import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/stores/authStore';
+import { Location, useLocationStore } from '@/stores/locationStore';
+import { zodResolver } from '@hookform/resolvers/zod';
+import React, { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import {
-  View,
+  Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Modal,
-  FlatList,
+  View
 } from 'react-native';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAuthStore } from '@/stores/authStore';
-import { useLocationStore, Location } from '@/stores/locationStore';
-import { ThemedView } from '@/components/themed-view';
-import { ThemedText } from '@/components/themed-text';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { supabase } from '@/lib/supabase';
-import { canBypassLocationFilter } from '@/lib/permissions';
-import { Typography, Spacing, BorderRadius, ComponentStyles, Colors, Shadows, BrandColors } from '@/constants/design-system';
 
 const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
+  email: z.string().min(1, 'Please enter your email or username'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   location: z.string().optional(),
 });
@@ -108,9 +106,9 @@ export default function LoginScreen() {
 
       // Sign in with selected location
       await signIn(data.email, data.password, selectedLocation?.id);
-      
+
       // The location will be initialized automatically by the auth store
-      
+
       // Navigation will be handled automatically by the auth layout
     } catch (error: any) {
       Alert.alert(
@@ -162,7 +160,7 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContainer}
         keyboardShouldPersistTaps="handled"
       >
@@ -184,21 +182,20 @@ export default function LoginScreen() {
 
           {/* Login Form */}
           <View style={styles.form}>
-            {/* Email Field */}
+            {/* Email/Username Field */}
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>Email or Username</Text>
               <Controller
                 control={control}
                 name="email"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
                     style={[styles.input, errors.email && styles.inputError]}
-                    placeholder="Enter your email"
+                    placeholder="Enter your email or username"
                     placeholderTextColor="#9CA3AF"
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
-                    keyboardType="email-address"
                     autoCapitalize="none"
                     autoCorrect={false}
                   />
@@ -260,17 +257,17 @@ export default function LoginScreen() {
                   disabled={loadingLocations}
                 >
                   <View style={styles.locationSelectorContent}>
-                    <IconSymbol 
-                      name="location.fill" 
-                      size={20} 
+                    <IconSymbol
+                      name="location.fill"
+                      size={20}
                       color={selectedLocation ? BrandColors.primary : BrandColors.ink + '60'}
                     />
                     <Text style={[
                       styles.locationSelectorText,
                       !selectedLocation && styles.placeholderText
                     ]}>
-                      {loadingLocations 
-                        ? 'Loading locations...' 
+                      {loadingLocations
+                        ? 'Loading locations...'
                         : selectedLocation?.name || 'Select your branch'}
                     </Text>
                   </View>
@@ -315,11 +312,11 @@ export default function LoginScreen() {
                 <IconSymbol name="xmark" size={20} color="#6B7280" />
               </TouchableOpacity>
             </View>
-            
+
             <Text style={styles.modalDescription}>
               Choose your branch location to access location-specific data and services.
             </Text>
-            
+
             <FlatList
               data={availableLocations}
               keyExtractor={(item) => item.id}
