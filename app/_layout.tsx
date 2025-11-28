@@ -1,15 +1,15 @@
+import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, useFonts } from '@expo-google-fonts/inter';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
 import { useEffect, useState } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useAuthStore } from '@/stores/authStore';
 import { SplashScreen } from '@/components/splash-screen';
 import { Colors } from '@/constants/design-system';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAuthStore } from '@/stores/authStore';
 
 // Create a client instance for React Query
 const queryClient = new QueryClient({
@@ -45,8 +45,9 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const { checkAuthState, initialized } = useAuthStore();
+  const [splashAnimationFinished, setSplashAnimationFinished] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
-  
+
   // Load Inter fonts
   const [fontsLoaded] = useFonts({
     'Inter-Regular': Inter_400Regular,
@@ -59,15 +60,18 @@ export default function RootLayout() {
     checkAuthState();
   }, [checkAuthState]);
 
+  useEffect(() => {
+    if (initialized && fontsLoaded && splashAnimationFinished) {
+      setShowSplash(false);
+    }
+  }, [initialized, fontsLoaded, splashAnimationFinished]);
+
   // Show splash screen while initializing, loading fonts, or if explicitly showing splash
-  if (!initialized || !fontsLoaded || showSplash) {
+  if (showSplash) {
     return (
-      <SplashScreen 
+      <SplashScreen
         onComplete={() => {
-          // Only hide splash if auth is also initialized and fonts are loaded
-          if (initialized && fontsLoaded) {
-            setShowSplash(false);
-          }
+          setSplashAnimationFinished(true);
         }}
       />
     );
