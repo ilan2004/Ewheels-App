@@ -1,0 +1,190 @@
+workflows:
+  # Development Build - For testing during development
+  android-development:
+    name: Android Development Build
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      groups:
+        # Add your environment variable groups in Codemagic UI
+        - android_signing
+      vars:
+        # App configuration
+        EXPO_PUBLIC_API_URL: https://your-api-url.com
+        NODE_VERSION: 20.18.0
+      node: $NODE_VERSION
+      java: 17
+    cache:
+      cache_paths:
+        - $HOME/.gradle/caches
+        - $HOME/.npm
+        - node_modules
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: "develop"
+          include: true
+          source: true
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm ci
+
+      - name: Expo prebuild
+        script: |
+          npx expo prebuild --platform android --clean
+
+      - name: Set up keystore
+        script: |
+          echo $CM_KEYSTORE | base64 --decode > $CM_BUILD_DIR/keystore.jks
+
+      - name: Build Android Debug APK
+        script: |
+          cd android
+          ./gradlew assembleDebug
+
+    artifacts:
+      - android/app/build/outputs/**/*.apk
+
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com
+        notify:
+          success: true
+          failure: true
+
+  # Preview Build - For internal testing and QA
+  android-preview:
+    name: Android Preview Build
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      groups:
+        - android_signing
+      vars:
+        EXPO_PUBLIC_API_URL: https://your-api-url.com
+        NODE_VERSION: 20.18.0
+      node: $NODE_VERSION
+      java: 17
+    cache:
+      cache_paths:
+        - $HOME/.gradle/caches
+        - $HOME/.npm
+        - node_modules
+    triggering:
+      events:
+        - push
+        - tag
+      branch_patterns:
+        - pattern: "main"
+          include: true
+          source: true
+        - pattern: "release/*"
+          include: true
+          source: true
+      tag_patterns:
+        - pattern: "v*-preview"
+          include: true
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm ci
+
+      - name: Expo prebuild
+        script: |
+          npx expo prebuild --platform android --clean
+
+      - name: Set up keystore
+        script: |
+          echo $CM_KEYSTORE | base64 --decode > $CM_BUILD_DIR/keystore.jks
+
+      - name: Build Android Release APK
+        script: |
+          cd android
+          ./gradlew assembleRelease
+
+    artifacts:
+      - android/app/build/outputs/**/*.apk
+
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com
+          - qa-team@example.com
+        notify:
+          success: true
+          failure: true
+      slack:
+        channel: "#mobile-builds"
+        notify_on_build_start: false
+
+  # Production Build - For release to Play Store
+  android-production:
+    name: Android Production Build
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      groups:
+        - android_signing
+        - google_play_credentials
+      vars:
+        EXPO_PUBLIC_API_URL: https://your-production-api-url.com
+        NODE_VERSION: 20.18.0
+      node: $NODE_VERSION
+      java: 17
+    cache:
+      cache_paths:
+        - $HOME/.gradle/caches
+        - $HOME/.npm
+        - node_modules
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: "v*"
+          include: true
+      cancel_previous_builds: false
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm ci
+
+      - name: Set version from tag
+        script: |
+          VERSION=${CM_TAG#v}
+          echo "Building version: $VERSION"
+
+      - name: Expo prebuild
+        script: |
+          npx expo prebuild --platform android --clean
+
+      - name: Set up keystore
+        script: |
+          echo $CM_KEYSTORE | base64 --decode > $CM_BUILD_DIR/keystore.jks
+
+      - name: Build Android App Bundle (AAB)
+        script: |
+          cd android
+          ./gradlew bundleRelease
+
+    artifacts:
+      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/**/*.apk
+
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com
+          - release-team@example.com
+        notify:
+          success: true
+          failure: true
+      slack:
+        channel: "#releases"
+        notify_on_build_start: true
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: true
