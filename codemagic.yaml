@@ -11,6 +11,8 @@ workflows:
       vars:
         # App configuration
         EXPO_PUBLIC_API_URL: https://ev-wheels.vercel.app
+        EXPO_PUBLIC_SUPABASE_URL: https://sddolthuxysdqdrmvsxh.supabase.co
+        EXPO_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkZG9sdGh1eHlzZHFkcm12c3hoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2ODM2ODYsImV4cCI6MjA3NDI1OTY4Nn0.ZG5jNgj66OuRSycjNJn07-oTLmNWmg2T1TUP0B933hA
         NODE_VERSION: 20.18.0
       node: $NODE_VERSION
       java: 17
@@ -65,6 +67,8 @@ workflows:
         - android_signing
       vars:
         EXPO_PUBLIC_API_URL: https://ev-wheels.vercel.app
+        EXPO_PUBLIC_SUPABASE_URL: https://sddolthuxysdqdrmvsxh.supabase.co
+        EXPO_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkZG9sdGh1eHlzZHFkcm12c3hoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2ODM2ODYsImV4cCI6MjA3NDI1OTY4Nn0.ZG5jNgj66OuRSycjNJn07-oTLmNWmg2T1TUP0B933hA
         NODE_VERSION: 20.18.0
       node: $NODE_VERSION
       java: 17
@@ -132,6 +136,8 @@ workflows:
         - google_play_credentials
       vars:
         EXPO_PUBLIC_API_URL: https://ev-wheels.vercel.app
+        EXPO_PUBLIC_SUPABASE_URL: https://sddolthuxysdqdrmvsxh.supabase.co
+        EXPO_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkZG9sdGh1eHlzZHFkcm12c3hoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2ODM2ODYsImV4cCI6MjA3NDI1OTY4Nn0.ZG5jNgj66OuRSycjNJn07-oTLmNWmg2T1TUP0B933hA
         NODE_VERSION: 20.18.0
       node: $NODE_VERSION
       java: 17
