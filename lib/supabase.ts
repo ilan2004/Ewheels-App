@@ -74,7 +74,7 @@ function normalizeEnv(val?: string | number | boolean | null) {
 }
 
 let supabaseUrl = normalizeEnv(rawUrl);
-const supabaseAnonKey = normalizeEnv(rawAnon);
+let supabaseAnonKey = normalizeEnv(rawAnon);
 
 // If URL is missing protocol but otherwise looks like a host, prepend https://
 if (supabaseUrl && !/^https?:\/\//.test(supabaseUrl)) {
@@ -82,13 +82,17 @@ if (supabaseUrl && !/^https?:\/\//.test(supabaseUrl)) {
 }
 
 if (!supabaseUrl || !/^https?:\/\//.test(supabaseUrl)) {
-  throw new Error('Invalid SUPABASE URL: provide a valid http(s) URL via EXPO_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_URL, or SUPABASE_URL.');
+  console.warn('Invalid SUPABASE URL: provide a valid http(s) URL via EXPO_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_URL, or SUPABASE_URL.');
+  // Fallback to prevent crash, but requests will fail
+  supabaseUrl = 'https://placeholder.supabase.co';
 }
 if (!supabaseAnonKey) {
-  throw new Error('Missing SUPABASE anon key: set EXPO_PUBLIC_SUPABASE_ANON_KEY, NEXT_PUBLIC_SUPABASE_ANON_KEY, or SUPABASE_ANON_KEY.');
+  console.warn('Missing SUPABASE anon key: set EXPO_PUBLIC_SUPABASE_ANON_KEY, NEXT_PUBLIC_SUPABASE_ANON_KEY, or SUPABASE_ANON_KEY.');
+  // Fallback to prevent crash
+  supabaseAnonKey = 'placeholder-key';
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient(supabaseUrl, supabaseAnonKey!, {
   auth: {
     storage: storageAdapter,
     autoRefreshToken: true,
