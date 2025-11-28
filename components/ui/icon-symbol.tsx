@@ -58,6 +58,67 @@ const MAPPING = {
   'shield.fill': 'security',
   'doc.text.fill': 'description',
   'trash.fill': 'delete',
+  'camera.viewfinder': 'camera-alt',
+  'dollarsign.circle.fill': 'monetization-on',
+  'person.crop.circle.fill': 'account-circle',
+  'doc.text': 'article',
+  'doc.text.fill.viewfinder': 'find-in-page',
+  'car.fill': 'directions-car',
+  'battery.100': 'battery-full',
+  'exclamationmark.triangle': 'warning',
+  'gearshape.2': 'build',
+  'clock': 'access-time',
+  'clock.badge.exclamationmark': 'history',
+  'location': 'location-on',
+  'xmark': 'close',
+  'magnifyingglass': 'search',
+  'line.3.horizontal.decrease': 'filter-list',
+  'tray': 'inbox',
+
+  'calendar': 'calendar-today',
+  'dollarsign.circle': 'attach-money',
+  'pencil.circle': 'edit',
+  'car': 'directions-car',
+
+  // Navigation & Actions
+  'chevron.left': 'chevron-left',
+  'square.and.arrow.up': 'share',
+  'square.and.arrow.up.fill': 'share',
+  'paperclip': 'attach-file',
+  'folder.badge.plus': 'create-new-folder',
+  'arrow.clockwise': 'refresh',
+  'plus': 'add',
+
+  'arrow.down.circle.fill': 'cloud-download',
+  'textformat': 'text-fields',
+
+  // Media & Camera
+  'camera.rotate.fill': 'flip-camera-ios',
+  'photo.on.rectangle': 'image',
+  'photo.fill': 'photo',
+  'video.fill': 'videocam',
+  'play.circle.fill': 'play-circle-filled',
+  'square.grid.3x3.fill': 'grid-view',
+
+  // Audio
+  'waveform': 'graphic-eq',
+  'mic.fill': 'mic',
+  'mic.circle.fill': 'mic',
+  'stop.fill': 'stop',
+  'gobackward.10': 'replay-10',
+  'goforward.10': 'forward-10',
+  'pause.fill': 'pause',
+  'play.fill': 'play-arrow',
+  'speaker.wave.2.fill': 'volume-up',
+  'speaker.fill': 'volume-mute',
+  'speaker.3.fill': 'volume-up',
+
+  // Misc
+  'person.circle': 'account-circle',
+  'stethoscope': 'medical-services',
+  'flag.fill': 'flag',
+  'info.circle.fill': 'info',
+  'calendar.badge.checkmark': 'event-available',
 } as IconMapping;
 
 /**

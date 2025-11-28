@@ -362,14 +362,14 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     flex: 1,
-    minWidth: '48%', // Make them take up about half width, wrapping if needed
+    minWidth: '47%', // Slightly reduced to ensure consistent wrapping on Android
     backgroundColor: BrandColors.surface,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: BrandColors.ink + '10',
     padding: Spacing.lg,
     alignItems: 'center',
-    ...Shadows.sm,
+    ...Shadows.base, // Increased shadow for better visibility on Android
   },
   primaryActionCard: {
     borderColor: BrandColors.primary + '20',
