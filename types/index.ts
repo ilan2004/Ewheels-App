@@ -307,7 +307,7 @@ export const STATUS_COLORS: Record<ServiceTicketStatus, string> = {
 };
 
 // Vehicle and Battery Case Types
-export type CaseStatus = 'received' | 'diagnosed' | 'in_progress' | 'completed' | 'delivered';
+export type CaseStatus = 'received' | 'triaged' | 'diagnosed' | 'in_progress' | 'completed' | 'delivered';
 
 // INTAKE LAYER - What customer brings
 export interface VehicleRecord {

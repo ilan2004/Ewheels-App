@@ -105,7 +105,7 @@ export class BatteriesService {
       // 1) Get tickets assigned to technician that have a battery case
       const { data: tickets, error: ticketsError } = await supabase
         .from('service_tickets')
-        .select('id, assigned_to, ticket_number, customer_complaint, battery_case_id')
+        .select('id, assigned_to, ticket_number, customer_complaint, battery_case_id, status')
         .eq('assigned_to', technicianId)
         .not('battery_case_id', 'is', null)
         .order('created_at', { ascending: false });
@@ -142,9 +142,22 @@ export class BatteriesService {
 
       const enriched = (cases || []).map(c => {
         const record = c.battery_record_id ? recordsById[c.battery_record_id] : {};
+        const ticket = ticketById[c.id];
+        let displayStatus = c.status;
+
+        // Sync status with ticket if available
+        if (ticket) {
+          if (ticket.status === 'in_progress') displayStatus = 'in_progress';
+          else if (ticket.status === 'completed') displayStatus = 'completed';
+          else if (ticket.status === 'delivered') displayStatus = 'delivered';
+          else if (ticket.status === 'triaged') displayStatus = 'triaged';
+          else if (ticket.status === 'assigned') displayStatus = 'received'; // "New" for tech
+        }
+
         return {
           ...record, // Base properties from record
           ...c,      // Override with case properties (status, etc)
+          status: displayStatus,
           // Map record fields to case fields expected by UI
           battery_make: c.battery_make || record.brand,
           battery_model: c.battery_model || record.model,
@@ -153,60 +166,14 @@ export class BatteriesService {
           voltage: c.voltage || record.voltage,
           capacity: c.capacity || record.capacity,
           battery_type: c.battery_type || record.battery_type,
-          // Ensure critical IDs are preserved/correctly mapped if needed, 
-          // but 'id' should probably be the CASE id for the UI to work with updates?
-          // The UI uses 'id' for updates. updateStatus calls updateBattery(id).
-          // updateBattery updates 'battery_records'. 
-          // This is a mess. The UI expects to update the RECORD or the CASE?
-          // updateStatus in batteriesService updates 'battery_records'.
-          // So the ID must be the RECORD ID?
-          // But we are listing CASES.
-          // If I return Case ID as 'id', updateStatus will try to update 'battery_records' with Case ID, which will fail.
-          // I should check what updateStatus does.
-          // It updates 'battery_records'.
-          // So I should return Record ID as 'id'? 
-          // But then how do we track the Case status?
-          // The Case has the status.
-          // If I update Record status, does it update Case status?
-          // The system seems to have a split brain.
-          // For now, I will return the RECORD ID as 'id' to be safe with existing update logic,
-          // BUT I will map Case properties onto it.
-          // Wait, if I use Record ID, then 'getMyBatteries' returning 'BatteryRecord[]' makes sense.
-          // But I need to make sure I'm getting the status from the CASE if that's what's being used.
-          // Actually, let's look at updateStatus again.
-          // It updates 'battery_records'.
-          // So the status is stored on the RECORD?
-          // Then what is the CASE for?
-          // The CASE also has 'status'.
-          // Triage creates a CASE.
-          // If the system uses CASES for workflow, then updateStatus should update CASES.
-          // But the code updates RECORDS.
-          // I will assume for now that I should return the object such that it works with the existing UI.
-          // The UI calls updateStatus(id).
-          // If I change 'id' to be Case ID, I must change updateStatus to update 'battery_cases'.
-          // Given the user wants "Vehicle Cases" and "Battery Cases" pages, it implies we are working with CASES.
-          // I will update updateStatus to update CASES as well, or instead.
-          // But that's a bigger refactor.
-          // Let's stick to the immediate goal: Show the items.
-          // If I return the merged object, I should probably keep 'id' as the Case ID if I want to show Cases.
-          // But if updateStatus updates Records...
-          // Let's assume I should use Case ID and fix updateStatus later if needed.
-          // Actually, let's look at `technician-batteries.tsx`.
-          // It uses `batteriesService.updateStatus`.
-          // If I change `getMyBatteries` to return Case ID, I should ensure `updateStatus` works with Case ID.
-          // `batteriesService.updateStatus` calls `updateBattery` which updates `battery_records`.
-          // This confirms the existing code expects Record ID.
-          // BUT `getMyBatteries` was querying `battery_records` using `battery_case_id` (which failed).
-          // So the previous code was broken anyway.
-          // I will return the CASE ID as 'id', and I will update `updateBattery` to update `battery_cases` instead of `records`.
-          // This aligns with "Vehicle Cases" and "Battery Cases".
 
           id: c.id, // Use Case ID
-          service_ticket: ticketById[c.id] ? {
-            id: ticketById[c.id].id,
-            assigned_to: ticketById[c.id].assigned_to,
-            ticket_number: ticketById[c.id].ticket_number,
-            customer_complaint: ticketById[c.id].customer_complaint,
+          service_ticket: ticket ? {
+            id: ticket.id,
+            assigned_to: ticket.assigned_to,
+            ticket_number: ticket.ticket_number,
+            customer_complaint: ticket.customer_complaint,
+            status: ticket.status,
           } : undefined,
 
         };
@@ -433,19 +400,21 @@ export class BatteriesService {
       return data;
     } catch (error) {
       console.error('Error updating battery:', error);
+      throw error;
     }
   }
 
   // Update battery status with automatic timestamp updates
   async updateStatus(
     id: string,
-    status: 'received' | 'diagnosed' | 'in_progress' | 'completed' | 'delivered',
+    status: 'received' | 'triaged' | 'diagnosed' | 'in_progress' | 'completed' | 'delivered',
     notes?: string
   ): Promise<BatteryCase> {
     const updates: any = { status };
 
     // Set appropriate timestamp based on status
     switch (status) {
+      case 'triaged':
       case 'diagnosed':
         if (!updates.diagnosed_at) updates.diagnosed_at = new Date().toISOString();
         break;

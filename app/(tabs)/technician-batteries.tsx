@@ -15,6 +15,7 @@ import {
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BrandColors, Colors, Shadows } from '@/constants/design-system';
 import { batteriesService } from '@/services/batteriesService';
 import { useAuthStore } from '@/stores/authStore';
 import { BatteryCase } from '@/types';
@@ -37,19 +38,21 @@ const BatteryCard: React.FC<BatteryCardProps> = ({
 
   const getStatusColor = () => {
     switch (battery.status) {
-      case 'received': return '#6B7280';
-      case 'diagnosed': return '#3B82F6';
-      case 'in_progress': return '#8B5CF6';
-      case 'completed': return '#10B981';
-      case 'delivered': return '#059669';
-      default: return '#6B7280';
+      case 'received': return '#EF4444'; // Reported/New (Red)
+      case 'triaged': return '#F59E0B'; // Triaged (Amber/Orange)
+      case 'diagnosed': return '#F59E0B'; // Legacy support
+      case 'in_progress': return '#499588'; // In Progress (Greenish)
+      case 'completed': return '#387868'; // Completed (Dark Green/Teal)
+      case 'delivered': return '#059669'; // Delivered
+      default: return Colors.neutral[500];
     }
   };
 
   const getStatusIcon = () => {
     switch (battery.status) {
       case 'received': return 'tray';
-      case 'diagnosed': return 'stethoscope';
+      case 'triaged': return 'list.bullet';
+      case 'diagnosed': return 'list.bullet';
       case 'in_progress': return 'gearshape';
       case 'completed': return 'checkmark.circle';
       case 'delivered': return 'checkmark.circle.fill';
@@ -59,25 +62,26 @@ const BatteryCard: React.FC<BatteryCardProps> = ({
 
   const getBMSStatusColor = () => {
     switch (battery.bms_status || 'unknown') {
-      case 'ok': return '#10B981';
-      case 'faulty': return '#EF4444';
-      case 'replaced': return '#3B82F6';
-      case 'unknown': return '#6B7280';
-      default: return '#6B7280';
+      case 'ok': return Colors.success[500];
+      case 'faulty': return Colors.error[500];
+      case 'replaced': return Colors.primary[500];
+      case 'unknown': return Colors.neutral[500];
+      default: return Colors.neutral[500];
     }
   };
 
   const getVoltageHealthColor = (voltage: number) => {
-    if (!battery.voltage) return '#6B7280';
+    if (!battery.voltage) return Colors.neutral[500];
     const healthPercentage = (voltage / battery.voltage) * 100;
-    if (healthPercentage >= 90) return '#10B981';
-    if (healthPercentage >= 80) return '#F59E0B';
-    return '#EF4444';
+    if (healthPercentage >= 90) return Colors.success[500];
+    if (healthPercentage >= 80) return Colors.warning[500];
+    return Colors.error[500];
   };
 
   const getNextStatusAction = () => {
     switch (battery.status) {
-      case 'received': return { status: 'diagnosed', label: 'Start Diagnosis', icon: 'stethoscope' };
+      case 'received': return { status: 'triaged', label: 'View Battery Case', icon: 'doc.text' };
+      case 'triaged': return { status: 'in_progress', label: 'Begin Repair', icon: 'gearshape' };
       case 'diagnosed': return { status: 'in_progress', label: 'Begin Repair', icon: 'gearshape' };
       case 'in_progress': return { status: 'completed', label: 'Mark Complete', icon: 'checkmark.circle' };
       case 'completed': return { status: 'delivered', label: 'Mark Delivered', icon: 'checkmark.circle.fill' };
@@ -185,7 +189,7 @@ const BatteryCard: React.FC<BatteryCardProps> = ({
                 <Text style={styles.diagnosticLabel}>Load Test</Text>
                 <Text style={[
                   styles.diagnosticValue,
-                  { color: battery.load_test_result >= 80 ? '#10B981' : battery.load_test_result >= 60 ? '#F59E0B' : '#EF4444' }
+                  { color: battery.load_test_result >= 80 ? Colors.success[500] : battery.load_test_result >= 60 ? Colors.warning[500] : Colors.error[500] }
                 ]}>
                   {Math.round(battery.load_test_result)}%
                 </Text>
@@ -215,13 +219,13 @@ const BatteryCard: React.FC<BatteryCardProps> = ({
       <View style={styles.batteryMeta}>
         {battery.estimated_cost && (
           <View style={styles.metaRow}>
-            <IconSymbol name="dollarsign.circle" size={14} color="#6B7280" />
+            <IconSymbol name="dollarsign.circle" size={14} color={Colors.neutral[500]} />
             <Text style={styles.metaText}>Est: ₹{Math.round(battery.estimated_cost)}</Text>
           </View>
         )}
         {battery.final_cost && (
           <View style={styles.metaRow}>
-            <IconSymbol name="dollarsign.circle.fill" size={14} color="#10B981" />
+            <IconSymbol name="dollarsign.circle.fill" size={14} color={Colors.success[500]} />
             <Text style={styles.metaText}>Final: ₹{Math.round(battery.final_cost)}</Text>
           </View>
         )}
@@ -231,12 +235,28 @@ const BatteryCard: React.FC<BatteryCardProps> = ({
       <View style={styles.actionSection}>
         {nextAction && (
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: getStatusColor() }]}
-            onPress={() => setShowActions(!showActions)}
+            style={[styles.actionButton, { backgroundColor: getStatusColor(), flex: 1 }]}
+            onPress={() => {
+              if (battery.status === 'received') {
+                onPress(); // Just navigate for "View Battery Case"
+              } else {
+                setShowActions(!showActions);
+              }
+            }}
           >
-            <IconSymbol name={nextAction.icon} size={16} color="#FFFFFF" />
+            <IconSymbol name={nextAction.icon as any} size={16} color="#FFFFFF" />
             <Text style={styles.actionButtonText}>{nextAction.label}</Text>
           </TouchableOpacity>
+
+          {battery.status === 'in_progress' && (
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: Colors.neutral[600], flex: 1 }]}
+            onPress={onPress}
+          >
+            <IconSymbol name="pencil.circle" size={16} color="#FFFFFF" />
+            <Text style={styles.actionButtonText}>Update Status</Text>
+          </TouchableOpacity>
+        )}
         )}
       </View>
 
@@ -249,6 +269,7 @@ const BatteryCard: React.FC<BatteryCardProps> = ({
             onChangeText={setNotes}
             multiline
             numberOfLines={3}
+            placeholderTextColor={Colors.neutral[400]}
           />
           <View style={styles.notesActions}>
             <TouchableOpacity
@@ -351,11 +372,11 @@ export default function TechnicianBatteriesScreen() {
 
   // Group batteries by status
   const batteriesByStatus = React.useMemo(() => {
-    if (!batteries) return { received: [], diagnosed: [], inProgress: [], completed: [] };
+    if (!batteries) return { received: [], triaged: [], inProgress: [], completed: [] };
 
     return {
       received: batteries.filter(b => b.status === 'received'),
-      diagnosed: batteries.filter(b => b.status === 'diagnosed'),
+      triaged: batteries.filter(b => b.status === 'triaged' || b.status === 'diagnosed'),
       inProgress: batteries.filter(b => b.status === 'in_progress'),
       completed: batteries.filter(b => ['completed', 'delivered'].includes(b.status)),
     };
@@ -364,7 +385,7 @@ export default function TechnicianBatteriesScreen() {
   if (batteriesError) {
     return (
       <ThemedView style={styles.errorContainer}>
-        <IconSymbol name="exclamationmark.triangle" size={48} color="#EF4444" />
+        <IconSymbol name="exclamationmark.triangle" size={48} color={Colors.error[500]} />
         <Text style={styles.errorText}>Failed to load battery records</Text>
         <TouchableOpacity onPress={handleRefresh} style={styles.retryButton}>
           <Text style={styles.retryText}>Retry</Text>
@@ -398,22 +419,22 @@ export default function TechnicianBatteriesScreen() {
             <View style={styles.summaryCard}>
               <Text style={styles.summaryNumber}>{batteriesByStatus.received.length}</Text>
               <Text style={styles.summaryLabel}>New</Text>
-              <View style={[styles.summaryIndicator, { backgroundColor: '#6B7280' }]} />
+              <View style={[styles.summaryIndicator, { backgroundColor: '#EF4444' }]} />
             </View>
             <View style={styles.summaryCard}>
-              <Text style={styles.summaryNumber}>{batteriesByStatus.diagnosed.length}</Text>
-              <Text style={styles.summaryLabel}>Diagnosed</Text>
-              <View style={[styles.summaryIndicator, { backgroundColor: '#3B82F6' }]} />
+              <Text style={styles.summaryNumber}>{batteriesByStatus.triaged.length}</Text>
+              <Text style={styles.summaryLabel}>Triaged</Text>
+              <View style={[styles.summaryIndicator, { backgroundColor: '#F59E0B' }]} />
             </View>
             <View style={styles.summaryCard}>
               <Text style={styles.summaryNumber}>{batteriesByStatus.inProgress.length}</Text>
               <Text style={styles.summaryLabel}>In Progress</Text>
-              <View style={[styles.summaryIndicator, { backgroundColor: '#8B5CF6' }]} />
+              <View style={[styles.summaryIndicator, { backgroundColor: '#499588' }]} />
             </View>
             <View style={styles.summaryCard}>
               <Text style={styles.summaryNumber}>{batteriesByStatus.completed.length}</Text>
               <Text style={styles.summaryLabel}>Completed</Text>
-              <View style={[styles.summaryIndicator, { backgroundColor: '#10B981' }]} />
+              <View style={[styles.summaryIndicator, { backgroundColor: '#387868' }]} />
             </View>
           </View>
         </View>
@@ -438,14 +459,14 @@ export default function TechnicianBatteriesScreen() {
           </View>
         )}
 
-        {/* Diagnosed Batteries */}
-        {batteriesByStatus.diagnosed.length > 0 && (
+        {/* Triaged Batteries */}
+        {batteriesByStatus.triaged.length > 0 && (
           <View style={styles.section}>
             <ThemedText type="subtitle" style={styles.sectionTitle}>
-              Diagnosed ({batteriesByStatus.diagnosed.length})
+              Triaged ({batteriesByStatus.triaged.length})
             </ThemedText>
             <View style={styles.batteriesList}>
-              {batteriesByStatus.diagnosed.map((battery) => (
+              {batteriesByStatus.triaged.map((battery) => (
                 <BatteryCard
                   key={battery.id}
                   battery={battery}
@@ -501,7 +522,7 @@ export default function TechnicianBatteriesScreen() {
         {/* Empty State */}
         {!batteriesLoading && batteries && batteries.length === 0 && (
           <View style={styles.emptyContainer}>
-            <IconSymbol name="battery.0" size={48} color="#6B7280" />
+            <IconSymbol name="battery.0" size={48} color={Colors.neutral[400]} />
             <Text style={styles.emptyTitle}>No Battery Records</Text>
             <Text style={styles.emptySubtitle}>
               You don't have any assigned battery diagnostics at the moment.
@@ -516,7 +537,7 @@ export default function TechnicianBatteriesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: BrandColors.surface,
   },
   scrollView: {
     flex: 1,
@@ -527,23 +548,22 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     paddingTop: 60,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    backgroundColor: BrandColors.surface,
+    borderBottomWidth: 0,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#111827',
+    color: BrandColors.ink,
   },
   subtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    color: Colors.neutral[500],
     marginTop: 4,
   },
   summarySection: {
     padding: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: BrandColors.surface,
   },
   summaryGrid: {
     flexDirection: 'row',
@@ -552,20 +572,21 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: Colors.white,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
     position: 'relative',
+    ...Shadows.sm,
   },
   summaryNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#111827',
+    color: BrandColors.ink,
   },
   summaryLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: Colors.neutral[500],
     marginTop: 4,
   },
   summaryIndicator: {
@@ -580,21 +601,17 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: BrandColors.ink,
     marginBottom: 16,
   },
   batteriesList: {
     gap: 12,
   },
   batteryCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     borderRadius: 12,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    ...Shadows.sm,
   },
   batteryHeader: {
     flexDirection: 'row',
@@ -614,11 +631,11 @@ const styles = StyleSheet.create({
   batterySerial: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: BrandColors.ink,
   },
   batteryDetails: {
     fontSize: 14,
-    color: '#6B7280',
+    color: Colors.neutral[500],
     marginTop: 2,
   },
   statusBadge: {
@@ -637,7 +654,7 @@ const styles = StyleSheet.create({
   specRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: Colors.neutral[50],
     borderRadius: 8,
     padding: 12,
   },
@@ -647,13 +664,13 @@ const styles = StyleSheet.create({
   },
   specLabel: {
     fontSize: 11,
-    color: '#6B7280',
+    color: Colors.neutral[500],
     marginBottom: 2,
   },
   specValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
+    color: BrandColors.ink,
   },
   diagnosticsSection: {
     marginBottom: 12,
@@ -661,13 +678,13 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#374151',
+    color: Colors.neutral[700],
     marginBottom: 8,
   },
   diagnosticsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#F0F9FF',
+    backgroundColor: Colors.info[50],
     borderRadius: 8,
     padding: 12,
   },
@@ -677,7 +694,7 @@ const styles = StyleSheet.create({
   },
   diagnosticLabel: {
     fontSize: 11,
-    color: '#374151',
+    color: Colors.neutral[700],
     marginBottom: 2,
   },
   diagnosticValue: {
@@ -689,8 +706,8 @@ const styles = StyleSheet.create({
   },
   repairText: {
     fontSize: 14,
-    color: '#6B7280',
-    backgroundColor: '#FEF3C7',
+    color: Colors.neutral[500],
+    backgroundColor: Colors.warning[100],
     padding: 8,
     borderRadius: 6,
   },
@@ -707,13 +724,13 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 12,
-    color: '#6B7280',
+    color: Colors.neutral[500],
   },
   actionSection: {
     flexDirection: 'row',
     gap: 8,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: Colors.neutral[200],
     paddingTop: 12,
   },
   diagnosticButton: {
@@ -744,18 +761,19 @@ const styles = StyleSheet.create({
   notesSection: {
     marginTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: Colors.neutral[200],
     paddingTop: 12,
   },
   notesInput: {
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: Colors.neutral[300],
     borderRadius: 8,
     padding: 12,
     fontSize: 14,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: Colors.neutral[50],
     minHeight: 60,
     textAlignVertical: 'top',
+    color: BrandColors.ink,
   },
   notesActions: {
     flexDirection: 'row',
@@ -768,12 +786,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   cancelButtonText: {
-    color: '#6B7280',
+    color: Colors.neutral[500],
     fontSize: 14,
     fontWeight: '500',
   },
   confirmButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: BrandColors.primary,
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 6,
@@ -788,16 +806,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: BrandColors.surface,
   },
   errorText: {
     fontSize: 16,
-    color: '#EF4444',
+    color: Colors.error[500],
     marginBottom: 16,
     textAlign: 'center',
     marginTop: 16,
   },
   retryButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: BrandColors.primary,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
@@ -816,13 +835,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: BrandColors.ink,
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    color: Colors.neutral[500],
     textAlign: 'center',
   },
 });

@@ -1,4 +1,4 @@
-import { ReportData } from '@/types/financial.types';
+import { Expense, ReportData, Sale } from '@/types/financial.types';
 import * as Print from 'expo-print';
 import { shareAsync } from 'expo-sharing';
 
@@ -227,7 +227,8 @@ const getMonthName = (monthIndex: number) => {
   return months[monthIndex];
 };
 
-// --- HTML Generator ---
+// --- HTML Generators ---
+
 const generateReportHTML = (data: ReportData) => {
   const { period, totalSales, totalExpenses, netProfit, cashSummary, rawSales, rawExpenses } = data;
 
@@ -411,14 +412,176 @@ const generateReportHTML = (data: ReportData) => {
         <!-- Footer -->
         <div class="footer">
           <div class="footer-left">EWheels Management System</div>
-          <div class="footer-right">www.ewheels.com</div>
         </div>
       </body>
     </html>
   `;
 };
 
-// --- PDF Generator ---
+const generateSalesHTML = (sales: Sale[], month: number, year: number) => {
+  const totalSales = sales.reduce((sum, s) => sum + s.total_amount, 0);
+  const totalCount = sales.length;
+
+  return `
+    <html>
+      <head>
+        <style>${css}</style>
+      </head>
+      <body>
+        <!-- Header -->
+        <div class="header section">
+          <div class="logo-box">
+            <div class="logo-title">EWHEELS</div>
+            <div class="logo-subtitle">MANAGEMENT SYSTEM</div>
+          </div>
+          
+          <div class="report-title">${getMonthName(month)} SALES REPORT</div>
+          <div class="report-subtitle">${String(month + 1).padStart(2, '0')} ${year}</div>
+          <div class="date-pill">
+            <div class="date-label">Generated On:</div>
+            <div class="date-value">${formatDate(new Date().toISOString())}</div>
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="metrics-grid section">
+          <div class="metric-card">
+            <div class="metric-label">Total Sales Volume</div>
+            <div class="metric-value" style="color: var(--color-success)">${formatCurrency(totalSales)}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Total Transactions</div>
+            <div class="metric-value" style="color: var(--color-dark)">${totalCount}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Average Sale Value</div>
+            <div class="metric-value" style="color: var(--color-primary)">
+              ${formatCurrency(totalCount > 0 ? totalSales / totalCount : 0)}
+            </div>
+          </div>
+        </div>
+
+        <!-- Sales List -->
+        <div class="table-section section">
+          <h3 class="table-title">DETAILED SALES LIST</h3>
+          <table>
+            <thead>
+              <tr>
+                <th style="background-color: var(--color-success)">Date</th>
+                <th style="background-color: var(--color-success)">Sale No.</th>
+                <th style="background-color: var(--color-success)">Customer</th>
+                <th style="background-color: var(--color-success)">Type</th>
+                <th style="background-color: var(--color-success)">Payment</th>
+                <th style="background-color: var(--color-success)">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sales.map((sale, index) => `
+                <tr class="${index % 2 !== 0 ? 'alt-row' : ''}">
+                  <td>${formatDate(sale.sale_date)}</td>
+                  <td>${sale.sale_number}</td>
+                  <td>${sale.customer_name || 'N/A'}</td>
+                  <td>${sale.sale_type}</td>
+                  <td>${sale.payment_method}</td>
+                  <td>${formatCurrency(sale.total_amount)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+          <div class="footer-left">EWheels Management System</div>
+        </div>
+      </body>
+    </html>
+  `;
+};
+
+const generateExpensesHTML = (expenses: Expense[], month: number, year: number) => {
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.total_amount, 0);
+  const totalCount = expenses.length;
+
+  return `
+    <html>
+      <head>
+        <style>${css}</style>
+      </head>
+      <body>
+        <!-- Header -->
+        <div class="header section">
+          <div class="logo-box">
+            <div class="logo-title">EWHEELS</div>
+            <div class="logo-subtitle">MANAGEMENT SYSTEM</div>
+          </div>
+          
+          <div class="report-title">${getMonthName(month)} EXPENSES REPORT</div>
+          <div class="report-subtitle">${String(month + 1).padStart(2, '0')} ${year}</div>
+          <div class="date-pill">
+            <div class="date-label">Generated On:</div>
+            <div class="date-value">${formatDate(new Date().toISOString())}</div>
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="metrics-grid section">
+          <div class="metric-card">
+            <div class="metric-label">Total Expenses</div>
+            <div class="metric-value" style="color: var(--color-danger)">${formatCurrency(totalExpenses)}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Total Transactions</div>
+            <div class="metric-value" style="color: var(--color-dark)">${totalCount}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Average Expense</div>
+            <div class="metric-value" style="color: var(--color-expense-secondary)">
+              ${formatCurrency(totalCount > 0 ? totalExpenses / totalCount : 0)}
+            </div>
+          </div>
+        </div>
+
+        <!-- Expenses List -->
+        <div class="table-section section">
+          <h3 class="table-title">DETAILED EXPENSES LIST</h3>
+          <table>
+            <thead>
+              <tr>
+                <th style="background-color: var(--color-danger)">Date</th>
+                <th style="background-color: var(--color-danger)">Expense No.</th>
+                <th style="background-color: var(--color-danger)">Vendor</th>
+                <th style="background-color: var(--color-danger)">Category</th>
+                <th style="background-color: var(--color-danger)">Status</th>
+                <th style="background-color: var(--color-danger)">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${expenses.map((expense, index) => `
+                <tr class="${index % 2 !== 0 ? 'alt-row' : ''}">
+                  <td>${formatDate(expense.expense_date)}</td>
+                  <td>${expense.expense_number}</td>
+                  <td>${expense.vendor_name || 'N/A'}</td>
+                  <td>${expense.category}</td>
+                  <td>${expense.approval_status}</td>
+                  <td>${formatCurrency(expense.total_amount)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+          <div class="footer-left">EWheels Management System</div>
+        </div>
+      </body>
+    </html>
+  `;
+};
+
+// --- PDF Generators ---
+
 export const generateFinancialReportPDF = async (data: ReportData) => {
   try {
     const html = generateReportHTML(data);
@@ -426,6 +589,28 @@ export const generateFinancialReportPDF = async (data: ReportData) => {
     await shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
   } catch (error) {
     console.error('Error generating PDF:', error);
+    throw error;
+  }
+};
+
+export const generateSalesPDF = async (sales: Sale[], month: number, year: number) => {
+  try {
+    const html = generateSalesHTML(sales, month, year);
+    const { uri } = await Print.printToFileAsync({ html });
+    await shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+  } catch (error) {
+    console.error('Error generating Sales PDF:', error);
+    throw error;
+  }
+};
+
+export const generateExpensesPDF = async (expenses: Expense[], month: number, year: number) => {
+  try {
+    const html = generateExpensesHTML(expenses, month, year);
+    const { uri } = await Print.printToFileAsync({ html });
+    await shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+  } catch (error) {
+    console.error('Error generating Expenses PDF:', error);
     throw error;
   }
 };

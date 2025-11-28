@@ -1,26 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  RefreshControl,
-  Modal,
-  Alert,
-} from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  Alert,
+  Modal,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
-import { ThemedView } from '@/components/themed-view';
+import { StatusIcon } from '@/components/empty-states';
 import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BorderRadius, BrandColors, Colors, ComponentStyles, Spacing, Typography } from '@/constants/design-system';
 import { jobCardsService } from '@/services/jobCardsService';
-import { ServiceTicket, TicketFilters } from '@/types';
 import { useAuthStore } from '@/stores/authStore';
-import { EmptySearchResults, StatusIcon } from '@/components/empty-states';
-import { Colors, Typography, Spacing, BorderRadius, ComponentStyles, Shadows } from '@/constants/design-system';
+import { ServiceTicket, TicketFilters } from '@/types';
 
 interface TechnicianFilters {
   status: 'all' | 'assigned' | 'in_progress' | 'completed';
@@ -118,9 +118,9 @@ const FilterModal: React.FC<FilterModalProps> = ({
                       localFilters.priority === priority && styles.filterOptionTextSelected,
                     ]}
                   >
-                    {priority === 'all' 
-                      ? 'All Priority' 
-                      : priority === '1' 
+                    {priority === 'all'
+                      ? 'All Priority'
+                      : priority === '1'
                         ? 'High Priority'
                         : priority === '2'
                           ? 'Medium Priority'
@@ -151,7 +151,7 @@ interface JobCardItemProps {
 const JobCardItem: React.FC<JobCardItemProps> = ({ ticket, onPress, onStatusUpdate }) => {
   const dueDate = ticket.due_date || ticket.dueDate;
   const isOverdue = dueDate && new Date(dueDate) < new Date();
-  const isDueToday = dueDate && 
+  const isDueToday = dueDate &&
     new Date(dueDate).toDateString() === new Date().toDateString();
 
   const getStatusColor = () => {
@@ -246,7 +246,7 @@ const JobCardItem: React.FC<JobCardItemProps> = ({ ticket, onPress, onStatusUpda
             </Text>
           </View>
         </View>
-        
+
         {/* Vehicle Info */}
         {(ticket.vehicle_reg_no || ticket.vehicleRegNo) && (
           <View style={styles.jobCardMetaRow}>
@@ -254,13 +254,13 @@ const JobCardItem: React.FC<JobCardItemProps> = ({ ticket, onPress, onStatusUpda
             <Text style={styles.jobCardMetaValue}>{ticket.vehicle_reg_no || ticket.vehicleRegNo}</Text>
           </View>
         )}
-        
+
         {/* Due Date */}
         {dueDate && (
           <View style={styles.jobCardMetaRow}>
             <Text style={styles.jobCardMetaLabel}>Due:</Text>
             <Text style={[
-              styles.jobCardMetaValue, 
+              styles.jobCardMetaValue,
               { color: isOverdue ? '#EF4444' : isDueToday ? '#F59E0B' : '#111827' }
             ]}>
               {new Date(dueDate).toLocaleDateString()}
@@ -277,13 +277,13 @@ const JobCardItem: React.FC<JobCardItemProps> = ({ ticket, onPress, onStatusUpda
             </Text>
           </View>
           <Text style={styles.jobCardDate}>
-            {new Date(ticket.created_at || ticket.createdAt).toLocaleDateString()}
+            {new Date(ticket.created_at || ticket.createdAt || new Date()).toLocaleDateString()}
           </Text>
         </View>
-        
+
         {/* Quick Action Button */}
         {getNextStatus() && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: getStatusColor() + '20' }]}
             onPress={(e) => {
               e.stopPropagation();
@@ -344,13 +344,13 @@ export default function TechnicianJobCardsScreen() {
   } = useQuery({
     queryKey: ['technician-job-cards', user?.id, filters, searchQuery, page],
     queryFn: () => {
-      const queryFilters: TicketFilters = { 
+      const queryFilters: TicketFilters = {
         assignedTo: user!.id, // Only get tickets assigned to this technician
         status: filters.status === 'all' ? 'all' : filters.status,
-        priority: filters.priority === 'all' ? 'all' : filters.priority,
+        priority: filters.priority === 'all' ? 'all' : (parseInt(filters.priority) as any),
         search: searchQuery,
       };
-      
+
       return jobCardsService.getTickets(queryFilters, page, 20);
     },
     enabled: !!user?.id,
@@ -398,7 +398,7 @@ export default function TechnicianJobCardsScreen() {
             <Text style={styles.activeFilterText}>
               Showing: {getFilterTitle()}
             </Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => {
                 router.replace('/(tabs)/technician-jobcards');
                 setFilters({ status: 'all', priority: 'all' });
@@ -428,7 +428,7 @@ export default function TechnicianJobCardsScreen() {
             </TouchableOpacity>
           )}
         </View>
-        
+
         {/* Filter Button */}
         <TouchableOpacity
           style={styles.searchFilterButton}
@@ -504,10 +504,10 @@ export default function TechnicianJobCardsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.neutral[50],
+    backgroundColor: BrandColors.surface,
   },
   activeFilterIndicator: {
-    backgroundColor: Colors.white,
+    backgroundColor: '#FFFFFF', // White
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
@@ -553,14 +553,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: Spacing.lg,
     paddingBottom: Spacing.md,
-    backgroundColor: Colors.white,
+    backgroundColor: BrandColors.surface,
     gap: Spacing.md,
   },
   searchBar: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.neutral[100],
+    backgroundColor: '#FFFFFF', // White
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
@@ -568,7 +568,7 @@ const styles = StyleSheet.create({
   },
   searchFilterButton: {
     padding: Spacing.md,
-    backgroundColor: Colors.neutral[100],
+    backgroundColor: '#FFFFFF', // White
     borderRadius: BorderRadius.md,
     position: 'relative',
   },
@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
   stats: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.md,
-    backgroundColor: Colors.white,
+    backgroundColor: BrandColors.surface,
     borderBottomWidth: 1,
     borderBottomColor: Colors.neutral[200],
   },
@@ -602,6 +602,7 @@ const styles = StyleSheet.create({
   },
   jobCardItem: {
     ...ComponentStyles.card,
+    backgroundColor: '#FFFFFF', // White
     padding: Spacing.base,
   },
   jobCardHeader: {

@@ -1,27 +1,28 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-} from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import React from 'react';
+import {
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
-import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { useAuthStore } from '@/stores/authStore';
+import { BrandColors, Colors, Shadows } from '@/constants/design-system';
 import { jobCardsService } from '@/services/jobCardsService';
+import { useAuthStore } from '@/stores/authStore';
 import { ServiceTicket } from '@/types';
 
 interface MetricCardProps {
   title: string;
   value: number;
-  color: string;
   icon: string;
+  type: 'assigned' | 'in_progress' | 'due_today' | 'completed';
   onPress?: () => void;
   subtitle?: string;
 }
@@ -29,28 +30,45 @@ interface MetricCardProps {
 const MetricCard: React.FC<MetricCardProps> = ({
   title,
   value,
-  color,
   icon,
+  type,
   onPress,
   subtitle,
-}) => (
-  <TouchableOpacity
-    style={[styles.metricCard, { borderLeftColor: color }]}
-    onPress={onPress}
-    disabled={!onPress}
-  >
-    <View style={styles.metricContent}>
-      <View style={styles.metricHeader}>
-        <IconSymbol name={icon} size={24} color={color} />
-        <Text style={styles.metricTitle}>{title}</Text>
+}) => {
+  // Map types to colors
+  const getColor = () => {
+    switch (type) {
+      case 'assigned': return Colors.neutral[500];
+      case 'in_progress': return '#499588';
+      case 'due_today': return BrandColors.primary;
+      case 'completed': return BrandColors.title;
+      default: return Colors.neutral[500];
+    }
+  };
+
+  const color = getColor();
+
+  return (
+    <TouchableOpacity
+      style={styles.metricCardContainer}
+      onPress={onPress}
+      disabled={!onPress}
+    >
+      <View style={styles.metricCard}>
+        <View style={styles.metricContent}>
+          <View style={styles.metricHeader}>
+            <IconSymbol name={icon as any} size={24} color={color} />
+            <Text style={styles.metricTitle}>{title}</Text>
+          </View>
+          <Text style={[styles.metricValue, { color }]}>{value}</Text>
+          {subtitle && (
+            <Text style={styles.metricSubtitle}>{subtitle}</Text>
+          )}
+        </View>
       </View>
-      <Text style={[styles.metricValue, { color }]}>{value}</Text>
-      {subtitle && (
-        <Text style={styles.metricSubtitle}>{subtitle}</Text>
-      )}
-    </View>
-  </TouchableOpacity>
-);
+    </TouchableOpacity>
+  );
+};
 
 interface TaskItemProps {
   ticket: ServiceTicket;
@@ -59,7 +77,7 @@ interface TaskItemProps {
 
 const TaskItem: React.FC<TaskItemProps> = ({ ticket, onPress }) => {
   const isOverdue = ticket.dueDate && new Date(ticket.dueDate) < new Date();
-  const isDueToday = ticket.dueDate && 
+  const isDueToday = ticket.dueDate &&
     new Date(ticket.dueDate).toDateString() === new Date().toDateString();
 
   const getStatusColor = () => {
@@ -84,10 +102,10 @@ const TaskItem: React.FC<TaskItemProps> = ({ ticket, onPress }) => {
     <TouchableOpacity style={styles.taskItem} onPress={onPress}>
       <View style={styles.taskHeader}>
         <View style={styles.taskTitleRow}>
-          <IconSymbol 
-            name={getStatusIcon()} 
-            size={20} 
-            color={getStatusColor()} 
+          <IconSymbol
+            name={getStatusIcon()}
+            size={20}
+            color={getStatusColor()}
           />
           <Text style={styles.taskNumber}>{ticket.ticketNumber}</Text>
         </View>
@@ -158,8 +176,8 @@ const TaskItem: React.FC<TaskItemProps> = ({ ticket, onPress }) => {
           }}
         >
           <Text style={styles.actionButtonText}>
-            {ticket.status === 'assigned' ? 'Start' : 
-             ticket.status === 'in_progress' ? 'Update' : 'View'}
+            {ticket.status === 'assigned' ? 'Start' :
+              ticket.status === 'in_progress' ? 'Update' : 'View'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -194,7 +212,7 @@ export default function TechnicianScreen() {
   };
 
   const handleTicketPress = (ticketId: string) => {
-    router.push(`/tickets/${ticketId}`);
+    router.push(`/jobcards/${ticketId}`);
   };
 
   const getGreeting = () => {
@@ -217,7 +235,7 @@ export default function TechnicianScreen() {
       assigned: assignedTickets.filter(t => t.status === 'assigned').length,
       inProgress: assignedTickets.filter(t => t.status === 'in_progress').length,
       completed: assignedTickets.filter(t => t.status === 'completed').length,
-      dueToday: assignedTickets.filter(t => 
+      dueToday: assignedTickets.filter(t =>
         t.dueDate && new Date(t.dueDate).toDateString() === today
       ).length,
     };
@@ -273,7 +291,7 @@ export default function TechnicianScreen() {
             style={styles.notificationButton}
             onPress={() => router.push('/notifications')}
           >
-            <IconSymbol name="bell" size={24} color="#6B7280" />
+            <IconSymbol name="bell" size={24} color={BrandColors.ink} />
             {/* Badge for unread notifications could go here */}
           </TouchableOpacity>
         </View>
@@ -287,28 +305,28 @@ export default function TechnicianScreen() {
             <MetricCard
               title="Assigned"
               value={metrics.assigned}
-              color="#3B82F6"
+              type="assigned"
               icon="doc.text"
               subtitle="New tasks"
             />
             <MetricCard
               title="In Progress"
               value={metrics.inProgress}
-              color="#8B5CF6"
+              type="in_progress"
               icon="gearshape"
               subtitle="Active work"
             />
             <MetricCard
               title="Due Today"
               value={metrics.dueToday}
-              color="#F59E0B"
+              type="due_today"
               icon="clock"
               subtitle="Urgent tasks"
             />
             <MetricCard
               title="Completed"
               value={metrics.completed}
-              color="#10B981"
+              type="completed"
               icon="checkmark.circle"
               subtitle="This week"
             />
@@ -387,7 +405,7 @@ export default function TechnicianScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: BrandColors.surface,
   },
   scrollView: {
     flex: 1,
@@ -401,14 +419,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     paddingTop: 60,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    backgroundColor: BrandColors.surface,
+    borderBottomWidth: 0,
   },
   greeting: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#111827',
+    color: BrandColors.ink,
   },
   subtitle: {
     fontSize: 14,
@@ -424,7 +441,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: BrandColors.ink,
     marginBottom: 16,
   },
   metricsGrid: {
@@ -432,17 +449,15 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 12,
   },
+  metricCardContainer: {
+    width: '48%',
+    ...Shadows.sm,
+  },
   metricCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFFFFF', // White
     borderRadius: 12,
     padding: 16,
-    borderLeftWidth: 4,
-    width: '48%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    minHeight: 100,
   },
   metricContent: {
     gap: 8,
@@ -454,22 +469,21 @@ const styles = StyleSheet.create({
   },
   metricTitle: {
     fontSize: 14,
-    color: '#6B7280',
     fontWeight: '500',
   },
   metricValue: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: BrandColors.ink,
   },
   metricSubtitle: {
     fontSize: 12,
-    color: '#9CA3AF',
   },
   tasksList: {
     gap: 12,
   },
   taskItem: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFFFFF', // White
     borderRadius: 12,
     padding: 16,
     shadowColor: '#000',
@@ -553,7 +567,7 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   actionButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: BrandColors.primary,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -568,6 +582,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: BrandColors.surface,
   },
   errorText: {
     fontSize: 16,
@@ -576,7 +591,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   retryButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: BrandColors.primary,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,

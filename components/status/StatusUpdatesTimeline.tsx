@@ -1,15 +1,14 @@
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BorderRadius, BrandColors, Colors as DesignColors, Spacing, StatusColors, Typography } from '@/constants/design-system';
 import React from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
   Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { ThemedText } from '@/components/themed-text';
-import { BrandColors, Typography, Spacing, BorderRadius, ComponentStyles, StatusColors, Colors } from '@/constants/design-system';
 
 interface StatusUpdate {
   id: string;
@@ -29,13 +28,13 @@ interface StatusUpdatesTimelineProps {
   canDelete?: boolean;
 }
 
-export function StatusUpdatesTimeline({ 
-  updates, 
-  currentStatus, 
+export function StatusUpdatesTimeline({
+  updates,
+  currentStatus,
   onDeleteUpdate,
-  canDelete = false 
+  canDelete = false
 }: StatusUpdatesTimelineProps) {
-  
+
   const getStatusColor = (status: string) => {
     return StatusColors[status as keyof typeof StatusColors]?.primary || BrandColors.primary;
   };
@@ -90,7 +89,7 @@ export function StatusUpdatesTimeline({
   if (updates.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <IconSymbol name="clock" size={24} color={Colors.neutral[400]} />
+        <IconSymbol name="clock" size={24} color={DesignColors.neutral[400]} />
         <Text style={styles.emptyText}>No status updates yet</Text>
         <Text style={styles.emptySubtext}>
           Updates will appear here as work progresses
@@ -118,7 +117,7 @@ export function StatusUpdatesTimeline({
         if (!statusUpdates || statusUpdates.length === 0) return null;
 
         const isCurrentStatus = status === currentStatus;
-        
+
         return (
           <View key={status} style={styles.statusSection}>
             {/* Status Header */}
@@ -127,10 +126,10 @@ export function StatusUpdatesTimeline({
                 styles.statusIconContainer,
                 { backgroundColor: getStatusColor(status) + '20' }
               ]}>
-                <IconSymbol 
-                  name={getStatusIcon(status)} 
-                  size={16} 
-                  color={getStatusColor(status)} 
+                <IconSymbol
+                  name={getStatusIcon(status)}
+                  size={16}
+                  color={getStatusColor(status)}
                 />
               </View>
               <View style={styles.statusHeaderText}>
@@ -155,13 +154,13 @@ export function StatusUpdatesTimeline({
                   <View style={styles.updateTimeline}>
                     <View style={[
                       styles.timelineDot,
-                      { backgroundColor: update.is_system_update ? Colors.neutral[400] : getStatusColor(status) }
+                      { backgroundColor: update.is_system_update ? DesignColors.neutral[400] : getStatusColor(status) }
                     ]} />
                     {index < statusUpdates.length - 1 && (
                       <View style={styles.timelineLine} />
                     )}
                   </View>
-                  
+
                   <View style={styles.updateContent}>
                     <View style={styles.updateHeader}>
                       <View style={styles.updateMeta}>
@@ -172,17 +171,17 @@ export function StatusUpdatesTimeline({
                           {formatRelativeTime(update.created_at)}
                         </Text>
                       </View>
-                      
+
                       {canDelete && !update.is_system_update && onDeleteUpdate && (
                         <TouchableOpacity
                           style={styles.deleteButton}
                           onPress={() => handleDeleteUpdate(update.id, update.update_text)}
                         >
-                          <IconSymbol name="trash" size={14} color={Colors.error[500]} />
+                          <IconSymbol name="trash" size={14} color={DesignColors.error[500]} />
                         </TouchableOpacity>
                       )}
                     </View>
-                    
+
                     <Text style={styles.updateText}>
                       {update.update_text}
                     </Text>

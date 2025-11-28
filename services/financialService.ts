@@ -1,22 +1,18 @@
-import { supabase } from '@/lib/supabase';
-import {
-  Sale,
-  Expense,
-  SaleForm,
-  ExpenseForm,
-  SalesFilters,
-  ExpensesFilters,
-  FinancialKPIs,
-  FinancialApiResponse,
-  PaginatedFinancialResponse,
-  SalesSummary,
-  ExpensesSummary,
-  RecentTransaction,
-  MonthlyTrendData,
-  CategoryBreakdownData,
-} from '@/types/financial.types';
-import { UserRole } from '@/types';
 import { canBypassLocationFilter } from '@/lib/permissions';
+import { supabase } from '@/lib/supabase';
+import { UserRole } from '@/types';
+import {
+  Expense,
+  ExpenseForm,
+  ExpensesFilters,
+  FinancialApiResponse,
+  FinancialKPIs,
+  PaginatedFinancialResponse,
+  RecentTransaction,
+  Sale,
+  SaleForm,
+  SalesFilters
+} from '@/types/financial.types';
 
 export class FinancialService {
   // Apply location scoping to queries based on user role
@@ -387,9 +383,13 @@ export class FinancialService {
 
     try {
       const today = new Date();
-      const startOfToday = new Date(today.setHours(0, 0, 0, 0)).toISOString().split('T')[0];
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
-      const startOfYear = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+
+      const startOfToday = `${year}-${month}-${day}`;
+      const startOfMonth = `${year}-${month}-01`;
+      const startOfYear = `${year}-01-01`;
 
       // Today's data
       const [todaySales, todayExpenses] = await Promise.all([
@@ -456,7 +456,7 @@ export class FinancialService {
 
     const { data, error } = await query;
     if (error) throw error;
-    
+
     return data?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0;
   }
 
@@ -481,7 +481,7 @@ export class FinancialService {
 
     const { data, error } = await query;
     if (error) throw error;
-    
+
     return data?.reduce((sum, expense) => sum + (expense.amount || 0), 0) || 0;
   }
 
@@ -510,7 +510,7 @@ export class FinancialService {
       let expensesQuery = this.applyScopeToQuery(
         'expenses',
         supabase.from('expenses')
-          .select('id, description, amount, expense_date, category')
+          .select('id, description, amount, total_amount, expense_date, category')
           .order('created_at', { ascending: false })
           .limit(Math.ceil(limit / 2)),
         userRole,

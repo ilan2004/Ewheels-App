@@ -82,7 +82,7 @@ export class VehiclesService {
       // 1) Get tickets assigned to technician that have a vehicle case
       const { data: tickets, error: ticketsError } = await supabase
         .from('service_tickets')
-        .select('id, assigned_to, ticket_number, customer_complaint, vehicle_case_id, customer_id')
+        .select('id, assigned_to, ticket_number, customer_complaint, vehicle_case_id, customer_id, status')
         .eq('assigned_to', technicianId)
         .not('vehicle_case_id', 'is', null)
         .order('created_at', { ascending: false });
@@ -103,15 +103,31 @@ export class VehiclesService {
       const byId: Record<string, any> = {};
       (tickets || []).forEach(t => { if (t.vehicle_case_id) byId[t.vehicle_case_id] = t; });
 
-      const enriched = (vehicles || []).map(v => ({
-        ...v,
-        service_ticket: byId[v.id] ? {
-          id: byId[v.id].id,
-          assigned_to: byId[v.id].assigned_to,
-          ticket_number: byId[v.id].ticket_number,
-          customer_complaint: byId[v.id].customer_complaint,
-        } : undefined,
-      }));
+      const enriched = (vehicles || []).map(v => {
+        const ticket = byId[v.id];
+        let displayStatus = v.status;
+
+        // Sync status with ticket if available
+        if (ticket) {
+          if (ticket.status === 'in_progress') displayStatus = 'in_progress';
+          else if (ticket.status === 'completed') displayStatus = 'completed';
+          else if (ticket.status === 'delivered') displayStatus = 'delivered';
+          else if (ticket.status === 'triaged') displayStatus = 'triaged';
+          else if (ticket.status === 'assigned') displayStatus = 'received'; // "New" for tech
+        }
+
+        return {
+          ...v,
+          status: displayStatus,
+          service_ticket: ticket ? {
+            id: ticket.id,
+            assigned_to: ticket.assigned_to,
+            ticket_number: ticket.ticket_number,
+            customer_complaint: ticket.customer_complaint,
+            status: ticket.status,
+          } : undefined,
+        };
+      });
 
       // Keep same order as tickets query
       const orderIndex: Record<string, number> = {};
@@ -290,13 +306,14 @@ export class VehiclesService {
   // Update vehicle status with automatic timestamp updates
   async updateStatus(
     id: string,
-    status: 'received' | 'diagnosed' | 'in_progress' | 'completed' | 'delivered',
+    status: 'received' | 'triaged' | 'diagnosed' | 'in_progress' | 'completed' | 'delivered',
     notes?: string
   ): Promise<VehicleCase> {
     const updates: any = { status };
 
     // Set appropriate timestamp based on status
     switch (status) {
+      case 'triaged':
       case 'diagnosed':
         if (!updates.diagnosed_at) updates.diagnosed_at = new Date().toISOString();
         break;

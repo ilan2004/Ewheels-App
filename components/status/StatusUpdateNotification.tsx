@@ -1,13 +1,13 @@
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BorderRadius, Colors as DesignColors, Shadows, Spacing, Typography } from '@/constants/design-system';
 import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
   Animated,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors, Typography, Spacing, BorderRadius, Shadows, BrandColors } from '@/constants/design-system';
 
 interface StatusUpdateNotificationProps {
   hasNewUpdates: boolean;
@@ -78,7 +78,7 @@ export function StatusUpdateNotification({
         activeOpacity={0.8}
       >
         <View style={styles.notificationIcon}>
-          <IconSymbol name="bell.fill" size={16} color={Colors.primary[600]} />
+          <IconSymbol name="bell.fill" size={16} color={DesignColors.primary[600]} />
           {updateCount > 0 && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>
@@ -87,12 +87,12 @@ export function StatusUpdateNotification({
             </View>
           )}
         </View>
-        
+
         <View style={styles.notificationText}>
           <Text style={styles.notificationTitle}>New Progress Updates</Text>
           <Text style={styles.notificationSubtitle}>
-            {updateCount === 1 
-              ? '1 new update available' 
+            {updateCount === 1
+              ? '1 new update available'
               : `${updateCount} new updates available`}
           </Text>
         </View>
@@ -104,7 +104,7 @@ export function StatusUpdateNotification({
             onDismiss?.();
           }}
         >
-          <IconSymbol name="xmark" size={14} color={Colors.neutral[500]} />
+          <IconSymbol name="xmark" size={14} color={DesignColors.neutral[500]} />
         </TouchableOpacity>
       </TouchableOpacity>
     </Animated.View>
@@ -123,12 +123,12 @@ const styles = StyleSheet.create({
   notificationContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: DesignColors.white,
     borderRadius: BorderRadius.md,
     padding: Spacing.base,
     ...Shadows.lg,
     borderWidth: 1,
-    borderColor: Colors.neutral[200],
+    borderColor: DesignColors.neutral[200],
   },
   notificationIcon: {
     position: 'relative',
@@ -138,19 +138,19 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -8,
     right: -8,
-    backgroundColor: Colors.error[500],
+    backgroundColor: DesignColors.error[500],
     borderRadius: BorderRadius.sm + 2,
     minWidth: 20,
     height: 20,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: Colors.white,
+    borderColor: DesignColors.white,
   },
   badgeText: {
     fontSize: Typography.fontSize.xs - 2,
     fontWeight: Typography.fontWeight.bold,
-    color: Colors.white,
+    color: DesignColors.white,
   },
   notificationText: {
     flex: 1,
@@ -158,12 +158,12 @@ const styles = StyleSheet.create({
   notificationTitle: {
     fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.semibold,
-    color: Colors.neutral[900],
+    color: DesignColors.neutral[900],
     marginBottom: 2,
   },
   notificationSubtitle: {
     fontSize: Typography.fontSize.xs,
-    color: Colors.neutral[500],
+    color: DesignColors.neutral[500],
   },
   dismissButton: {
     padding: Spacing.sm,
@@ -172,12 +172,12 @@ const styles = StyleSheet.create({
 });
 
 // Badge component for use in tab bars or headers
-export function StatusUpdateBadge({ 
-  count, 
-  visible = true 
-}: { 
-  count: number; 
-  visible?: boolean; 
+export function StatusUpdateBadge({
+  count,
+  visible = true
+}: {
+  count: number;
+  visible?: boolean;
 }) {
   if (!visible || count === 0) {
     return null;
@@ -197,19 +197,19 @@ const badgeStyles = StyleSheet.create({
     position: 'absolute',
     top: -6,
     right: -6,
-    backgroundColor: Colors.error[500],
+    backgroundColor: DesignColors.error[500],
     borderRadius: BorderRadius.sm + 2,
     minWidth: 20,
     height: 20,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: Colors.white,
+    borderColor: DesignColors.white,
   },
   badgeText: {
     fontSize: Typography.fontSize.xs - 2,
     fontWeight: Typography.fontWeight.bold,
-    color: Colors.white,
+    color: DesignColors.white,
     lineHeight: 12,
   },
 });

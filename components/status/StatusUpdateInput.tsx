@@ -1,21 +1,21 @@
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BorderRadius, BrandColors, ComponentStyles, Spacing, StatusColors, Typography } from '@/constants/design-system';
+import { jobCardsService } from '@/services/jobCardsService';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
+  ActivityIndicator,
+  Alert,
   Modal,
   ScrollView,
-  Alert,
-  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { ThemedView } from '@/components/themed-view';
-import { ThemedText } from '@/components/themed-text';
-import { jobCardsService } from '@/services/jobCardsService';
-import { BrandColors, Typography, Spacing, BorderRadius, ComponentStyles, StatusColors } from '@/constants/design-system';
 
 interface StatusUpdateInputProps {
   ticketId: string;
@@ -63,10 +63,10 @@ const statusTemplates: Record<string, string[]> = {
   ],
 };
 
-export function StatusUpdateInput({ 
-  ticketId, 
-  currentStatus, 
-  onUpdateAdded 
+export function StatusUpdateInput({
+  ticketId,
+  currentStatus,
+  onUpdateAdded
 }: StatusUpdateInputProps) {
   const [showModal, setShowModal] = useState(false);
   const [updateText, setUpdateText] = useState('');
@@ -126,10 +126,10 @@ export function StatusUpdateInput({
         ]}
         onPress={() => setShowModal(true)}
       >
-        <IconSymbol 
-          name="plus.circle" 
-          size={20} 
-          color={StatusColors[currentStatus as keyof typeof StatusColors]?.primary || BrandColors.primary} 
+        <IconSymbol
+          name="plus.circle"
+          size={20}
+          color={StatusColors[currentStatus as keyof typeof StatusColors]?.primary || BrandColors.primary}
         />
         <Text style={[
           styles.addButtonText,
@@ -140,9 +140,9 @@ export function StatusUpdateInput({
       </TouchableOpacity>
 
       {/* Update Modal */}
-      <Modal 
-        visible={showModal} 
-        animationType="slide" 
+      <Modal
+        visible={showModal}
+        animationType="slide"
         presentationStyle="pageSheet"
       >
         <ThemedView style={styles.modalContainer}>
@@ -153,12 +153,12 @@ export function StatusUpdateInput({
             <ThemedText type="subtitle" style={styles.modalTitle}>
               Add Progress Update
             </ThemedText>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={handleSubmit}
               disabled={addUpdateMutation.isPending || !updateText.trim()}
             >
               {addUpdateMutation.isPending ? (
-                <ActivityIndicator size="small" color={Colors.primary[600]} />
+                <ActivityIndicator size="small" color={BrandColors.primary} />
               ) : (
                 <Text style={[
                   styles.modalDone,
@@ -196,7 +196,7 @@ export function StatusUpdateInput({
                 <Text style={styles.sectionDescription}>
                   Tap to use a common update for this status
                 </Text>
-                
+
                 <View style={styles.templatesGrid}>
                   {templates.map((template, index) => (
                     <TouchableOpacity
@@ -225,7 +225,7 @@ export function StatusUpdateInput({
               <Text style={styles.sectionDescription}>
                 Describe what's happening with this job card
               </Text>
-              
+
               <TextInput
                 style={styles.textInput}
                 placeholder="Enter progress update..."

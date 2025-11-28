@@ -9,6 +9,7 @@ import {
   Typography,
 } from '@/constants/design-system';
 import { useSales } from '@/hooks/useFinancial';
+import { generateSalesPDF } from '@/lib/reportPDFGenerator';
 import {
   PaymentMethodLabels,
   PaymentStatus,
@@ -42,6 +43,33 @@ export default function SalesManagement() {
   const [filters, setFilters] = useState<SalesFilters>({});
   const [showFilters, setShowFilters] = useState(false);
 
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+  const getMonthName = (monthIndex: number) => {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[monthIndex];
+  };
+
+  const changeMonth = (increment: number) => {
+    let newMonth = selectedMonth + increment;
+    let newYear = selectedYear;
+
+    if (newMonth > 11) {
+      newMonth = 0;
+      newYear += 1;
+    } else if (newMonth < 0) {
+      newMonth = 11;
+      newYear -= 1;
+    }
+
+    setSelectedMonth(newMonth);
+    setSelectedYear(newYear);
+  };
+
   // Form state
   const [formData, setFormData] = useState<SaleForm>({
     invoice_id: '',
@@ -63,15 +91,27 @@ export default function SalesManagement() {
 
   useEffect(() => {
     loadSales();
-  }, []);
+  }, [selectedMonth, selectedYear]);
 
   const loadSales = () => {
-    fetchSales({ ...filters, search: searchQuery });
+    const startDate = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0];
+    const endDate = new Date(selectedYear, selectedMonth + 1, 0).toISOString().split('T')[0];
+    fetchSales({ ...filters, search: searchQuery, startDate, endDate });
   };
 
   const handleSearch = () => {
     setFilters(prev => ({ ...prev, search: searchQuery }));
-    fetchSales({ ...filters, search: searchQuery });
+    const startDate = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0];
+    const endDate = new Date(selectedYear, selectedMonth + 1, 0).toISOString().split('T')[0];
+    fetchSales({ ...filters, search: searchQuery, startDate, endDate });
+  };
+
+  const handleExport = async () => {
+    try {
+      await generateSalesPDF(sales, selectedMonth, selectedYear);
+    } catch (error) {
+      Alert.alert('Export Failed', 'An error occurred while generating the PDF.');
+    }
   };
 
   const formatCurrency = (amount: number): string => {
@@ -284,6 +324,32 @@ export default function SalesManagement() {
     <View style={styles.container}>
       {/* Header with Search and Add Button */}
       <View style={styles.header}>
+        <View style={styles.headerTopRow}>
+          <View style={styles.monthSelector}>
+            <TouchableOpacity onPress={() => changeMonth(-1)} style={styles.arrowButton}>
+              <IconSymbol name="chevron.left" size={20} color={BrandColors.primary} />
+            </TouchableOpacity>
+
+            <View style={styles.dateDisplay}>
+              <IconSymbol name="calendar" size={16} color={Colors.neutral[500]} style={{ marginRight: 6 }} />
+              <Text style={styles.dateText}>{getMonthName(selectedMonth)} {selectedYear}</Text>
+            </View>
+
+            <TouchableOpacity onPress={() => changeMonth(1)} style={styles.arrowButton}>
+              <IconSymbol name="chevron.right" size={20} color={BrandColors.primary} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.headerActions}>
+            <TouchableOpacity style={styles.exportButton} onPress={handleExport}>
+              <IconSymbol name="square.and.arrow.up" size={18} color={BrandColors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.addButton} onPress={handleAddSale}>
+              <IconSymbol size={20} name="plus" color={Colors.white} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
         <View style={styles.searchContainer}>
           <IconSymbol size={20} name="magnifyingglass" color={Colors.neutral[400]} />
           <TextInput
@@ -294,10 +360,6 @@ export default function SalesManagement() {
             onSubmitEditing={handleSearch}
           />
         </View>
-
-        <TouchableOpacity style={styles.addButton} onPress={handleAddSale}>
-          <IconSymbol size={20} name="plus" color={Colors.white} />
-        </TouchableOpacity>
       </View>
 
       {/* Sales List */}
@@ -482,13 +544,55 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.neutral[50],
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
     padding: Spacing.base,
     backgroundColor: BrandColors.surface,
     borderBottomWidth: 1,
     borderBottomColor: Colors.neutral[200],
     ...Shadows.sm,
+    gap: Spacing.sm,
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  monthSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.neutral[50],
+    borderRadius: BorderRadius.base,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: Colors.neutral[200],
+  },
+  arrowButton: {
+    padding: Spacing.xs,
+  },
+  dateDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.sm,
+    minWidth: 120,
+    justifyContent: 'center',
+  },
+  dateText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.title,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  exportButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.neutral[200],
   },
   searchContainer: {
     flex: 1,
@@ -497,7 +601,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     borderRadius: BorderRadius.lg,
     paddingHorizontal: Spacing.md,
-    marginRight: Spacing.md,
   },
   searchInput: {
     flex: 1,

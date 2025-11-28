@@ -1,11 +1,8 @@
-import { LocationSelector } from '@/components/location-selector';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { BorderRadius, BrandColors, Colors, Shadows, Spacing, Typography } from '@/constants/design-system';
-import { canBypassLocationFilter, getFeatureAccess } from '@/lib/permissions';
 import { useAuthStore } from '@/stores/authStore';
-import { useLocationStore } from '@/stores/locationStore';
 import React from 'react';
 import {
   Alert,
@@ -56,12 +53,6 @@ const ProfileItem: React.FC<ProfileItemProps> = ({
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuthStore();
-  const { activeLocation, availableLocations } = useLocationStore();
-
-  const featureAccess = user ? getFeatureAccess(user.role) : null;
-  const canAccessAllLocations = user ? canBypassLocationFilter(user.role) : false;
-
-
 
   const handleSignOut = () => {
     Alert.alert(
@@ -91,20 +82,6 @@ export default function ProfileScreen() {
   };
   const roleDisplayName = roleMap[user?.role as keyof typeof roleMap] || 'User';
 
-  const getPermissionSummary = () => {
-    if (!featureAccess) return 'Loading...';
-
-    const permissions = [];
-    if (featureAccess.canCreateTickets) permissions.push('Create Tickets');
-    if (featureAccess.canEditAllTickets) permissions.push('Edit All Tickets');
-    if (featureAccess.canAssignTechnicians) permissions.push('Assign Tasks');
-    if (featureAccess.canViewAnalytics) permissions.push('View Analytics');
-    if (featureAccess.canManageUsers) permissions.push('Manage Users');
-    if (featureAccess.canManageSettings) permissions.push('System Settings');
-
-    return permissions.length > 0 ? `${permissions.length} permissions` : 'View Only';
-  };
-
   return (
     <ThemedView style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
@@ -119,183 +96,10 @@ export default function ProfileScreen() {
             {userName}
           </ThemedText>
           <Text style={styles.userRole}>{roleDisplayName}</Text>
-          <Text style={styles.userEmail}>{user?.email}</Text>
-        </View>
-
-
-
-        {/* Admin Quick Actions */}
-        {user?.role === 'admin' && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Admin Actions</Text>
-            <View style={styles.listContainer}>
-              <ProfileItem
-                icon="person.3.fill"
-                title="User Management"
-                subtitle="Manage system users and roles"
-                onPress={() => { }}
-              />
-              <ProfileItem
-                icon="gear"
-                title="System Settings"
-                subtitle="Configure application settings"
-                onPress={() => { }}
-              />
-              <ProfileItem
-                icon="chart.bar.fill"
-                title="Analytics"
-                subtitle="View system performance"
-                onPress={() => { }}
-              />
-              <ProfileItem
-                icon="server.rack"
-                title="System Health"
-                subtitle="Monitor server status"
-                onPress={() => { }}
-              />
-            </View>
-          </View>
-        )}
-
-        {/* Profile Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Profile Information</Text>
-          <View style={styles.listContainer}>
-            <ProfileItem
-              icon="person"
-              title="Full Name"
-              subtitle={userName}
-              showChevron={false}
-            />
-            <ProfileItem
-              icon="envelope"
-              title="Email"
-              subtitle={user?.email}
-              showChevron={false}
-            />
-            <ProfileItem
-              icon="briefcase"
-              title="Role"
-              subtitle={roleDisplayName}
-              showChevron={false}
-            />
-            {user?.id && (
-              <ProfileItem
-                icon="number"
-                title="User ID"
-                subtitle={user.id}
-                showChevron={false}
-              />
-            )}
-            {user?.role === 'admin' && (
-              <ProfileItem
-                icon="checkmark.shield.fill"
-                title="Admin Level"
-                subtitle="System Administrator"
-                showChevron={false}
-              />
-            )}
-          </View>
-        </View>
-
-        {/* Location Context */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Location & Access</Text>
-          <View style={styles.listContainer}>
-            {canAccessAllLocations ? (
-              <ProfileItem
-                icon="globe"
-                title="Access Level"
-                subtitle="All Locations"
-                showChevron={false}
-              />
-            ) : (
-              <ProfileItem
-                icon="location.fill"
-                title="Active Location"
-                subtitle={activeLocation?.name || 'No location selected'}
-                showChevron={false}
-              />
-            )}
-            <ProfileItem
-              icon="list.bullet"
-              title="Available Locations"
-              subtitle={`${availableLocations.length} location${availableLocations.length !== 1 ? 's' : ''}`}
-              showChevron={false}
-            />
-            <ProfileItem
-              icon="shield.checkered"
-              title="Permissions"
-              subtitle={getPermissionSummary()}
-              showChevron={false}
-            />
-            {user?.role === 'admin' && (
-              <ProfileItem
-                icon="crown.fill"
-                title="Admin Privileges"
-                subtitle="Full system access"
-                showChevron={false}
-              />
-            )}
-          </View>
-          {!canAccessAllLocations && availableLocations.length > 1 && (
-            <LocationSelector style={styles.locationSelectorCard} />
-          )}
-        </View>
-
-        {/* Settings */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Settings</Text>
-          <View style={styles.listContainer}>
-            <ProfileItem
-              icon="bell"
-              title="Notifications"
-              subtitle="Manage notification preferences"
-              onPress={() => console.log('Notifications settings')}
-            />
-            <ProfileItem
-              icon="moon"
-              title="Dark Mode"
-              subtitle="Toggle dark/light theme"
-              onPress={() => console.log('Dark mode toggle')}
-            />
-            <ProfileItem
-              icon="globe"
-              title="Language"
-              subtitle="English"
-              onPress={() => console.log('Language settings')}
-            />
-          </View>
-        </View>
-
-        {/* Support */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Support</Text>
-          <View style={styles.listContainer}>
-            <ProfileItem
-              icon="questionmark.circle"
-              title="Help & Support"
-              subtitle="Get help with your queries"
-              onPress={() => console.log('Help & Support')}
-            />
-            <ProfileItem
-              icon="info.circle"
-              title="About"
-              subtitle="App version and info"
-              onPress={() => console.log('About')}
-            />
-            <ProfileItem
-              icon="shield.checkered"
-              title="Privacy Policy"
-              subtitle="Read our privacy policy"
-              onPress={() => console.log('Privacy Policy')}
-            />
-          </View>
         </View>
 
         {/* Sign Out */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
           <View style={styles.listContainer}>
             <ProfileItem
               icon="arrow.right.square"
@@ -305,11 +109,6 @@ export default function ProfileScreen() {
               destructive
             />
           </View>
-        </View>
-
-        {/* App Version */}
-        <View style={styles.footer}>
-          <Text style={styles.versionText}>EV Wheels v1.0.0</Text>
         </View>
       </ScrollView>
     </ThemedView>

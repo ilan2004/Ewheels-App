@@ -2,16 +2,14 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { BorderRadius, Colors, Shadows, Spacing, Typography } from '@/constants/design-system';
 import { useAuthStore } from '@/stores/authStore';
 import { Image } from 'expo-image';
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Alert,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
-  TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 
 interface ProfileItemProps {
@@ -60,44 +58,6 @@ const ProfileItem: React.FC<ProfileItemProps> = ({
 
 export default function FrontDeskProfile() {
   const { user, signOut } = useAuthStore();
-  const [isEditing, setIsEditing] = useState(false);
-
-  // Form states
-  const [firstName, setFirstName] = useState(user?.firstName || 'John');
-  const [lastName, setLastName] = useState(user?.lastName || 'Doe');
-  const [email, setEmail] = useState(user?.email || 'john.doe@ewheels.com');
-  const [phone, setPhone] = useState('+1 (555) 123-4567');
-  const [employeeId, setEmployeeId] = useState('EW-FD-001');
-
-  // Settings states
-  const [notifications, setNotifications] = useState(true);
-  const [emailAlerts, setEmailAlerts] = useState(true);
-  const [autoSync, setAutoSync] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
-
-  const handleSave = () => {
-    // Here you would save the profile data
-    console.log('Saving profile data:', {
-      firstName,
-      lastName,
-      email,
-      phone,
-      employeeId,
-    });
-
-    Alert.alert('Profile Updated', 'Your profile has been successfully updated.');
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
-    // Reset form to original values
-    setFirstName(user?.firstName || 'John');
-    setLastName(user?.lastName || 'Doe');
-    setEmail(user?.email || 'john.doe@ewheels.com');
-    setPhone('+1 (555) 123-4567');
-    setEmployeeId('EW-FD-001');
-    setIsEditing(false);
-  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -114,26 +74,8 @@ export default function FrontDeskProfile() {
     );
   };
 
-  const handleChangePassword = () => {
-    Alert.alert('Change Password', 'Password change functionality would be implemented here.');
-  };
-
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      'Delete Account',
-      'This action cannot be undone. Are you sure you want to delete your account?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            console.log('Account deletion requested');
-          },
-        },
-      ]
-    );
-  };
+  const firstName = user?.firstName || 'John';
+  const lastName = user?.lastName || 'Doe';
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -144,194 +86,14 @@ export default function FrontDeskProfile() {
             source={{ uri: 'https://ui-avatars.com/api/?name=John+Doe&background=3B82F6&color=fff&size=120' }}
             style={styles.avatar}
           />
-          <TouchableOpacity style={styles.cameraButton}>
-            <IconSymbol name="camera.fill" size={16} color={Colors.white} />
-          </TouchableOpacity>
         </View>
 
         <Text style={styles.name}>{firstName} {lastName}</Text>
         <Text style={styles.role}>Front Desk Manager</Text>
-        <Text style={styles.employeeIdText}>Employee ID: {employeeId}</Text>
-      </View>
-
-      {/* Profile Information */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Personal Information</Text>
-          <TouchableOpacity
-            style={styles.editButton}
-            onPress={() => setIsEditing(!isEditing)}
-          >
-            <IconSymbol
-              name={isEditing ? 'xmark.circle.fill' : 'pencil.circle.fill'}
-              size={24}
-              color={Colors.primary[600]}
-            />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.formContainer}>
-          <View style={styles.inputRow}>
-            <View style={styles.inputHalf}>
-              <Text style={styles.inputLabel}>First Name</Text>
-              <TextInput
-                style={[styles.input, !isEditing && styles.inputDisabled]}
-                value={firstName}
-                onChangeText={setFirstName}
-                editable={isEditing}
-                placeholder="First Name"
-              />
-            </View>
-
-            <View style={styles.inputHalf}>
-              <Text style={styles.inputLabel}>Last Name</Text>
-              <TextInput
-                style={[styles.input, !isEditing && styles.inputDisabled]}
-                value={lastName}
-                onChangeText={setLastName}
-                editable={isEditing}
-                placeholder="Last Name"
-              />
-            </View>
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Email</Text>
-            <TextInput
-              style={[styles.input, !isEditing && styles.inputDisabled]}
-              value={email}
-              onChangeText={setEmail}
-              editable={isEditing}
-              placeholder="Email"
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Phone</Text>
-            <TextInput
-              style={[styles.input, !isEditing && styles.inputDisabled]}
-              value={phone}
-              onChangeText={setPhone}
-              editable={isEditing}
-              placeholder="Phone"
-              keyboardType="phone-pad"
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Employee ID</Text>
-            <TextInput
-              style={[styles.input, !isEditing && styles.inputDisabled]}
-              value={employeeId}
-              onChangeText={setEmployeeId}
-              editable={isEditing}
-              placeholder="Employee ID"
-            />
-          </View>
-
-          {isEditing && (
-            <View style={styles.actionButtons}>
-              <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-                <Text style={styles.saveButtonText}>Save Changes</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* App Settings */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>App Settings</Text>
-        <View style={styles.listContainer}>
-          <ProfileItem
-            icon="bell.fill"
-            title="Push Notifications"
-            subtitle="Receive alerts for new tickets"
-            rightElement={
-              <Switch
-                value={notifications}
-                onValueChange={setNotifications}
-                trackColor={{ false: Colors.neutral[300], true: Colors.primary[200] }}
-                thumbColor={notifications ? Colors.primary[600] : Colors.neutral[400]}
-              />
-            }
-          />
-          <ProfileItem
-            icon="envelope.fill"
-            title="Email Alerts"
-            subtitle="Get email notifications"
-            rightElement={
-              <Switch
-                value={emailAlerts}
-                onValueChange={setEmailAlerts}
-                trackColor={{ false: Colors.neutral[300], true: Colors.primary[200] }}
-                thumbColor={emailAlerts ? Colors.primary[600] : Colors.neutral[400]}
-              />
-            }
-          />
-          <ProfileItem
-            icon="arrow.clockwise.circle.fill"
-            title="Auto Sync"
-            subtitle="Automatically sync data"
-            rightElement={
-              <Switch
-                value={autoSync}
-                onValueChange={setAutoSync}
-                trackColor={{ false: Colors.neutral[300], true: Colors.primary[200] }}
-                thumbColor={autoSync ? Colors.primary[600] : Colors.neutral[400]}
-              />
-            }
-          />
-          <ProfileItem
-            icon="moon.fill"
-            title="Dark Mode"
-            subtitle="Use dark theme"
-            rightElement={
-              <Switch
-                value={darkMode}
-                onValueChange={setDarkMode}
-                trackColor={{ false: Colors.neutral[300], true: Colors.primary[200] }}
-                thumbColor={darkMode ? Colors.primary[600] : Colors.neutral[400]}
-              />
-            }
-          />
-        </View>
-      </View>
-
-      {/* Security & Privacy */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Security & Privacy</Text>
-        <View style={styles.listContainer}>
-          <ProfileItem
-            icon="key.fill"
-            title="Change Password"
-            subtitle="Update your login password"
-            onPress={handleChangePassword}
-          />
-          <ProfileItem
-            icon="shield.fill"
-            title="Privacy Policy"
-            subtitle="Read our privacy policy"
-            onPress={() => { }}
-          />
-          <ProfileItem
-            icon="doc.text.fill"
-            title="Terms of Service"
-            subtitle="Read our terms of service"
-            onPress={() => { }}
-          />
-        </View>
       </View>
 
       {/* Account Actions */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Account Actions</Text>
         <View style={styles.listContainer}>
           <ProfileItem
             icon="arrow.right.square.fill"
@@ -340,19 +102,7 @@ export default function FrontDeskProfile() {
             onPress={handleLogout}
             destructive
           />
-          <ProfileItem
-            icon="trash.fill"
-            title="Delete Account"
-            subtitle="Permanently delete your account"
-            onPress={handleDeleteAccount}
-            destructive
-          />
         </View>
-      </View>
-
-      {/* App Version */}
-      <View style={styles.footer}>
-        <Text style={styles.versionText}>E-Wheels App v1.0.0</Text>
       </View>
     </ScrollView>
   );

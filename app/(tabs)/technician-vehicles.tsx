@@ -15,6 +15,7 @@ import {
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BrandColors, Colors, Shadows } from '@/constants/design-system';
 import { vehiclesService } from '@/services/vehiclesService';
 import { useAuthStore } from '@/stores/authStore';
 import { VehicleCase } from '@/types';
@@ -31,19 +32,21 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onPress, onStatusUpd
 
   const getStatusColor = () => {
     switch (vehicle.status) {
-      case 'received': return '#6B7280';
-      case 'diagnosed': return '#3B82F6';
-      case 'in_progress': return '#8B5CF6';
-      case 'completed': return '#10B981';
-      case 'delivered': return '#059669';
-      default: return '#6B7280';
+      case 'received': return '#EF4444'; // Reported/New (Red)
+      case 'triaged': return '#F59E0B'; // Triaged (Amber/Orange)
+      case 'diagnosed': return '#F59E0B'; // Legacy support
+      case 'in_progress': return '#499588'; // In Progress (Greenish)
+      case 'completed': return '#387868'; // Completed (Dark Green/Teal)
+      case 'delivered': return '#059669'; // Delivered
+      default: return Colors.neutral[500];
     }
   };
 
   const getStatusIcon = () => {
     switch (vehicle.status) {
       case 'received': return 'tray';
-      case 'diagnosed': return 'stethoscope';
+      case 'triaged': return 'list.bullet';
+      case 'diagnosed': return 'list.bullet';
       case 'in_progress': return 'gearshape';
       case 'completed': return 'checkmark.circle';
       case 'delivered': return 'checkmark.circle.fill';
@@ -53,7 +56,8 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onPress, onStatusUpd
 
   const getNextStatusAction = () => {
     switch (vehicle.status) {
-      case 'received': return { status: 'diagnosed', label: 'Start Diagnosis', icon: 'stethoscope' };
+      case 'received': return { status: 'triaged', label: 'View Vehicle Case', icon: 'doc.text' };
+      case 'triaged': return { status: 'in_progress', label: 'Begin Repair', icon: 'gearshape' };
       case 'diagnosed': return { status: 'in_progress', label: 'Begin Repair', icon: 'gearshape' };
       case 'in_progress': return { status: 'completed', label: 'Mark Complete', icon: 'checkmark.circle' };
       case 'completed': return { status: 'delivered', label: 'Mark Delivered', icon: 'checkmark.circle.fill' };
@@ -125,13 +129,13 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onPress, onStatusUpd
       <View style={styles.vehicleMeta}>
         {vehicle.vehicle_year && (
           <View style={styles.metaRow}>
-            <IconSymbol name="calendar" size={14} color="#6B7280" />
+            <IconSymbol name="calendar" size={14} color={Colors.neutral[500]} />
             <Text style={styles.metaText}>{vehicle.vehicle_year}</Text>
           </View>
         )}
         {vehicle.estimated_cost && (
           <View style={styles.metaRow}>
-            <IconSymbol name="dollarsign.circle" size={14} color="#6B7280" />
+            <IconSymbol name="dollarsign.circle" size={14} color={Colors.neutral[500]} />
             <Text style={styles.metaText}>₹{Math.round(vehicle.estimated_cost)}</Text>
           </View>
         )}
@@ -140,12 +144,28 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onPress, onStatusUpd
       {nextAction && (
         <View style={styles.actionSection}>
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: getStatusColor() }]}
-            onPress={() => setShowActions(!showActions)}
+            style={[styles.actionButton, { backgroundColor: getStatusColor(), flex: 1 }]}
+            onPress={() => {
+              if (vehicle.status === 'received') {
+                onPress(); // Just navigate for "View Vehicle Case"
+              } else {
+                setShowActions(!showActions);
+              }
+            }}
           >
-            <IconSymbol name={nextAction.icon} size={16} color="#FFFFFF" />
+            <IconSymbol name={nextAction.icon as any} size={16} color="#FFFFFF" />
             <Text style={styles.actionButtonText}>{nextAction.label}</Text>
           </TouchableOpacity>
+
+          {vehicle.status === 'in_progress' && (
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: Colors.neutral[600], flex: 1 }]}
+              onPress={onPress}
+            >
+              <IconSymbol name="pencil.circle" size={16} color="#FFFFFF" />
+              <Text style={styles.actionButtonText}>Update Status</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -158,6 +178,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onPress, onStatusUpd
             onChangeText={setNotes}
             multiline
             numberOfLines={3}
+            placeholderTextColor={Colors.neutral[400]}
           />
           <View style={styles.notesActions}>
             <TouchableOpacity
@@ -231,11 +252,11 @@ export default function TechnicianVehiclesScreen() {
 
   // Group vehicles by status
   const vehiclesByStatus = React.useMemo(() => {
-    if (!vehicles) return { received: [], diagnosed: [], inProgress: [], completed: [] };
+    if (!vehicles) return { received: [], triaged: [], inProgress: [], completed: [] };
 
     return {
       received: vehicles.filter(v => v.status === 'received'),
-      diagnosed: vehicles.filter(v => v.status === 'diagnosed'),
+      triaged: vehicles.filter(v => v.status === 'triaged' || v.status === 'diagnosed'),
       inProgress: vehicles.filter(v => v.status === 'in_progress'),
       completed: vehicles.filter(v => ['completed', 'delivered'].includes(v.status)),
     };
@@ -244,7 +265,7 @@ export default function TechnicianVehiclesScreen() {
   if (vehiclesError) {
     return (
       <ThemedView style={styles.errorContainer}>
-        <IconSymbol name="exclamationmark.triangle" size={48} color="#EF4444" />
+        <IconSymbol name="exclamationmark.triangle" size={48} color={Colors.error[500]} />
         <Text style={styles.errorText}>Failed to load vehicle cases</Text>
         <TouchableOpacity onPress={handleRefresh} style={styles.retryButton}>
           <Text style={styles.retryText}>Retry</Text>
@@ -278,22 +299,22 @@ export default function TechnicianVehiclesScreen() {
             <View style={styles.summaryCard}>
               <Text style={styles.summaryNumber}>{vehiclesByStatus.received.length}</Text>
               <Text style={styles.summaryLabel}>New</Text>
-              <View style={[styles.summaryIndicator, { backgroundColor: '#6B7280' }]} />
+              <View style={[styles.summaryIndicator, { backgroundColor: '#EF4444' }]} />
             </View>
             <View style={styles.summaryCard}>
-              <Text style={styles.summaryNumber}>{vehiclesByStatus.diagnosed.length}</Text>
-              <Text style={styles.summaryLabel}>Diagnosed</Text>
-              <View style={[styles.summaryIndicator, { backgroundColor: '#3B82F6' }]} />
+              <Text style={styles.summaryNumber}>{vehiclesByStatus.triaged.length}</Text>
+              <Text style={styles.summaryLabel}>Triaged</Text>
+              <View style={[styles.summaryIndicator, { backgroundColor: '#F59E0B' }]} />
             </View>
             <View style={styles.summaryCard}>
               <Text style={styles.summaryNumber}>{vehiclesByStatus.inProgress.length}</Text>
               <Text style={styles.summaryLabel}>In Progress</Text>
-              <View style={[styles.summaryIndicator, { backgroundColor: '#8B5CF6' }]} />
+              <View style={[styles.summaryIndicator, { backgroundColor: '#499588' }]} />
             </View>
             <View style={styles.summaryCard}>
               <Text style={styles.summaryNumber}>{vehiclesByStatus.completed.length}</Text>
               <Text style={styles.summaryLabel}>Completed</Text>
-              <View style={[styles.summaryIndicator, { backgroundColor: '#10B981' }]} />
+              <View style={[styles.summaryIndicator, { backgroundColor: '#387868' }]} />
             </View>
           </View>
         </View>
@@ -317,14 +338,14 @@ export default function TechnicianVehiclesScreen() {
           </View>
         )}
 
-        {/* Diagnosed Vehicles */}
-        {vehiclesByStatus.diagnosed.length > 0 && (
+        {/* Triaged Vehicles */}
+        {vehiclesByStatus.triaged.length > 0 && (
           <View style={styles.section}>
             <ThemedText type="subtitle" style={styles.sectionTitle}>
-              Diagnosed ({vehiclesByStatus.diagnosed.length})
+              Triaged ({vehiclesByStatus.triaged.length})
             </ThemedText>
             <View style={styles.vehiclesList}>
-              {vehiclesByStatus.diagnosed.map((vehicle) => (
+              {vehiclesByStatus.triaged.map((vehicle) => (
                 <VehicleCard
                   key={vehicle.id}
                   vehicle={vehicle}
@@ -377,7 +398,7 @@ export default function TechnicianVehiclesScreen() {
         {/* Empty State */}
         {!vehiclesLoading && vehicles && vehicles.length === 0 && (
           <View style={styles.emptyContainer}>
-            <IconSymbol name="car" size={48} color="#6B7280" />
+            <IconSymbol name="car" size={48} color={Colors.neutral[400]} />
             <Text style={styles.emptyTitle}>No Vehicle Cases</Text>
             <Text style={styles.emptySubtitle}>
               You don't have any assigned vehicle cases at the moment.
@@ -392,7 +413,7 @@ export default function TechnicianVehiclesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: BrandColors.surface,
   },
   scrollView: {
     flex: 1,
@@ -403,23 +424,22 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     paddingTop: 60,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    backgroundColor: BrandColors.surface,
+    borderBottomWidth: 0,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#111827',
+    color: BrandColors.ink,
   },
   subtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    color: Colors.neutral[500],
     marginTop: 4,
   },
   summarySection: {
     padding: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: BrandColors.surface,
   },
   summaryGrid: {
     flexDirection: 'row',
@@ -428,20 +448,21 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: Colors.white,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
     position: 'relative',
+    ...Shadows.sm,
   },
   summaryNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#111827',
+    color: BrandColors.ink,
   },
   summaryLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: Colors.neutral[500],
     marginTop: 4,
   },
   summaryIndicator: {
@@ -456,21 +477,17 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: BrandColors.ink,
     marginBottom: 16,
   },
   vehiclesList: {
     gap: 12,
   },
   vehicleCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     borderRadius: 12,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    ...Shadows.sm,
   },
   vehicleHeader: {
     flexDirection: 'row',
@@ -490,11 +507,11 @@ const styles = StyleSheet.create({
   vehicleRegNo: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: BrandColors.ink,
   },
   vehicleDetails: {
     fontSize: 14,
-    color: '#6B7280',
+    color: Colors.neutral[500],
     marginTop: 2,
   },
   statusBadge: {
@@ -513,12 +530,12 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#374151',
+    color: Colors.neutral[700],
     marginBottom: 4,
   },
   diagnosisText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: Colors.neutral[500],
     lineHeight: 20,
   },
   symptomsSection: {
@@ -526,7 +543,7 @@ const styles = StyleSheet.create({
   },
   symptomsText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: Colors.neutral[500],
     lineHeight: 20,
   },
   vehicleMeta: {
@@ -542,12 +559,14 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 12,
-    color: '#6B7280',
+    color: Colors.neutral[500],
   },
   actionSection: {
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: Colors.neutral[200],
     paddingTop: 12,
+    flexDirection: 'row',
+    gap: 12,
   },
   actionButton: {
     flexDirection: 'row',
@@ -566,18 +585,19 @@ const styles = StyleSheet.create({
   notesSection: {
     marginTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: Colors.neutral[200],
     paddingTop: 12,
   },
   notesInput: {
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: Colors.neutral[300],
     borderRadius: 8,
     padding: 12,
     fontSize: 14,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: Colors.neutral[50],
     minHeight: 60,
     textAlignVertical: 'top',
+    color: BrandColors.ink,
   },
   notesActions: {
     flexDirection: 'row',
@@ -590,12 +610,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   cancelButtonText: {
-    color: '#6B7280',
+    color: Colors.neutral[500],
     fontSize: 14,
     fontWeight: '500',
   },
   confirmButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: BrandColors.primary,
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 6,
@@ -610,16 +630,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: BrandColors.surface,
   },
   errorText: {
     fontSize: 16,
-    color: '#EF4444',
+    color: Colors.error[500],
     marginBottom: 16,
     textAlign: 'center',
     marginTop: 16,
   },
   retryButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: BrandColors.primary,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
@@ -638,13 +659,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: BrandColors.ink,
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    color: Colors.neutral[500],
     textAlign: 'center',
   },
 });

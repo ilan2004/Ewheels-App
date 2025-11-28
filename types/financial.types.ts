@@ -127,6 +127,7 @@ export interface ExpensesFilters {
   startDate?: string;
   endDate?: string;
   vendor_name?: string;
+  is_recurring?: boolean;
 }
 
 // KPI Types

@@ -1,54 +1,21 @@
-import { useQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
 import React from 'react';
 import {
   Alert,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { BorderRadius, Colors, ComponentStyles, Shadows, Spacing, Typography } from '@/constants/design-system';
-import { jobCardsService } from '@/services/jobCardsService';
+import { BorderRadius, BrandColors, Colors, ComponentStyles, Shadows, Spacing, Typography } from '@/constants/design-system';
 import { useAuthStore } from '@/stores/authStore';
 import { useLocationStore } from '@/stores/locationStore';
 
-interface StatCardProps {
-  title: string;
-  value: number | string;
-  color: string;
-  backgroundColor: string;
-  icon: string;
-  subtitle?: string;
-}
 
-const StatCard: React.FC<StatCardProps> = ({
-  title,
-  value,
-  color,
-  backgroundColor,
-  icon,
-  subtitle,
-}) => (
-  <View style={[styles.statCard, { backgroundColor }]}>
-    <View style={styles.statContent}>
-      <View style={styles.statHeader}>
-        <IconSymbol name={icon} size={24} color={color} />
-        <Text style={styles.statTitle}>{title}</Text>
-      </View>
-      <Text style={[styles.statValue, { color }]}>{value}</Text>
-      {subtitle && (
-        <Text style={styles.statSubtitle}>{subtitle}</Text>
-      )}
-    </View>
-  </View>
-);
 
 interface ProfileItemProps {
   icon: string;
@@ -75,7 +42,7 @@ const ProfileItem: React.FC<ProfileItemProps> = ({
   >
     <View style={styles.profileItemLeft}>
       <View style={styles.profileItemIcon}>
-        <IconSymbol name={icon} size={24} color={destructive ? Colors.error[600] : Colors.neutral[900]} />
+        <IconSymbol name={icon} size={24} color={destructive ? Colors.error[600] : BrandColors.ink} />
       </View>
       <View style={styles.profileItemContent}>
         <Text style={[styles.profileItemTitle, destructive && styles.destructiveText]}>{title}</Text>
@@ -92,48 +59,6 @@ export default function TechnicianProfileScreen() {
   const { user, signOut } = useAuthStore();
   const { activeLocation } = useLocationStore();
 
-  // Fetch technician's work statistics
-  const {
-    data: stats,
-    isLoading: statsLoading,
-    refetch: refetchStats,
-  } = useQuery({
-    queryKey: ['technician-stats', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-
-      // Get all tickets assigned to this technician
-      const response = await jobCardsService.getTickets(
-        { assignedTo: user.id, status: 'all' },
-        1,
-        100
-      );
-
-      const tickets = response.data;
-      const now = new Date();
-      const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      return {
-        totalAssigned: tickets.length,
-        completed: tickets.filter(t => t.status === 'completed').length,
-        inProgress: tickets.filter(t => t.status === 'in_progress').length,
-        pending: tickets.filter(t => t.status === 'assigned').length,
-        completedThisWeek: tickets.filter(t =>
-          t.status === 'completed' &&
-          new Date(t.updated_at || t.created_at).getTime() >= startOfWeek.getTime()
-        ).length,
-        completedThisMonth: tickets.filter(t =>
-          t.status === 'completed' &&
-          new Date(t.updated_at || t.created_at).getTime() >= startOfMonth.getTime()
-        ).length,
-        avgCompletionTime: '2.3 days',
-        efficiency: '94%',
-      };
-    },
-    enabled: !!user?.id,
-    refetchInterval: 30000,
-  });
-
   const handleSignOut = () => {
     Alert.alert(
       'Sign Out',
@@ -147,28 +72,6 @@ export default function TechnicianProfileScreen() {
         },
       ]
     );
-  };
-
-  const handleChangePassword = () => {
-    Alert.alert(
-      'Change Password',
-      'This feature will be available in a future update.',
-      [{ text: 'OK' }]
-    );
-  };
-
-  const handleNotificationSettings = () => {
-    Alert.alert(
-      'Notification Settings',
-      'This feature will be available in a future update.',
-      [{ text: 'OK' }]
-    );
-  };
-
-  const refreshing = statsLoading;
-
-  const handleRefresh = async () => {
-    await refetchStats();
   };
 
   const getGreeting = () => {
@@ -187,9 +90,6 @@ export default function TechnicianProfileScreen() {
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
       >
         {/* Header */}
         <View style={styles.header}>
@@ -217,130 +117,8 @@ export default function TechnicianProfileScreen() {
           </View>
         </View>
 
-        {/* Performance Stats */}
-        <View style={styles.section}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>
-            Performance Overview
-          </ThemedText>
-          <View style={styles.statsGrid}>
-            <StatCard
-              title="Total Jobs"
-              value={stats?.totalAssigned || 0}
-              color="#3B82F6"
-              backgroundColor="#EFF6FF"
-              icon="doc.text.fill"
-              subtitle="All time"
-            />
-            <StatCard
-              title="Completed"
-              value={stats?.completed || 0}
-              color="#10B981"
-              backgroundColor="#F0FDF4"
-              icon="checkmark.circle.fill"
-              subtitle="Successfully finished"
-            />
-            <StatCard
-              title="In Progress"
-              value={stats?.inProgress || 0}
-              color="#8B5CF6"
-              backgroundColor="#F5F3FF"
-              icon="gearshape.fill"
-              subtitle="Currently working"
-            />
-            <StatCard
-              title="Pending"
-              value={stats?.pending || 0}
-              color="#F59E0B"
-              backgroundColor="#FFFBEB"
-              icon="clock.fill"
-              subtitle="Assigned to you"
-            />
-          </View>
-        </View>
-
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>
-            Quick Actions
-          </ThemedText>
-          <View style={styles.listContainer}>
-            <ProfileItem
-              icon="doc.text.magnifyingglass"
-              title="View My Job Cards"
-              subtitle="See all assigned tasks"
-              onPress={() => router.push('/(tabs)/technician-jobcards')}
-            />
-            <ProfileItem
-              icon="bell.fill"
-              title="Notifications"
-              subtitle="Check alerts and updates"
-              onPress={() => router.push('/(tabs)/notifications')}
-            />
-          </View>
-        </View>
-
-        {/* Profile Information */}
-        <View style={styles.section}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>
-            Profile Information
-          </ThemedText>
-          <View style={styles.listContainer}>
-            <ProfileItem
-              icon="person.fill"
-              title="Name"
-              subtitle={userName}
-            />
-            <ProfileItem
-              icon="envelope.fill"
-              title="Email"
-              subtitle={user?.email || 'N/A'}
-            />
-            <ProfileItem
-              icon="briefcase.fill"
-              title="Role"
-              subtitle="Technician"
-            />
-            <ProfileItem
-              icon="calendar.badge.plus"
-              title="Member Since"
-              subtitle={user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
-            />
-            {activeLocation && (
-              <ProfileItem
-                icon="location.fill"
-                title="Location"
-                subtitle={activeLocation.name}
-              />
-            )}
-          </View>
-        </View>
-
-        {/* Settings */}
-        <View style={styles.section}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>
-            Settings
-          </ThemedText>
-          <View style={styles.listContainer}>
-            <ProfileItem
-              icon="lock.fill"
-              title="Change Password"
-              subtitle="Update your password"
-              onPress={handleChangePassword}
-            />
-            <ProfileItem
-              icon="bell.badge.fill"
-              title="Notifications"
-              subtitle="Manage notification preferences"
-              onPress={handleNotificationSettings}
-            />
-          </View>
-        </View>
-
         {/* Sign Out */}
         <View style={styles.section}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>
-            Account
-          </ThemedText>
           <View style={styles.listContainer}>
             <ProfileItem
               icon="arrow.right.square.fill"
@@ -359,7 +137,7 @@ export default function TechnicianProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.neutral[50],
+    backgroundColor: BrandColors.surface,
   },
   scrollView: {
     flex: 1,
@@ -368,9 +146,12 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   header: {
-    backgroundColor: Colors.white,
+    backgroundColor: BrandColors.surface,
     ...ComponentStyles.header,
     paddingBottom: Spacing.lg,
+    borderBottomWidth: 0,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   headerContent: {
     flexDirection: 'row',
@@ -385,7 +166,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: Colors.primary[600],
+    backgroundColor: BrandColors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     ...Shadows.md,
@@ -402,12 +183,12 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: Typography.fontSize.xl,
     fontFamily: Typography.fontFamily.bold,
-    color: Colors.neutral[900],
+    color: BrandColors.ink,
   },
   role: {
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.medium,
-    color: Colors.primary[600],
+    color: BrandColors.primary,
     marginTop: Spacing.xs,
   },
   location: {
@@ -423,7 +204,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: Typography.fontSize.lg,
     fontFamily: Typography.fontFamily.bold,
-    color: Colors.neutral[900],
+    color: BrandColors.ink,
     marginBottom: Spacing.md,
   },
   statsGrid: {
@@ -436,7 +217,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     padding: Spacing.base,
     borderLeftWidth: 4,
-    borderLeftColor: Colors.primary[600],
+    borderLeftColor: BrandColors.primary,
     ...Shadows.base,
   },
   statContent: {
@@ -492,7 +273,7 @@ const styles = StyleSheet.create({
   profileItemTitle: {
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.semibold,
-    color: Colors.neutral[900],
+    color: BrandColors.ink,
   },
   profileItemSubtitle: {
     fontSize: Typography.fontSize.sm,
