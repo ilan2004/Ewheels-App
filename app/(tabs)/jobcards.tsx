@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
   },
   activeFilterIndicator: {
     backgroundColor: BrandColors.surface,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40, // Account for status bar
+    paddingTop: Platform.OS === 'ios' ? 60 : 40, // Match Media Hub
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.md,
     borderBottomWidth: 1,
@@ -626,9 +626,9 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: Platform.OS === 'ios' ? 60 : 16, // Reduced from 40 for Android
+    paddingTop: Platform.OS === 'ios' ? 60 : 40, // Match Media Hub
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.sm, // Reduced from md
+    paddingBottom: Spacing.sm,
     backgroundColor: BrandColors.surface,
     gap: Spacing.md,
   },
@@ -655,6 +655,8 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.regular,
     color: BrandColors.ink,
+    textAlignVertical: 'center', // Fix for Android placeholder alignment
+    paddingVertical: 0, // Ensure no extra padding affects alignment
   },
   stats: {
     flexDirection: 'row',

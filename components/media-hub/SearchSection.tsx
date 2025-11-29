@@ -1,17 +1,17 @@
+import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
   FlatList,
-  TextInput,
   Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors, Typography, Spacing, BrandColors } from '@/constants/design-system';
+import { BrandColors, Colors, Spacing, Typography } from '@/constants/design-system';
 import { useMediaHubStore } from '@/stores/mediaHubStore';
 import JobCardSelector from './JobCardSelector';
 import MediaItem from './MediaItem';
@@ -29,11 +29,11 @@ export default function SearchSection() {
     selectedItems,
     clearSelection,
   } = useMediaHubStore();
-  
+
   const [showJobCardSelector, setShowJobCardSelector] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState<'start' | 'end' | null>(null);
   const [showStats, setShowStats] = useState(false);
-  
+
   const filteredItems = getFilteredItems();
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
@@ -66,7 +66,7 @@ export default function SearchSection() {
     const audio = all.filter(item => item.mediaType === 'audio');
     const assigned = all.filter(item => item.ticketId);
     const unassigned = all.filter(item => !item.ticketId);
-    
+
     return { all, images, videos, audio, assigned, unassigned };
   };
 
@@ -114,26 +114,26 @@ export default function SearchSection() {
             >
               <IconSymbol name="calendar" size={16} color={Colors.primary[600]} />
               <Text style={styles.dateButtonText}>
-                {dateRangeFilter.start 
+                {dateRangeFilter.start
                   ? new Date(dateRangeFilter.start).toLocaleDateString()
                   : 'From'
                 }
               </Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={styles.dateButton}
               onPress={() => setShowDatePicker('end')}
             >
               <IconSymbol name="calendar" size={16} color={Colors.primary[600]} />
               <Text style={styles.dateButtonText}>
-                {dateRangeFilter.end 
+                {dateRangeFilter.end
                   ? new Date(dateRangeFilter.end).toLocaleDateString()
                   : 'To'
                 }
               </Text>
             </TouchableOpacity>
-            
+
             {(dateRangeFilter.start || dateRangeFilter.end) && (
               <TouchableOpacity
                 style={styles.clearFilterButton}
@@ -153,10 +153,10 @@ export default function SearchSection() {
               style={[styles.ticketButton, ticketFilter && styles.ticketButtonActive]}
               onPress={() => setShowJobCardSelector(true)}
             >
-              <IconSymbol 
-                name="doc.text.fill" 
-                size={16} 
-                color={ticketFilter ? Colors.white : Colors.primary[600]} 
+              <IconSymbol
+                name="doc.text.fill"
+                size={16}
+                color={ticketFilter ? Colors.white : Colors.primary[600]}
               />
               <Text style={[
                 styles.ticketButtonText,
@@ -165,7 +165,7 @@ export default function SearchSection() {
                 {selectedTicket ? selectedTicket.ticket_number : 'Select Job Card'}
               </Text>
             </TouchableOpacity>
-            
+
             {ticketFilter && (
               <TouchableOpacity
                 style={styles.clearFilterButton}
@@ -183,18 +183,18 @@ export default function SearchSection() {
         style={styles.statsToggle}
         onPress={() => setShowStats(!showStats)}
       >
-        <IconSymbol 
-          name="chart.bar.fill" 
-          size={18} 
-          color={Colors.primary[600]} 
+        <IconSymbol
+          name="chart.bar.fill"
+          size={18}
+          color={Colors.primary[600]}
         />
         <Text style={styles.statsToggleText}>
           {showStats ? 'Hide' : 'Show'} Statistics
         </Text>
-        <IconSymbol 
-          name={showStats ? "chevron.up" : "chevron.down"} 
-          size={16} 
-          color={Colors.primary[600]} 
+        <IconSymbol
+          name={showStats ? "chevron.up" : "chevron.down"}
+          size={16}
+          color={Colors.primary[600]}
         />
       </TouchableOpacity>
 
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: BrandColors.surface,
   },
-  
+
   // Search header
   searchHeader: {
     backgroundColor: BrandColors.surface,
@@ -343,10 +343,11 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    paddingVertical: Spacing.sm,
+    paddingVertical: 0, // Ensure no extra padding affects alignment
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.regular,
     color: Colors.neutral[900],
+    textAlignVertical: 'center', // Fix for Android placeholder alignment
   },
   clearButton: {
     padding: Spacing.xs,

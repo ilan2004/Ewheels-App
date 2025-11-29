@@ -1,7 +1,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { BorderRadius, BrandColors, Colors, ComponentStyles, Shadows, Spacing, Typography } from '@/constants/design-system';
+import { BorderRadius, BrandColors, Colors, Shadows, Spacing, Typography } from '@/constants/design-system';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { Location, useLocationStore } from '@/stores/locationStore';
@@ -11,6 +11,7 @@ import { Controller, useForm } from 'react-hook-form';
 import {
   Alert,
   FlatList,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -163,20 +164,23 @@ export default function LoginScreen() {
       <ScrollView
         contentContainerStyle={styles.scrollContainer}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         <ThemedView style={styles.content}>
           {/* Logo and Header */}
           <View style={styles.header}>
             <View style={styles.logoContainer}>
-              <View style={styles.logoPlaceholder}>
-                <Text style={styles.logoText}>EV</Text>
-              </View>
+              <Image
+                source={require('@/assets/images/ewheels-logo app.png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
             </View>
             <ThemedText type="title" style={styles.title}>
-              EV Wheels
+              Welcome Back
             </ThemedText>
             <ThemedText type="subtitle" style={styles.subtitle}>
-              Sign in to your account
+              Sign in to continue to EV Wheels
             </ThemedText>
           </View>
 
@@ -189,16 +193,19 @@ export default function LoginScreen() {
                 control={control}
                 name="email"
                 render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    style={[styles.input, errors.email && styles.inputError]}
-                    placeholder="Enter your email or username"
-                    placeholderTextColor="#9CA3AF"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
+                  <View style={[styles.inputWrapper, errors.email && styles.inputWrapperError]}>
+                    <IconSymbol name="envelope.fill" size={20} color={BrandColors.ink + '60'} style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Enter your email"
+                      placeholderTextColor="#9CA3AF"
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                  </View>
                 )}
               />
               {errors.email && (
@@ -209,16 +216,14 @@ export default function LoginScreen() {
             {/* Password Field */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Password</Text>
-              <View style={styles.passwordContainer}>
+              <View style={[styles.inputWrapper, errors.password && styles.inputWrapperError]}>
+                <IconSymbol name="lock.fill" size={20} color={BrandColors.ink + '60'} style={styles.inputIcon} />
                 <Controller
                   control={control}
                   name="password"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      style={[
-                        styles.passwordInput,
-                        errors.password && styles.inputError,
-                      ]}
+                      style={styles.input}
                       placeholder="Enter your password"
                       placeholderTextColor="#9CA3AF"
                       value={value}
@@ -234,9 +239,11 @@ export default function LoginScreen() {
                   style={styles.showPasswordButton}
                   onPress={() => setShowPassword(!showPassword)}
                 >
-                  <Text style={styles.showPasswordText}>
-                    {showPassword ? 'Hide' : 'Show'}
-                  </Text>
+                  <IconSymbol
+                    name={showPassword ? "eye.slash.fill" : "eye.fill"}
+                    size={20}
+                    color={BrandColors.ink + '60'}
+                  />
                 </TouchableOpacity>
               </View>
               {errors.password && (
@@ -251,7 +258,7 @@ export default function LoginScreen() {
                 <TouchableOpacity
                   style={[
                     styles.locationSelector,
-                    !selectedLocation && styles.inputError
+                    !selectedLocation && styles.inputWrapperError
                   ]}
                   onPress={() => setShowLocationModal(true)}
                   disabled={loadingLocations}
@@ -288,6 +295,7 @@ export default function LoginScreen() {
               <Text style={styles.loginButtonText}>
                 {loading ? 'Signing In...' : 'Sign In'}
               </Text>
+              {!loading && <IconSymbol name="arrow.right" size={20} color={Colors.white} />}
             </TouchableOpacity>
 
           </View>
@@ -340,6 +348,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     padding: Spacing.lg,
+    paddingBottom: Spacing['4xl'], // Added extra padding for better scrolling
   },
   content: {
     flex: 1,
@@ -354,26 +363,21 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     marginBottom: Spacing.lg,
-  },
-  logoPlaceholder: {
-    width: 80,
-    height: 80,
+    ...Shadows.md, // Added shadow to logo container
     borderRadius: BorderRadius['2xl'],
-    backgroundColor: BrandColors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...Shadows.md,
+    backgroundColor: Colors.white,
+    padding: Spacing.sm,
   },
-  logoText: {
-    color: Colors.white,
-    fontSize: Typography.fontSize['2xl'],
-    fontFamily: Typography.fontFamily.bold,
+  logo: {
+    width: 100,
+    height: 100,
   },
   title: {
     fontSize: Typography.fontSize['3xl'],
     fontFamily: Typography.fontFamily.bold,
     color: BrandColors.title,
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.xs,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: Typography.fontSize.base,
@@ -381,78 +385,87 @@ const styles = StyleSheet.create({
     color: BrandColors.ink,
     textAlign: 'center',
     lineHeight: Typography.lineHeight.base,
+    opacity: 0.7,
   },
   form: {
-    gap: Spacing.xl,
+    gap: Spacing.lg,
   },
   inputContainer: {
-    gap: Spacing.sm,
+    gap: Spacing.xs,
   },
   label: {
-    fontSize: Typography.fontSize.base,
+    fontSize: Typography.fontSize.sm,
     fontFamily: Typography.fontFamily.medium,
     color: BrandColors.ink,
+    marginLeft: Spacing.xs,
   },
-  input: {
-    ...ComponentStyles.input,
-    height: 52,
-    fontSize: Typography.fontSize.base,
-    fontFamily: Typography.fontFamily.regular,
-    ...Shadows.sm,
-  },
-  inputError: {
-    borderColor: Colors.error[500],
-    borderWidth: 2,
-  },
-  passwordContainer: {
+  inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    position: 'relative',
-  },
-  passwordInput: {
-    ...ComponentStyles.input,
-    flex: 1,
-    height: 52,
-    paddingRight: 60,
-    fontFamily: Typography.fontFamily.regular,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.neutral[200],
+    borderRadius: BorderRadius.lg,
+    height: 56,
+    paddingHorizontal: Spacing.md,
     ...Shadows.sm,
   },
-  showPasswordButton: {
-    position: 'absolute',
-    right: Spacing.base,
-    paddingVertical: Spacing.xs,
+  inputWrapperError: {
+    borderColor: Colors.error[500],
+    borderWidth: 1.5,
   },
-  showPasswordText: {
-    color: BrandColors.primary,
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.medium,
+  inputIcon: {
+    marginRight: Spacing.sm,
+  },
+  input: {
+    flex: 1,
+    height: '100%',
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink,
+  },
+  showPasswordButton: {
+    padding: Spacing.xs,
   },
   errorText: {
-    fontSize: Typography.fontSize.sm,
+    fontSize: Typography.fontSize.xs,
     fontFamily: Typography.fontFamily.regular,
     color: Colors.error[600],
+    marginLeft: Spacing.xs,
+    marginTop: 2,
   },
   loginButton: {
-    ...ComponentStyles.button.primary,
-    height: 52,
-    marginTop: Spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: BrandColors.primary,
+    height: 56,
+    borderRadius: BorderRadius.lg,
+    marginTop: Spacing.md,
+    gap: Spacing.sm,
+    ...Shadows.md,
   },
   loginButtonDisabled: {
-    backgroundColor: BrandColors.ink + '40', // 25% opacity
-    opacity: 0.6,
+    backgroundColor: BrandColors.ink + '40',
+    opacity: 0.7,
+    ...Shadows.none,
   },
   loginButtonText: {
     color: Colors.white,
-    fontSize: Typography.fontSize.base,
+    fontSize: Typography.fontSize.lg,
     fontFamily: Typography.fontFamily.semibold,
   },
   // Location Selector Styles
   locationSelector: {
-    ...ComponentStyles.input,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: 52,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.neutral[200],
+    borderRadius: BorderRadius.lg,
+    height: 56,
+    paddingHorizontal: Spacing.md,
     ...Shadows.sm,
   },
   locationSelectorContent: {
@@ -478,72 +491,75 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: Colors.white,
-    borderTopLeftRadius: BorderRadius.xl,
-    borderTopRightRadius: BorderRadius.xl,
-    maxHeight: '70%',
-    paddingBottom: Spacing.lg,
+    borderTopLeftRadius: BorderRadius['2xl'],
+    borderTopRightRadius: BorderRadius['2xl'],
+    maxHeight: '80%',
+    paddingBottom: Spacing.xl,
     ...Shadows.xl,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: Spacing.lg,
-    paddingBottom: Spacing.base,
+    padding: Spacing.xl,
+    paddingBottom: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.neutral[200],
+    borderBottomColor: Colors.neutral[100],
   },
   modalTitle: {
-    fontSize: Typography.fontSize.lg,
+    fontSize: Typography.fontSize.xl,
     fontFamily: Typography.fontFamily.semibold,
-    color: Colors.neutral[900],
+    color: BrandColors.title,
   },
   closeButton: {
     padding: Spacing.xs,
+    backgroundColor: Colors.neutral[100],
+    borderRadius: BorderRadius.full,
   },
   modalDescription: {
-    fontSize: 14,
-    color: '#6B7280',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.neutral[500],
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
     lineHeight: 20,
   },
   locationList: {
-    paddingHorizontal: 20,
+    paddingHorizontal: Spacing.xl,
   },
   locationItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    marginVertical: 4,
-    backgroundColor: '#F9FAFB',
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.xl,
+    marginVertical: Spacing.xs,
+    backgroundColor: Colors.neutral[50],
+    borderWidth: 1,
+    borderColor: Colors.transparent,
   },
   activeLocationItem: {
-    backgroundColor: '#EBF4FF',
-    borderWidth: 1,
-    borderColor: '#3B82F6',
+    backgroundColor: BrandColors.primary + '10',
+    borderColor: BrandColors.primary,
   },
   locationInfo: {
     flex: 1,
   },
   locationName: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#111827',
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.ink,
     marginBottom: 2,
   },
   activeLocationName: {
-    color: '#1D4ED8',
+    color: BrandColors.primary,
   },
   locationCode: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '400',
+    fontSize: Typography.fontSize.xs,
+    color: Colors.neutral[500],
+    fontFamily: Typography.fontFamily.medium,
   },
   activeLocationCode: {
-    color: '#3B82F6',
+    color: BrandColors.primary,
   },
 });

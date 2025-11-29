@@ -40,8 +40,8 @@ const getCommonScreenOptions = (colorScheme: any, accentColor: string) => ({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 8,
-    height: Platform.OS === 'ios' ? 90 : 70,
-    paddingBottom: Platform.OS === 'ios' ? 25 : 10,
+    height: Platform.OS === 'ios' ? 90 : 80, // Increased from 70 for Android
+    paddingBottom: Platform.OS === 'ios' ? 25 : 20, // Increased from 10 for Android
     paddingTop: 8,
   },
   tabBarLabelStyle: {

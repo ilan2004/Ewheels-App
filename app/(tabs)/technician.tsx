@@ -13,7 +13,7 @@ import {
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { BrandColors, Colors, Shadows } from '@/constants/design-system';
+import { BorderRadius, BrandColors, Colors, Shadows, Spacing, Typography } from '@/constants/design-system';
 import { jobCardsService } from '@/services/jobCardsService';
 import { useAuthStore } from '@/stores/authStore';
 import { ServiceTicket } from '@/types';
@@ -333,6 +333,58 @@ export default function TechnicianScreen() {
           </View>
         </View>
 
+        {/* Quick Actions */}
+        <View style={styles.section}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>
+            Quick Actions
+          </ThemedText>
+          <View style={styles.actionsGrid}>
+            <TouchableOpacity
+              style={[styles.actionCard, styles.primaryActionCard]}
+              onPress={() => router.push('/camera')}
+            >
+              <View style={[styles.iconContainer, styles.primaryIconContainer]}>
+                <IconSymbol name="qrcode.viewfinder" size={28} color={BrandColors.primary} />
+              </View>
+              <Text style={styles.actionTitle}>Scan QR Code</Text>
+              <Text style={styles.actionSubtitle}>Identify vehicle/part</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionCard, styles.blueActionCard]}
+              onPress={() => router.push('/media-hub')}
+            >
+              <View style={[styles.iconContainer, styles.blueIconContainer]}>
+                <IconSymbol name="photo.on.rectangle.angled" size={28} color="#0284C7" />
+              </View>
+              <Text style={styles.actionTitle}>Media Hub</Text>
+              <Text style={styles.actionSubtitle}>Photos & videos</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionCard, styles.greenActionCard]}
+              onPress={() => router.push('/notifications')}
+            >
+              <View style={[styles.iconContainer, styles.greenIconContainer]}>
+                <IconSymbol name="bell.fill" size={28} color={BrandColors.title} />
+              </View>
+              <Text style={styles.actionTitle}>Notifications</Text>
+              <Text style={styles.actionSubtitle}>Updates & alerts</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionCard, styles.orangeActionCard]}
+              onPress={() => router.push('/profile')}
+            >
+              <View style={[styles.iconContainer, styles.orangeIconContainer]}>
+                <IconSymbol name="person.circle.fill" size={28} color="#D97706" />
+              </View>
+              <Text style={styles.actionTitle}>My Profile</Text>
+              <Text style={styles.actionSubtitle}>Settings & info</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Assigned Tasks */}
         {ticketsByStatus.assigned.length > 0 && (
           <View style={styles.section}>
@@ -617,6 +669,70 @@ const styles = StyleSheet.create({
   emptySubtitle: {
     fontSize: 14,
     color: '#6B7280',
+    textAlign: 'center',
+  },
+  actionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.md,
+  },
+  actionCard: {
+    width: '47%', // Ensure 2 columns
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: BrandColors.ink + '10',
+    padding: Spacing.lg,
+    alignItems: 'center',
+  },
+  primaryActionCard: {
+    borderColor: BrandColors.primary + '30',
+    backgroundColor: BrandColors.surface,
+  },
+  blueActionCard: {
+    borderColor: '#0284C7' + '30',
+    backgroundColor: BrandColors.surface,
+  },
+  greenActionCard: {
+    borderColor: BrandColors.title + '30',
+    backgroundColor: BrandColors.surface,
+  },
+  orangeActionCard: {
+    borderColor: '#D97706' + '30',
+    backgroundColor: BrandColors.surface,
+  },
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  primaryIconContainer: {
+    backgroundColor: BrandColors.primary + '10',
+  },
+  blueIconContainer: {
+    backgroundColor: '#0284C7' + '10',
+  },
+  greenIconContainer: {
+    backgroundColor: BrandColors.title + '10',
+  },
+  orangeIconContainer: {
+    backgroundColor: '#D97706' + '10',
+  },
+  actionTitle: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.ink,
+    marginTop: Spacing.sm,
+    textAlign: 'center',
+  },
+  actionSubtitle: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '80',
+    marginTop: 2,
     textAlign: 'center',
   },
 });

@@ -580,6 +580,8 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     color: Colors.neutral[900],
     fontFamily: Typography.fontFamily.regular,
+    textAlignVertical: 'center', // Fix for Android placeholder alignment
+    paddingVertical: 0, // Ensure no extra padding affects alignment
   },
   stats: {
     paddingHorizontal: Spacing.lg,

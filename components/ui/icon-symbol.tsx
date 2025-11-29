@@ -136,6 +136,18 @@ const MAPPING = {
   'eye.fill': 'visibility',
   'arrow.triangle.2.circlepath': 'loop',
   'person.crop.circle': 'account-circle',
+  'arrow.up.circle.fill': 'trending-up',
+  'arrow.down.circle.fill': 'trending-down',
+  'circle': 'radio-button-unchecked',
+  'checkmark.circle': 'check-circle',
+  'arrow.2.squarepath': 'sync',
+  'mappin': 'location-on',
+  'exclamationmark.circle': 'error-outline',
+  'exclamationmark.circle.fill': 'error',
+  'exclamationmark.triangle.fill': 'warning',
+  'hammer': 'build',
+  'lock.shield': 'security',
+  'chart.bar': 'bar-chart',
 } as IconMapping;
 
 /**

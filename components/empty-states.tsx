@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Image, StyleSheet } from 'react-native';
+import { HeroImageCard } from '@/components/image-card';
 import { ThemedText } from '@/components/themed-text';
-import { ImageCard, HeroImageCard } from '@/components/image-card';
-import { Colors, Typography, Spacing } from '@/constants/design-system';
+import { Colors, Spacing, Typography } from '@/constants/design-system';
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
 
 interface EmptyStateProps {
   title: string;
@@ -65,40 +65,59 @@ export const EmptySearchResults: React.FC = () => (
 
 // Status icons component
 interface StatusIconProps {
-  status: 'in_progress' | 'completed' | 'overdue' | 'assigned' | 'reported';
+  status: 'in_progress' | 'completed' | 'overdue' | 'assigned' | 'reported' | 'delivered';
   size?: 'sm' | 'md';
 }
 
 export const StatusIcon: React.FC<StatusIconProps> = ({ status, size = 'sm' }) => {
-  const getStatusImage = () => {
+  const { IconSymbol } = require('@/components/ui/icon-symbol'); // Lazy import to avoid cycle if any
+
+  const getStatusIconName = () => {
     switch (status) {
-      case 'in_progress':
-        return require('@/assets/images/custom/in-progress-status.png');
-      case 'completed':
-        return require('@/assets/images/custom/completed-status.png');
-      case 'overdue':
-        return require('@/assets/images/custom/overdue-status.png');
+      case 'reported':
+        return 'exclamationmark.circle';
       case 'assigned':
-        return require('@/assets/images/custom/technical-support.png'); // Using tech support as assigned
+        return 'person.fill';
+      case 'in_progress':
+        return 'hammer';
+      case 'completed':
+        return 'checkmark.circle.fill';
+      case 'delivered':
+        return 'checkmark.circle.fill';
+      case 'overdue':
+        return 'clock.badge.exclamationmark';
       default:
-        return null;
+        return 'circle';
     }
   };
 
-  const image = getStatusImage();
-  if (!image) return null;
+  const getStatusColor = () => {
+    switch (status) {
+      case 'reported':
+        return '#EF4444'; // Red
+      case 'assigned':
+        return '#3B82F6'; // Blue
+      case 'in_progress':
+        return '#8B5CF6'; // Purple
+      case 'completed':
+        return '#10B981'; // Green
+      case 'delivered':
+        return '#059669'; // Darker Green
+      case 'overdue':
+        return '#EF4444'; // Red
+      default:
+        return '#6B7280'; // Gray
+    }
+  };
 
-  // For chip usage, use a larger transparent container for better visibility
-  const chipSize = size === 'sm' ? { width: 24, height: 24 } : { width: 28, height: 28 };
+  const iconSize = size === 'sm' ? 16 : 20;
 
   return (
-    <View style={[chipSize, { backgroundColor: 'transparent' }]}>
-      <Image
-        source={image}
-        style={[chipSize]}
-        resizeMode="contain"
-      />
-    </View>
+    <IconSymbol
+      name={getStatusIconName() as any}
+      size={iconSize}
+      color={getStatusColor()}
+    />
   );
 };
 

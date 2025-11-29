@@ -18,6 +18,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { StatusIcon } from '@/components/empty-states';
 import { HorizontalServiceProgress } from '@/components/progress/HorizontalServiceProgress';
@@ -47,6 +48,7 @@ const TechnicianPickerModal: React.FC<TechnicianPickerModalProps> = ({
   currentAssignee,
   currentDueDate,
 }) => {
+  const insets = useSafeAreaInsets();
   const [selectedTechnician, setSelectedTechnician] = useState<string | null>(currentAssignee || null);
   const [dueDate, setDueDate] = useState<Date>(() => {
     if (currentDueDate) {
@@ -115,7 +117,7 @@ const TechnicianPickerModal: React.FC<TechnicianPickerModalProps> = ({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <ThemedView style={styles.modalContainer}>
+      <ThemedView style={[styles.modalContainer, { paddingTop: Platform.OS === 'android' ? insets.top : 0 }]}>
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={step === 'duedate' ? () => setStep('technician') : onClose}>
             <Text style={styles.modalCancel}>{step === 'duedate' ? 'Back' : 'Cancel'}</Text>
@@ -364,6 +366,7 @@ const AudioPlayerModal: React.FC<AudioPlayerModalProps> = ({
   onClose,
   audio,
 }) => {
+  const insets = useSafeAreaInsets();
   const audioPlayer = useAudioPlayer(audio?.url || null);
   const playerStatus = useAudioPlayerStatus(audioPlayer);
   const [isLoading, setIsLoading] = useState(false);
@@ -441,7 +444,7 @@ const AudioPlayerModal: React.FC<AudioPlayerModalProps> = ({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <View style={styles.audioPlayerContainer}>
+      <View style={[styles.audioPlayerContainer, { paddingTop: Platform.OS === 'android' ? insets.top : 0 }]}>
         {/* Header */}
         <View style={styles.audioPlayerHeader}>
           <TouchableOpacity onPress={handleClose}>

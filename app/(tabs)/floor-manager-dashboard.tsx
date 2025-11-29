@@ -1,23 +1,22 @@
+import { useQuery } from '@tanstack/react-query';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import React from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
   RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
 
 import { ThemedView } from '@/components/themed-view';
-import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { AssignmentOverviewColors, BorderRadius, BrandColors, Shadows, Spacing, Typography } from '@/constants/design-system';
+import { floorManagerService } from '@/services/floorManagerService';
 import { useAuthStore } from '@/stores/authStore';
 import { useLocationStore } from '@/stores/locationStore';
-import { floorManagerService } from '@/services/floorManagerService';
-import { BrandColors, Typography, Spacing, BorderRadius, Shadows, AssignmentOverviewColors } from '@/constants/design-system';
 
 interface QuickStatProps {
   title: string;
@@ -89,10 +88,10 @@ interface TechnicianCardProps {
 
 const TechnicianCard: React.FC<TechnicianCardProps> = ({ technician, onPress }) => {
   const utilizationPercent = (technician.activeTickets / technician.capacity) * 100;
-  const utilizationColor = 
-    utilizationPercent >= 100 ? '#EF4444' : 
-    utilizationPercent >= 75 ? BrandColors.primary : 
-    BrandColors.title;
+  const utilizationColor =
+    utilizationPercent >= 100 ? '#EF4444' :
+      utilizationPercent >= 75 ? BrandColors.primary :
+        BrandColors.title;
 
   return (
     <TouchableOpacity style={styles.technicianCard} onPress={onPress}>
@@ -181,7 +180,7 @@ export default function FloorManagerDashboard() {
     return 'Good evening';
   };
 
-  const userName = user?.firstName 
+  const userName = user?.firstName
     ? `${user.firstName} ${user.lastName || ''}`.trim()
     : 'Floor Manager';
 
@@ -288,16 +287,20 @@ export default function FloorManagerDashboard() {
               style={[styles.actionCard, styles.primaryActionCard]}
               onPress={() => router.push('/jobcards')}
             >
-              <IconSymbol name="doc.text.magnifyingglass" size={28} color={BrandColors.primary} />
+              <View style={[styles.iconContainer, styles.primaryIconContainer]}>
+                <IconSymbol name="doc.text.magnifyingglass" size={28} color={BrandColors.primary} />
+              </View>
               <Text style={styles.actionTitle}>View Job Cards</Text>
               <Text style={styles.actionSubtitle}>Assign & manage tickets</Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={[styles.actionCard, styles.greenActionCard]}
               onPress={() => router.push('/create-technician')}
             >
-              <IconSymbol name="person.badge.plus" size={28} color={BrandColors.title} />
+              <View style={[styles.iconContainer, styles.greenIconContainer]}>
+                <IconSymbol name="person.badge.plus" size={28} color={BrandColors.title} />
+              </View>
               <Text style={styles.actionTitle}>Add Technician</Text>
               <Text style={styles.actionSubtitle}>Create new team member</Text>
             </TouchableOpacity>
@@ -314,7 +317,7 @@ export default function FloorManagerDashboard() {
               <Text style={styles.viewAllText}>View All</Text>
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.techniciansContainer}>
             {technicians?.slice(0, 4).map((technician) => (
               <TechnicianCard
@@ -323,7 +326,7 @@ export default function FloorManagerDashboard() {
                 onPress={() => handleTechnicianPress(technician.id)}
               />
             ))}
-            
+
             {!techniciansLoading && !technicians?.length && (
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyText}>No technicians found</Text>
@@ -461,22 +464,37 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     flex: 1,
-    minWidth: '48%',
+    minWidth: '47%', // Slightly reduced to ensure 2 columns fit well
     backgroundColor: BrandColors.surface,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: BrandColors.ink + '10',
     padding: Spacing.lg,
     alignItems: 'center',
-    ...Shadows.sm,
+    // Removed shadow for flat design on Android
   },
   primaryActionCard: {
-    borderColor: BrandColors.primary + '20',
-    backgroundColor: BrandColors.primary + '05',
+    borderColor: BrandColors.primary + '30', // Stronger border
+    backgroundColor: BrandColors.surface,
   },
   greenActionCard: {
-    borderColor: BrandColors.title + '20',
-    backgroundColor: BrandColors.title + '05',
+    borderColor: BrandColors.title + '30', // Stronger border
+    backgroundColor: BrandColors.surface,
+  },
+  // New Icon Container Styles
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  primaryIconContainer: {
+    backgroundColor: BrandColors.primary + '10',
+  },
+  greenIconContainer: {
+    backgroundColor: BrandColors.title + '10',
   },
   actionTitle: {
     fontSize: Typography.fontSize.base,

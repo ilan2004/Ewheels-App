@@ -1,29 +1,29 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-} from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import React from 'react';
+import {
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
-import { ThemedView } from '@/components/themed-view';
+import { StatusIcon } from '@/components/empty-states';
+import { LocationSelector } from '@/components/location-selector';
 import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { AdminPanelOverviewColors, BorderRadius, BrandColors, Colors, ComponentStyles, FinancialColors, Shadows, Spacing, Typography } from '@/constants/design-system';
+import { useFinancialKPIs } from '@/hooks/useFinancial';
+import { getFeatureAccess, isFloorManager } from '@/lib/permissions';
+import { dataService } from '@/services/dataService';
 import { useAuthStore } from '@/stores/authStore';
 import { useLocationStore } from '@/stores/locationStore';
-import { dataService } from '@/services/dataService';
 import { DashboardKPIs, ServiceTicket } from '@/types';
-import { LocationSelector } from '@/components/location-selector';
-import { getFeatureAccess, isFloorManager } from '@/lib/permissions';
-import { Colors, Typography, Spacing, BorderRadius, ComponentStyles, Shadows, StatusColors, BrandColors, FinancialColors, AdminPanelOverviewColors } from '@/constants/design-system';
 import { LinearGradient } from 'expo-linear-gradient';
-import { EmptyJobCards, StatusIcon } from '@/components/empty-states';
 import FloorManagerDashboard from './floor-manager-dashboard';
-import { useFinancialKPIs } from '@/hooks/useFinancial';
 
 interface KPICardProps {
   title: string;
@@ -120,7 +120,7 @@ interface RecentTicketItemProps {
 
 const RecentTicketItem: React.FC<RecentTicketItemProps> = ({ ticket, onPress }) => {
   const isOverdue = ticket.due_date && new Date(ticket.due_date) < new Date();
-  const isDueToday = ticket.due_date && 
+  const isDueToday = ticket.due_date &&
     new Date(ticket.due_date).toDateString() === new Date().toDateString();
 
   return (
@@ -169,9 +169,9 @@ const RecentTicketItem: React.FC<RecentTicketItemProps> = ({ ticket, onPress }) 
 export default function DashboardScreen() {
   const { user } = useAuthStore();
   const { activeLocation } = useLocationStore();
-  
+
   const featureAccess = user ? getFeatureAccess(user.role) : null;
-  
+
   // Show Floor Manager specific dashboard
   if (user && isFloorManager(user.role)) {
     return <FloorManagerDashboard />;
@@ -373,7 +373,60 @@ export default function DashboardScreen() {
               />
             </View>
           </View>
+
         )}
+
+        {/* Quick Actions */}
+        <View style={styles.section}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>
+            Quick Actions
+          </ThemedText>
+          <View style={styles.actionsGrid}>
+            <TouchableOpacity
+              style={[styles.actionCard, styles.primaryActionCard]}
+              onPress={() => router.push('/jobcards/new')}
+            >
+              <View style={[styles.iconContainer, styles.primaryIconContainer]}>
+                <IconSymbol name="plus" size={28} color={BrandColors.primary} />
+              </View>
+              <Text style={styles.actionTitle}>Create Job Card</Text>
+              <Text style={styles.actionSubtitle}>New service ticket</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionCard, styles.blueActionCard]}
+              onPress={() => router.push('/(tabs)/financial')}
+            >
+              <View style={[styles.iconContainer, styles.blueIconContainer]}>
+                <IconSymbol name="chart.bar.fill" size={28} color="#0284C7" />
+              </View>
+              <Text style={styles.actionTitle}>View Reports</Text>
+              <Text style={styles.actionSubtitle}>Financial overview</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionCard, styles.greenActionCard]}
+              onPress={() => router.push('/(tabs)/team')}
+            >
+              <View style={[styles.iconContainer, styles.greenIconContainer]}>
+                <IconSymbol name="person.3.fill" size={28} color={BrandColors.title} />
+              </View>
+              <Text style={styles.actionTitle}>Manage Team</Text>
+              <Text style={styles.actionSubtitle}>Technicians & staff</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionCard, styles.orangeActionCard]}
+              onPress={() => router.push('/(tabs)/jobcards')}
+            >
+              <View style={[styles.iconContainer, styles.orangeIconContainer]}>
+                <IconSymbol name="doc.text.magnifyingglass" size={28} color="#D97706" />
+              </View>
+              <Text style={styles.actionTitle}>View Job Cards</Text>
+              <Text style={styles.actionSubtitle}>All service tickets</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </ScrollView>
 
       {/* Floating Action Button */}
@@ -687,5 +740,69 @@ const styles = StyleSheet.create({
   retryText: {
     color: '#FFFFFF',
     fontWeight: '600',
+  },
+  actionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.md,
+  },
+  actionCard: {
+    width: '47%', // Ensure 2 columns
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: BrandColors.ink + '10',
+    padding: Spacing.lg,
+    alignItems: 'center',
+  },
+  primaryActionCard: {
+    borderColor: BrandColors.primary + '30',
+    backgroundColor: BrandColors.surface,
+  },
+  blueActionCard: {
+    borderColor: '#0284C7' + '30',
+    backgroundColor: BrandColors.surface,
+  },
+  greenActionCard: {
+    borderColor: BrandColors.title + '30',
+    backgroundColor: BrandColors.surface,
+  },
+  orangeActionCard: {
+    borderColor: '#D97706' + '30',
+    backgroundColor: BrandColors.surface,
+  },
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  primaryIconContainer: {
+    backgroundColor: BrandColors.primary + '10',
+  },
+  blueIconContainer: {
+    backgroundColor: '#0284C7' + '10',
+  },
+  greenIconContainer: {
+    backgroundColor: BrandColors.title + '10',
+  },
+  orangeIconContainer: {
+    backgroundColor: '#D97706' + '10',
+  },
+  actionTitle: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.ink,
+    marginTop: Spacing.sm,
+    textAlign: 'center',
+  },
+  actionSubtitle: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '80',
+    marginTop: 2,
+    textAlign: 'center',
   },
 });

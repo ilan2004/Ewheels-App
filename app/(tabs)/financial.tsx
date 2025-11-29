@@ -12,7 +12,7 @@ import React, { useState } from 'react';
 import {
   Alert,
   LayoutChangeEvent,
-  SafeAreaView,
+  Platform,
   StatusBar,
   StyleSheet,
   Text,
@@ -105,7 +105,7 @@ export default function FinancialTab() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar backgroundColor={BrandColors.surface} barStyle="dark-content" />
 
       {/* Header */}
@@ -166,7 +166,7 @@ export default function FinancialTab() {
       <View style={styles.content}>
         {renderTabContent()}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -180,7 +180,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40, // Match Media Hub
+    paddingBottom: Spacing.md,
     backgroundColor: BrandColors.surface,
     borderBottomWidth: 1,
     borderBottomColor: Colors.neutral[200],

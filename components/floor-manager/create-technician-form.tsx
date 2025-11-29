@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -34,6 +35,7 @@ export const CreateTechnicianForm: React.FC<CreateTechnicianFormProps> = ({
   onSuccess,
   onCancel,
 }) => {
+  const insets = useSafeAreaInsets();
   const { activeLocation } = useLocationStore();
   const { user } = useAuthStore();
   const [formData, setFormData] = useState({
@@ -277,7 +279,7 @@ export const CreateTechnicianForm: React.FC<CreateTechnicianFormProps> = ({
     <ThemedView style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Enhanced Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + Spacing.lg }]}>
           <View style={styles.headerIcon}>
             <IconSymbol name="person.badge.plus" size={28} color={BrandColors.primary} />
           </View>
@@ -396,23 +398,20 @@ export const CreateTechnicianForm: React.FC<CreateTechnicianFormProps> = ({
             </View>
           </View>
 
-          {/* Branch Assignment Info Card */}
-          <View style={styles.infoCard}>
-            <View style={styles.infoHeader}>
-              <View style={styles.infoIconContainer}>
-                <IconSymbol name="mappin" size={16} color={BrandColors.primary} />
-              </View>
-              <Text style={styles.infoTitle}>Branch Assignment</Text>
+          {/* Branch Assignment Info Card - Quick Action Style */}
+          <View style={[styles.actionCard, styles.primaryActionCard]}>
+            <View style={[styles.iconContainer, styles.primaryIconContainer]}>
+              <IconSymbol name="mappin" size={28} color={BrandColors.primary} />
             </View>
-            <Text style={styles.infoText}>
-              This technician will be automatically assigned to your branch:
+            <Text style={styles.actionTitle}>Branch Assignment</Text>
+            <Text style={styles.actionSubtitle}>
+              Technician will be assigned to:
             </Text>
-            <Text style={styles.branchName}>
-              {activeLocation?.name || 'Current Branch'}
-            </Text>
-            <Text style={styles.infoSubtext}>
-              They will only have access to job cards and resources from this location.
-            </Text>
+            <View style={styles.branchNameTag}>
+              <Text style={styles.branchNameText}>
+                {activeLocation?.name || 'Current Branch'}
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -562,59 +561,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
     lineHeight: 18,
   },
-  infoCard: {
-    backgroundColor: BrandColors.primary + '05',
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    marginHorizontal: Spacing.lg,
-    marginTop: Spacing.lg,
-    borderWidth: 1,
-    borderColor: BrandColors.primary + '20',
-    ...Shadows.sm,
-  },
-  infoHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
-  infoIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: BrandColors.primary + '15',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.md,
-  },
-  infoTitle: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.bold as any,
-    color: BrandColors.primary,
-    letterSpacing: -0.2,
-  },
-  infoText: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.neutral[700],
-    lineHeight: 20,
-    marginBottom: Spacing.sm,
-  },
-  branchName: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.bold as any,
-    color: BrandColors.primary,
-    backgroundColor: BrandColors.primary + '10',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    textAlign: 'center',
-    marginVertical: Spacing.sm,
-    letterSpacing: -0.2,
-  },
-  infoSubtext: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.neutral[500],
-    lineHeight: 18,
-  },
+
   actions: {
     flexDirection: 'row',
     paddingHorizontal: Spacing.lg,
@@ -657,5 +604,58 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: Typography.fontSize.base,
+  },
+  // Quick Actions Style for Branch Assignment
+  actionCard: {
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: BrandColors.ink + '10',
+    padding: Spacing.lg,
+    alignItems: 'center',
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.lg,
+    ...Shadows.sm,
+  },
+  primaryActionCard: {
+    borderColor: BrandColors.primary + '30',
+    backgroundColor: BrandColors.surface,
+  },
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  primaryIconContainer: {
+    backgroundColor: BrandColors.primary + '10',
+  },
+  actionTitle: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.ink,
+    marginTop: Spacing.sm,
+    textAlign: 'center',
+  },
+  actionSubtitle: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '80',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  branchNameTag: {
+    marginTop: Spacing.sm,
+    backgroundColor: BrandColors.primary + '10',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+  },
+  branchNameText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.primary,
   },
 });

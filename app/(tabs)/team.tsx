@@ -458,6 +458,8 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: Typography.fontSize.base,
     color: BrandColors.ink,
+    textAlignVertical: 'center', // Fix for Android placeholder alignment
+    paddingVertical: 0, // Ensure no extra padding affects alignment
   },
   filterButton: {
     backgroundColor: Colors.white,

@@ -213,31 +213,19 @@ export default function FrontDeskDashboard() {
             Quick Actions
           </Text>
           <View style={styles.actionsGrid}>
-            {/* Create Job Card Button */}
+            {/* View Job Cards Button */}
             <TouchableOpacity
               style={[styles.actionCard, styles.primaryActionCard]}
               onPress={() => router.push('/jobcards')}
             >
               <View style={[styles.iconContainer, styles.primaryIconContainer]}>
-                <IconSymbol name="doc.text.fill.viewfinder" size={28} color={BrandColors.primary} />
+                <IconSymbol name="doc.text.magnifyingglass" size={28} color={BrandColors.primary} />
               </View>
-              <Text style={styles.actionTitle}>Create Job Card</Text>
-              <Text style={styles.actionSubtitle}>New service ticket</Text>
+              <Text style={styles.actionTitle}>View Job Cards</Text>
+              <Text style={styles.actionSubtitle}>Manage service tickets</Text>
             </TouchableOpacity>
 
-            {/* Create Invoice Button */}
-            <TouchableOpacity
-              style={[styles.actionCard, styles.greenActionCard]}
-              onPress={() => router.push('/invoices/create')}
-            >
-              <View style={[styles.iconContainer, styles.greenIconContainer]}>
-                <IconSymbol name="doc.text" size={28} color={BrandColors.title} />
-              </View>
-              <Text style={styles.actionTitle}>Create Invoice</Text>
-              <Text style={styles.actionSubtitle}>Bill a customer</Text>
-            </TouchableOpacity>
-
-            {/* Check This Month Report Button */}
+            {/* View Reports Button */}
             <TouchableOpacity
               style={[styles.actionCard, styles.blueActionCard]}
               onPress={() => router.push('/financial')}
@@ -245,8 +233,8 @@ export default function FrontDeskDashboard() {
               <View style={[styles.iconContainer, styles.blueIconContainer]}>
                 <IconSymbol name="chart.bar.fill" size={28} color="#0284C7" />
               </View>
-              <Text style={styles.actionTitle}>Check Reports</Text>
-              <Text style={styles.actionSubtitle}>This month's stats</Text>
+              <Text style={styles.actionTitle}>View Reports</Text>
+              <Text style={styles.actionSubtitle}>Financial overview</Text>
             </TouchableOpacity>
           </View>
         </View>
