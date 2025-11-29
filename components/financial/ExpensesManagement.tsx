@@ -630,11 +630,11 @@ export default function ExpensesManagement() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.neutral[50],
+    backgroundColor: BrandColors.surface,
   },
   header: {
     padding: Spacing.base,
-    backgroundColor: BrandColors.surface,
+    backgroundColor: Colors.white,
     borderBottomWidth: 1,
     borderBottomColor: Colors.neutral[200],
     ...Shadows.sm,
@@ -648,7 +648,7 @@ const styles = StyleSheet.create({
   monthSelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.neutral[50],
+    backgroundColor: Colors.white,
     borderRadius: BorderRadius.base,
     padding: 4,
     borderWidth: 1,
@@ -678,7 +678,7 @@ const styles = StyleSheet.create({
     height: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: BrandColors.surface,
+    backgroundColor: Colors.white,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: Colors.neutral[200],
@@ -710,7 +710,7 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing['2xl'],
   },
   expenseCard: {
-    backgroundColor: BrandColors.surface,
+    backgroundColor: Colors.white,
     borderRadius: BorderRadius.lg,
     padding: Spacing.base,
     marginBottom: Spacing.md,

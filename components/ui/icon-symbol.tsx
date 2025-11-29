@@ -148,6 +148,11 @@ const MAPPING = {
   'hammer': 'build',
   'lock.shield': 'security',
   'chart.bar': 'bar-chart',
+  'banknote.fill': 'attach-money',
+  'arrow.down.left': 'call-received',
+  'arrow.up.right': 'call-made',
+  'pencil': 'edit',
+  'trash': 'delete',
 } as IconMapping;
 
 /**

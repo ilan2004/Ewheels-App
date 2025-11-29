@@ -447,7 +447,7 @@ export default function ReportsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.neutral[50],
+        backgroundColor: BrandColors.surface,
     },
     contentContainer: {
         padding: Spacing.base,
@@ -456,7 +456,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: Colors.neutral[50],
+        backgroundColor: BrandColors.surface,
     },
     loadingText: {
         marginTop: Spacing.sm,
@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
         fontFamily: Typography.fontFamily.medium,
     },
     controlsCard: {
-        backgroundColor: BrandColors.surface,
+        backgroundColor: Colors.white,
         borderRadius: BorderRadius.lg,
         padding: 12,
         marginBottom: 12,
@@ -531,7 +531,7 @@ const styles = StyleSheet.create({
     },
     summaryCard: {
         width: '48%', // Approx half width
-        backgroundColor: BrandColors.surface,
+        backgroundColor: Colors.white,
         padding: 16,
         borderRadius: BorderRadius.xl,
         borderLeftWidth: 4,
@@ -571,7 +571,7 @@ const styles = StyleSheet.create({
     },
     statsRowContainer: {
         flexDirection: 'row',
-        backgroundColor: BrandColors.surface,
+        backgroundColor: Colors.white,
         borderRadius: BorderRadius.xl,
         padding: Spacing.lg,
         ...Shadows.sm,
@@ -600,7 +600,7 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.neutral[200],
     },
     detailCard: {
-        backgroundColor: BrandColors.surface,
+        backgroundColor: Colors.white,
         borderRadius: BorderRadius.xl,
         padding: Spacing.lg,
         ...Shadows.sm,
@@ -631,7 +631,7 @@ const styles = StyleSheet.create({
     },
     splitCard: {
         flex: 1,
-        backgroundColor: BrandColors.surface,
+        backgroundColor: Colors.white,
         borderRadius: BorderRadius.xl,
         padding: 12,
         ...Shadows.sm,

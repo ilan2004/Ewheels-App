@@ -1,5 +1,5 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { BrandColors, Colors } from '@/constants/design-system';
+import { BorderRadius, BrandColors, Colors, Shadows, Spacing, Typography } from '@/constants/design-system';
 import { ServiceTicket } from '@/types';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -30,23 +30,22 @@ export const JobCard: React.FC<JobCardProps> = ({
     const isDueToday = dueDate &&
         new Date(dueDate).toDateString() === new Date().toDateString();
 
-    const getStatusColor = () => {
-        switch (ticket.status) {
-            case 'assigned': return '#3B82F6';
-            case 'in_progress': return '#8B5CF6';
-            case 'completed': return '#10B981';
-            case 'reported': return Colors.warning[500];
-            default: return '#6B7280';
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'assigned': return BrandColors.primary;
+            case 'in_progress': return Colors.info[500];
+            case 'completed': return Colors.success[500];
+            case 'reported': return Colors.error[500];
+            default: return Colors.neutral[500];
         }
     };
 
-    const getStatusIcon = () => {
-        switch (ticket.status) {
-            case 'assigned': return 'doc.text';
-            case 'in_progress': return 'gearshape';
-            case 'completed': return 'checkmark.circle';
-            case 'reported': return 'exclamationmark.circle';
-            default: return 'doc.text';
+    const getPriorityColor = (priority: number) => {
+        switch (priority) {
+            case 1: return Colors.error[500];
+            case 2: return Colors.warning[500];
+            case 3: return Colors.neutral[500];
+            default: return Colors.neutral[500];
         }
     };
 
@@ -73,28 +72,22 @@ export const JobCard: React.FC<JobCardProps> = ({
                             />
                         </View>
                     )}
-                    <IconSymbol
-                        name={getStatusIcon()}
-                        size={20}
-                        color={getStatusColor()}
-                    />
                     <Text style={styles.ticketNumber}>{ticket.ticket_number || ticket.ticketNumber}</Text>
                 </View>
+
                 <View style={styles.badges}>
                     {isOverdue && (
                         <View style={[styles.badge, styles.overdueBadge]}>
-                            <Text style={[styles.badgeText, { color: '#DC2626' }]}>Overdue</Text>
+                            <Text style={[styles.badgeText, { color: Colors.error[600] }]}>Overdue</Text>
                         </View>
                     )}
                     {isDueToday && !isOverdue && (
                         <View style={[styles.badge, styles.dueTodayBadge]}>
-                            <Text style={[styles.badgeText, { color: '#D97706' }]}>Due Today</Text>
+                            <Text style={[styles.badgeText, { color: Colors.warning[600] }]}>Due Today</Text>
                         </View>
                     )}
-                    {ticket.priority === 1 && (
-                        <View style={[styles.badge, styles.highPriorityBadge]}>
-                            <Text style={[styles.badgeText, { color: '#DC2626' }]}>High Priority</Text>
-                        </View>
+                    {ticket.priority && (
+                        <View style={[styles.priorityDot, { backgroundColor: getPriorityColor(ticket.priority) }]} />
                     )}
                 </View>
             </View>
@@ -104,38 +97,50 @@ export const JobCard: React.FC<JobCardProps> = ({
             </Text>
 
             <View style={styles.meta}>
-                <View style={styles.metaRow}>
-                    <IconSymbol name="person" size={14} color="#6B7280" />
-                    <Text style={styles.metaText}>
-                        {ticket.customer?.name || 'N/A'}
-                    </Text>
-                </View>
-                {(ticket.vehicle_reg_no || ticket.vehicleRegNo) && (
-                    <View style={styles.metaRow}>
-                        <IconSymbol name="car" size={14} color="#6B7280" />
-                        <Text style={styles.metaText}>{ticket.vehicle_reg_no || ticket.vehicleRegNo}</Text>
-                    </View>
-                )}
-                {showTechnician && technicianName && (
-                    <View style={styles.metaRow}>
-                        <IconSymbol name="wrench.and.screwdriver" size={14} color="#6B7280" />
-                        <Text style={styles.metaText}>{technicianName}</Text>
-                    </View>
-                )}
-                {dueDate && (
-                    <View style={styles.metaRow}>
-                        <IconSymbol name="clock" size={14} color="#6B7280" />
-                        <Text style={styles.metaText}>
-                            Due: {new Date(dueDate).toLocaleDateString()}
+                {/* Customer - Enhanced visibility */}
+                <View style={styles.infoRow}>
+                    <View style={styles.customerInfo}>
+                        <Text style={styles.customerLabel}>Customer</Text>
+                        <Text style={styles.customerName}>
+                            {ticket.customer?.name || 'Unknown Customer'}
                         </Text>
+                    </View>
+                </View>
+
+                {/* Vehicle Info - Highlighted */}
+                {(ticket.vehicle_reg_no || ticket.vehicleRegNo) && (
+                    <View style={styles.infoRow}>
+                        <View style={styles.vehicleInfo}>
+                            <Text style={styles.vehicleLabel}>Vehicle</Text>
+                            <Text style={styles.vehicleValue}>
+                                {ticket.vehicle_reg_no || ticket.vehicleRegNo}
+                            </Text>
+                        </View>
+                    </View>
+                )}
+
+                {/* Technician Info - Highlighted */}
+                {showTechnician && technicianName && (
+                    <View style={styles.infoRow}>
+                        <View style={styles.technicianInfo}>
+                            <Text style={styles.technicianLabel}>Technician</Text>
+                            <Text style={styles.technicianValue}>
+                                {technicianName}
+                            </Text>
+                        </View>
                     </View>
                 )}
             </View>
 
             <View style={styles.footer}>
-                <View style={[styles.statusBadge, { backgroundColor: getStatusColor() + '20' }]}>
-                    <Text style={[styles.statusBadgeText, { color: getStatusColor() }]}>
-                        {ticket.status.replace('_', ' ')}
+                <View style={styles.footerLeft}>
+                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(ticket.status) + '20' }]}>
+                        <Text style={[styles.statusBadgeText, { color: getStatusColor(ticket.status) }]}>
+                            {(ticket.status || 'Unknown').replace('_', ' ')}
+                        </Text>
+                    </View>
+                    <Text style={styles.dateText}>
+                        {new Date(ticket.created_at || Date.now()).toLocaleDateString()}
                     </Text>
                 </View>
 
@@ -147,15 +152,11 @@ export const JobCard: React.FC<JobCardProps> = ({
 
 const styles = StyleSheet.create({
     container: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 12,
-        padding: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-        elevation: 2,
-        marginBottom: 12,
+        backgroundColor: Colors.white,
+        borderRadius: BorderRadius.lg,
+        padding: Spacing.md,
+        ...Shadows.sm,
+        marginBottom: Spacing.md,
     },
     selectedContainer: {
         borderColor: BrandColors.primary,
@@ -165,80 +166,150 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 8,
+        alignItems: 'center',
+        marginBottom: Spacing.xs,
     },
     titleRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
-        flex: 1,
+        gap: Spacing.sm,
     },
     ticketNumber: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#111827',
+        fontSize: Typography.fontSize.base,
+        fontWeight: Typography.fontWeight.semibold as any,
+        color: BrandColors.ink,
     },
     badges: {
         flexDirection: 'row',
-        gap: 6,
-        flexWrap: 'wrap',
-        justifyContent: 'flex-end',
-        maxWidth: '40%',
+        alignItems: 'center',
+        gap: Spacing.xs,
     },
     badge: {
-        paddingHorizontal: 6,
+        paddingHorizontal: Spacing.xs,
         paddingVertical: 2,
-        borderRadius: 8,
+        borderRadius: BorderRadius.full,
     },
     overdueBadge: {
-        backgroundColor: '#FEE2E2',
+        backgroundColor: Colors.error[50],
     },
     dueTodayBadge: {
-        backgroundColor: '#FEF3C7',
-    },
-    highPriorityBadge: {
-        backgroundColor: '#FEE2E2',
+        backgroundColor: Colors.warning[50],
     },
     badgeText: {
-        fontSize: 9,
-        fontWeight: '600',
+        fontSize: 10,
+        fontWeight: Typography.fontWeight.semibold as any,
+    },
+    priorityDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
     },
     symptom: {
-        fontSize: 14,
-        color: '#374151',
-        marginBottom: 12,
+        fontSize: Typography.fontSize.sm,
+        color: Colors.neutral[600],
+        marginBottom: Spacing.sm,
         lineHeight: 20,
     },
     meta: {
-        gap: 6,
-        marginBottom: 12,
+        gap: 8,
+        marginBottom: Spacing.sm,
     },
-    metaRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
+    infoRow: {
+        marginBottom: 2,
     },
-    metaText: {
-        fontSize: 12,
-        color: '#6B7280',
+    // Customer Styles
+    customerInfo: {
+        backgroundColor: BrandColors.primary + '08',
+        padding: Spacing.sm,
+        borderRadius: BorderRadius.md,
+        borderLeftWidth: 3,
+        borderLeftColor: BrandColors.primary,
+    },
+    customerLabel: {
+        fontSize: 10,
+        color: BrandColors.primary,
+        fontWeight: Typography.fontWeight.semibold as any,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: 2,
+    },
+    customerName: {
+        fontSize: Typography.fontSize.sm,
+        color: BrandColors.ink,
+        fontWeight: Typography.fontWeight.bold as any,
+    },
+    // Vehicle Styles
+    vehicleInfo: {
+        backgroundColor: BrandColors.title + '08',
+        padding: Spacing.sm,
+        borderRadius: BorderRadius.md,
+        borderLeftWidth: 3,
+        borderLeftColor: BrandColors.title,
+    },
+    vehicleLabel: {
+        fontSize: 10,
+        color: BrandColors.title,
+        fontWeight: Typography.fontWeight.semibold as any,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: 2,
+    },
+    vehicleValue: {
+        fontSize: Typography.fontSize.sm,
+        color: BrandColors.ink,
+        fontWeight: Typography.fontWeight.bold as any,
+    },
+    // Technician Styles
+    technicianInfo: {
+        backgroundColor: Colors.info[50],
+        padding: Spacing.sm,
+        borderRadius: BorderRadius.md,
+        borderLeftWidth: 3,
+        borderLeftColor: Colors.info[600],
+    },
+    technicianLabel: {
+        fontSize: 10,
+        color: Colors.info[600],
+        fontWeight: Typography.fontWeight.semibold as any,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: 2,
+    },
+    technicianValue: {
+        fontSize: Typography.fontSize.sm,
+        color: BrandColors.ink,
+        fontWeight: Typography.fontWeight.bold as any,
     },
     footer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        marginTop: Spacing.xs,
+    },
+    footerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.sm,
+        flex: 1,
     },
     statusBadge: {
-        paddingHorizontal: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: Spacing.sm,
         paddingVertical: 4,
-        borderRadius: 12,
+        borderRadius: BorderRadius.full,
+        gap: 4,
     },
     statusBadgeText: {
-        fontSize: 11,
-        fontWeight: '600',
+        fontSize: 10,
+        fontWeight: Typography.fontWeight.semibold as any,
         textTransform: 'capitalize',
     },
+    dateText: {
+        fontSize: 10,
+        color: Colors.neutral[400],
+    },
     selectionCheckbox: {
-        marginRight: 4,
+        marginRight: Spacing.xs,
     },
 });

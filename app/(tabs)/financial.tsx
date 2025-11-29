@@ -26,11 +26,12 @@ import Animated, {
 } from 'react-native-reanimated';
 
 // Import components
+import CashManagement from '@/components/financial/CashManagement';
 import ExpensesManagement from '@/components/financial/ExpensesManagement';
 import SalesManagement from '@/components/financial/SalesManagement';
 import ReportsScreen from '@/src/screens/dashboard/finances/ReportsScreen';
 
-type TabType = 'sales' | 'expenses' | 'reports';
+type TabType = 'sales' | 'expenses' | 'reports' | 'cash';
 
 const tabs: Array<{
   id: TabType;
@@ -51,6 +52,11 @@ const tabs: Array<{
       id: 'expenses',
       title: 'Expenses',
       icon: 'arrow.down.circle.fill',
+    },
+    {
+      id: 'cash',
+      title: 'Cash',
+      icon: 'banknote.fill',
     }
   ];
 
@@ -99,6 +105,8 @@ export default function FinancialTab() {
         return <ExpensesManagement />;
       case 'reports':
         return <ReportsScreen />;
+      case 'cash':
+        return <CashManagement />;
       default:
         return <ReportsScreen />;
     }

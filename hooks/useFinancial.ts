@@ -1,18 +1,18 @@
-import { useState, useEffect, useCallback } from 'react';
-import { 
-  Sale, 
-  Expense, 
-  SaleForm, 
-  ExpenseForm, 
-  SalesFilters, 
-  ExpensesFilters, 
-  FinancialKPIs,
-  PaginatedFinancialResponse,
-  RecentTransaction
-} from '@/types/financial.types';
 import { financialService } from '@/services/financialService';
 import { useAuthStore } from '@/stores/authStore';
 import { useLocationStore } from '@/stores/locationStore';
+import {
+  DailyCash,
+  Expense,
+  ExpenseForm,
+  ExpensesFilters,
+  FinancialKPIs,
+  RecentTransaction,
+  Sale,
+  SaleForm,
+  SalesFilters
+} from '@/types/financial.types';
+import { useCallback, useEffect, useState } from 'react';
 
 // Hook for managing sales data
 export const useSales = () => {
@@ -31,18 +31,18 @@ export const useSales = () => {
 
   const fetchSales = useCallback(async (filters: SalesFilters = {}, page = 1, limit = 10) => {
     if (!user) return;
-    
+
     try {
       setLoading(true);
       setError(null);
       const response = await financialService.getSales(
-        filters, 
-        user.role, 
+        filters,
+        user.role,
         activeLocation?.id,
         page,
         limit
       );
-      
+
       setSales(response.data);
       setPagination(response.pagination);
     } catch (err) {
@@ -54,7 +54,7 @@ export const useSales = () => {
 
   const createSale = useCallback(async (saleData: SaleForm) => {
     if (!user) return { success: false, error: 'User not authenticated' };
-    
+
     try {
       const response = await financialService.createSale(saleData, user.role, activeLocation?.id);
       if (response.success && response.data) {
@@ -63,16 +63,16 @@ export const useSales = () => {
       }
       return response;
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to create sale' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create sale'
       };
     }
   }, [user, activeLocation]);
 
   const updateSale = useCallback(async (id: string, updates: Partial<SaleForm>) => {
     if (!user) return { success: false, error: 'User not authenticated' };
-    
+
     try {
       const response = await financialService.updateSale(id, updates, user.role, activeLocation?.id);
       if (response.success && response.data) {
@@ -80,16 +80,16 @@ export const useSales = () => {
       }
       return response;
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to update sale' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update sale'
       };
     }
   }, [user, activeLocation]);
 
   const deleteSale = useCallback(async (id: string) => {
     if (!user) return { success: false, error: 'User not authenticated' };
-    
+
     try {
       const response = await financialService.deleteSale(id, user.role, activeLocation?.id);
       if (response.success) {
@@ -98,9 +98,9 @@ export const useSales = () => {
       }
       return response;
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to delete sale' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to delete sale'
       };
     }
   }, [user, activeLocation]);
@@ -135,18 +135,18 @@ export const useExpenses = () => {
 
   const fetchExpenses = useCallback(async (filters: ExpensesFilters = {}, page = 1, limit = 10) => {
     if (!user) return;
-    
+
     try {
       setLoading(true);
       setError(null);
       const response = await financialService.getExpenses(
-        filters, 
-        user.role, 
+        filters,
+        user.role,
         activeLocation?.id,
         page,
         limit
       );
-      
+
       setExpenses(response.data);
       setPagination(response.pagination);
     } catch (err) {
@@ -158,7 +158,7 @@ export const useExpenses = () => {
 
   const createExpense = useCallback(async (expenseData: ExpenseForm) => {
     if (!user) return { success: false, error: 'User not authenticated' };
-    
+
     try {
       const response = await financialService.createExpense(expenseData, user.role, activeLocation?.id);
       if (response.success && response.data) {
@@ -167,16 +167,16 @@ export const useExpenses = () => {
       }
       return response;
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to create expense' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create expense'
       };
     }
   }, [user, activeLocation]);
 
   const updateExpense = useCallback(async (id: string, updates: Partial<ExpenseForm>) => {
     if (!user) return { success: false, error: 'User not authenticated' };
-    
+
     try {
       const response = await financialService.updateExpense(id, updates, user.role, activeLocation?.id);
       if (response.success && response.data) {
@@ -184,16 +184,16 @@ export const useExpenses = () => {
       }
       return response;
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to update expense' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update expense'
       };
     }
   }, [user, activeLocation]);
 
   const deleteExpense = useCallback(async (id: string) => {
     if (!user) return { success: false, error: 'User not authenticated' };
-    
+
     try {
       const response = await financialService.deleteExpense(id, user.role, activeLocation?.id);
       if (response.success) {
@@ -202,9 +202,9 @@ export const useExpenses = () => {
       }
       return response;
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to delete expense' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to delete expense'
       };
     }
   }, [user, activeLocation]);
@@ -234,16 +234,16 @@ export const useFinancialKPIs = () => {
 
   const fetchKPIs = useCallback(async () => {
     if (!user) return;
-    
+
     try {
       setLoading(true);
       setError(null);
-      
+
       const [kpisResponse, transactionsResponse] = await Promise.all([
         financialService.getFinancialKPIs(user.role, activeLocation?.id),
         financialService.getRecentTransactions(user.role, activeLocation?.id, 10)
       ]);
-      
+
       setKpis(kpisResponse);
       setRecentTransactions(transactionsResponse);
     } catch (err) {
@@ -267,6 +267,73 @@ export const useFinancialKPIs = () => {
     loading,
     error,
     refreshKPIs
+  };
+};
+
+// Hook for managing cash management data
+export const useCashManagement = () => {
+  const [dailyCash, setDailyCash] = useState<DailyCash | null>(null);
+  const [cashSales, setCashSales] = useState<Sale[]>([]);
+  const [cashExpenses, setCashExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const { user } = useAuthStore();
+  const { activeLocation } = useLocationStore();
+
+  const fetchData = useCallback(async (date: string) => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [dailyCashRes, cashSalesRes, cashExpensesRes] = await Promise.all([
+        financialService.getDailyCash(date, user.role, activeLocation?.id),
+        financialService.getCashSales(date, user.role, activeLocation?.id),
+        financialService.getCashExpenses(date, user.role, activeLocation?.id)
+      ]);
+
+      if (dailyCashRes.success) setDailyCash(dailyCashRes.data || null);
+      if (cashSalesRes.success) setCashSales(cashSalesRes.data || []);
+      if (cashExpensesRes.success) setCashExpenses(cashExpensesRes.data || []);
+
+      if (dailyCashRes.error) setError(dailyCashRes.error);
+      if (cashSalesRes.error) setError(cashSalesRes.error);
+      if (cashExpensesRes.error) setError(cashExpensesRes.error);
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch cash management data');
+    } finally {
+      setLoading(false);
+    }
+  }, [user, activeLocation]);
+
+  const updateDailyCash = useCallback(async (date: string, data: Partial<DailyCash>) => {
+    if (!user) return { success: false, error: 'User not authenticated' };
+
+    try {
+      const response = await financialService.updateDailyCash(date, data, user.role, activeLocation?.id);
+      if (response.success && response.data) {
+        setDailyCash(response.data);
+      }
+      return response;
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update daily cash'
+      };
+    }
+  }, [user, activeLocation]);
+
+  return {
+    dailyCash,
+    cashSales,
+    cashExpenses,
+    loading,
+    error,
+    fetchData,
+    updateDailyCash
   };
 };
 

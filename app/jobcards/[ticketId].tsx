@@ -1,4 +1,3 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
@@ -32,227 +31,9 @@ import { BorderRadius, BrandColors, ComponentStyles, PriorityColors, Spacing, St
 import { batteriesService } from '@/services/batteriesService';
 import { jobCardsService } from '@/services/jobCardsService';
 import { vehiclesService } from '@/services/vehiclesService';
+import { useAuthStore } from '@/stores/authStore';
 
-interface TechnicianPickerModalProps {
-  visible: boolean;
-  onClose: () => void;
-  onSelect: (technicianId: string, dueDate?: string) => void;
-  currentAssignee?: string;
-  currentDueDate?: string;
-}
 
-const TechnicianPickerModal: React.FC<TechnicianPickerModalProps> = ({
-  visible,
-  onClose,
-  onSelect,
-  currentAssignee,
-  currentDueDate,
-}) => {
-  const insets = useSafeAreaInsets();
-  const [selectedTechnician, setSelectedTechnician] = useState<string | null>(currentAssignee || null);
-  const [dueDate, setDueDate] = useState<Date>(() => {
-    if (currentDueDate) {
-      return new Date(currentDueDate);
-    }
-    // Default to 3 days from now
-    const defaultDate = new Date();
-    defaultDate.setDate(defaultDate.getDate() + 3);
-    return defaultDate;
-  });
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [step, setStep] = useState<'technician' | 'duedate'>('technician');
-
-  const { data: technicians, isLoading } = useQuery({
-    queryKey: ['available-technicians'],
-    queryFn: jobCardsService.getTechnicians,
-    enabled: visible,
-  });
-
-  const handleTechnicianSelect = (technicianId: string) => {
-    setSelectedTechnician(technicianId);
-    if (technicianId === '') {
-      // If unassigning, do it immediately without due date
-      onSelect(technicianId);
-      onClose();
-    } else {
-      // Move to due date step
-      setStep('duedate');
-    }
-  };
-
-  const handleAssignWithDueDate = () => {
-    if (selectedTechnician) {
-      onSelect(selectedTechnician, dueDate.toISOString());
-      onClose();
-      // Reset state
-      setStep('technician');
-      setSelectedTechnician(null);
-    }
-  };
-
-  const handleDateChange = (event: any, selectedDate?: Date) => {
-    if (Platform.OS === 'android') {
-      setShowDatePicker(false);
-    }
-    if (selectedDate) {
-      setDueDate(selectedDate);
-    }
-  };
-
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
-  const getSelectedTechnicianName = () => {
-    if (!selectedTechnician) return 'None';
-    const technician = technicians?.find(t => t.id === selectedTechnician);
-    if (!technician) return selectedTechnician;
-    return `${technician.first_name || ''} ${technician.last_name || ''}`.trim() || technician.email;
-  };
-
-  return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <ThemedView style={[styles.modalContainer, { paddingTop: Platform.OS === 'android' ? insets.top : 0 }]}>
-        <View style={styles.modalHeader}>
-          <TouchableOpacity onPress={step === 'duedate' ? () => setStep('technician') : onClose}>
-            <Text style={styles.modalCancel}>{step === 'duedate' ? 'Back' : 'Cancel'}</Text>
-          </TouchableOpacity>
-          <ThemedText type="subtitle" style={styles.modalTitle}>
-            {step === 'technician' ? 'Assign Technician' : 'Set Due Date'}
-          </ThemedText>
-          <View style={styles.modalSpacer} />
-        </View>
-
-        <ScrollView style={styles.modalContent}>
-          {step === 'technician' ? (
-            // Step 1: Technician Selection
-            <>
-              {technicians?.map((technician) => (
-                <TouchableOpacity
-                  key={technician.id}
-                  style={[
-                    styles.technicianOption,
-                    selectedTechnician === technician.id && styles.technicianOptionSelected,
-                  ]}
-                  onPress={() => handleTechnicianSelect(technician.id)}
-                >
-                  <View style={styles.technicianAvatar}>
-                    <Text style={styles.technicianInitials}>
-                      {`${technician.first_name?.[0] || ''}${technician.last_name?.[0] || ''}`}
-                    </Text>
-                  </View>
-                  <View style={styles.technicianDetails}>
-                    <Text style={styles.technicianName}>
-                      {`${technician.first_name || ''} ${technician.last_name || ''}`.trim()}
-                    </Text>
-                    <Text style={styles.technicianEmail}>{technician.email}</Text>
-                  </View>
-                  {selectedTechnician === technician.id && (
-                    <IconSymbol name="checkmark" size={20} color="#10B981" />
-                  )}
-                </TouchableOpacity>
-              ))}
-
-              {/* Unassign option */}
-              <TouchableOpacity
-                style={[
-                  styles.technicianOption,
-                  !currentAssignee && styles.technicianOptionSelected,
-                ]}
-                onPress={() => handleTechnicianSelect('')}
-              >
-                <View style={[styles.technicianAvatar, { backgroundColor: '#6B7280' }]}>
-                  <IconSymbol name="minus" size={20} color="#FFFFFF" />
-                </View>
-                <View style={styles.technicianDetails}>
-                  <Text style={styles.technicianName}>Unassigned</Text>
-                  <Text style={styles.technicianEmail}>Remove current assignment</Text>
-                </View>
-                {!currentAssignee && (
-                  <IconSymbol name="checkmark" size={20} color="#10B981" />
-                )}
-              </TouchableOpacity>
-            </>
-          ) : (
-            // Step 2: Due Date Selection
-            <>
-              {/* Assignment Summary */}
-              <View style={styles.assignmentSummary}>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Technician:</Text>
-                  <Text style={styles.summaryValue}>{getSelectedTechnicianName()}</Text>
-                </View>
-              </View>
-
-              {/* Due Date Section */}
-              <View style={styles.dueDateSection}>
-                <Text style={styles.dueDateTitle}>Set Due Date</Text>
-                <Text style={styles.dueDateSubtitle}>
-                  When should this job card be completed?
-                </Text>
-
-                {/* Date Display */}
-                <TouchableOpacity
-                  style={styles.dateButton}
-                  onPress={() => setShowDatePicker(true)}
-                >
-                  <IconSymbol name="calendar" size={20} color="#3B82F6" />
-                  <Text style={styles.dateButtonText}>{formatDate(dueDate)}</Text>
-                  <IconSymbol name="chevron.right" size={16} color="#6B7280" />
-                </TouchableOpacity>
-
-                {/* Quick Date Options */}
-                <View style={styles.quickDateOptions}>
-                  <Text style={styles.quickDateTitle}>Quick Options:</Text>
-                  <View style={styles.quickDateButtons}>
-                    {[1, 3, 7, 14].map((days) => {
-                      const quickDate = new Date();
-                      quickDate.setDate(quickDate.getDate() + days);
-                      return (
-                        <TouchableOpacity
-                          key={days}
-                          style={styles.quickDateButton}
-                          onPress={() => setDueDate(quickDate)}
-                        >
-                          <Text style={styles.quickDateButtonText}>
-                            {days === 1 ? 'Tomorrow' : `${days} days`}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                </View>
-
-                {/* Date Picker */}
-                {showDatePicker && (
-                  <DateTimePicker
-                    value={dueDate}
-                    mode="date"
-                    minimumDate={new Date()}
-                    onChange={handleDateChange}
-                  />
-                )}
-              </View>
-
-              {/* Assign Button */}
-              <TouchableOpacity
-                style={styles.assignButton}
-                onPress={handleAssignWithDueDate}
-              >
-                <Text style={styles.assignButtonText}>Assign with Due Date</Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </ScrollView>
-      </ThemedView>
-    </Modal>
-  );
-};
 
 // Image Viewer Modal Component
 interface ImageViewerModalProps {
@@ -541,8 +322,9 @@ const AudioPlayerModal: React.FC<AudioPlayerModalProps> = ({
 };
 
 export default function JobCardDetailScreen() {
+  const { user } = useAuthStore();
   const { ticketId } = useLocalSearchParams<{ ticketId: string }>();
-  const [showTechnicianPicker, setShowTechnicianPicker] = useState(false);
+
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const [audioUrls, setAudioUrls] = useState<Record<string, string>>({});
   const [showImageViewer, setShowImageViewer] = useState(false);
@@ -612,23 +394,7 @@ export default function JobCardDetailScreen() {
     enabled: !!ticketId,
   });
 
-  // Assignment mutation
-  const assignTicketMutation = useMutation({
-    mutationFn: ({ technicianId, dueDate }: { technicianId: string; dueDate?: string }) =>
-      jobCardsService.assignTicket(ticketId!, technicianId, dueDate),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ticket-detail', ticketId] });
-      queryClient.invalidateQueries({ queryKey: ['job-cards'] });
-      queryClient.invalidateQueries({ queryKey: ['team-workload'] });
-      queryClient.invalidateQueries({ queryKey: ['ticket-attachments', ticketId] });
-    },
-    onError: (error: any) => {
-      Alert.alert(
-        'Assignment Failed',
-        error.message || 'Failed to assign ticket. Please try again.'
-      );
-    },
-  });
+
 
   // Status update mutation
   const updateStatusMutation = useMutation({
@@ -640,9 +406,7 @@ export default function JobCardDetailScreen() {
     },
   });
 
-  const handleAssignTechnician = (technicianId: string, dueDate?: string) => {
-    assignTicketMutation.mutate({ technicianId, dueDate });
-  };
+
 
   const handleStatusUpdate = (status: string) => {
     Alert.alert(
@@ -841,19 +605,20 @@ export default function JobCardDetailScreen() {
           },
           headerRight: () => (
             <TouchableOpacity
-              onPress={() => setShowTechnicianPicker(true)}
+              onPress={() => {
+                if (ticket?.assigned_to || ticket?.assignedTo) {
+                  refetch();
+                } else {
+                  router.push(`/jobcards/assign-technician?ticketId=${ticketId}`);
+                }
+              }}
               style={{ marginRight: 16 }}
-              disabled={assignTicketMutation.isPending}
             >
-              {assignTicketMutation.isPending ? (
-                <ActivityIndicator size="small" color="#3B82F6" />
-              ) : (
-                <IconSymbol
-                  name={(ticket?.assigned_to || ticket?.assignedTo) ? "arrow.triangle.2.circlepath" : "person.badge.plus"}
-                  size={24}
-                  color="#3B82F6"
-                />
-              )}
+              <IconSymbol
+                name={(ticket?.assigned_to || ticket?.assignedTo) ? "arrow.triangle.2.circlepath" : "person.badge.plus"}
+                size={24}
+                color="#3B82F6"
+              />
             </TouchableOpacity>
           ),
         }}
@@ -1437,6 +1202,18 @@ export default function JobCardDetailScreen() {
                     </View>
                   )}
                 </View>
+                {/* Floor Manager Assign Button */}
+                {(user?.role === 'floor_manager' || user?.role === 'admin') && (
+                  <TouchableOpacity
+                    style={styles.secondaryAssignButton}
+                    onPress={() => router.push(`/jobcards/assign-technician?ticketId=${ticketId}`)}
+                  >
+                    <IconSymbol name="person.badge.plus" size={20} color={BrandColors.primary} />
+                    <Text style={styles.secondaryAssignButtonText}>
+                      {(ticket.assigned_to || ticket.assignedTo) ? 'Reassign Technician' : 'Assign Technician'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
 
               {/* Status Actions */}
@@ -1512,14 +1289,7 @@ export default function JobCardDetailScreen() {
           )}
         </ScrollView>
 
-        {/* Technician Picker Modal */}
-        <TechnicianPickerModal
-          visible={showTechnicianPicker}
-          onClose={() => setShowTechnicianPicker(false)}
-          onSelect={handleAssignTechnician}
-          currentAssignee={(ticket?.assigned_to || ticket?.assignedTo) || undefined}
-          currentDueDate={ticket?.due_date || ticket?.dueDate}
-        />
+
 
         {/* Image Viewer Modal */}
         <ImageViewerModal
@@ -1600,21 +1370,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.lg,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
     gap: Spacing.xs,
+  },
+  secondaryAssignButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    backgroundColor: BrandColors.primary + '10',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginTop: Spacing.md,
+    borderWidth: 1,
+    borderColor: BrandColors.primary + '20',
+  },
+  secondaryAssignButtonText: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.primary,
   },
   statusText: {
     fontSize: Typography.fontSize.xs,
     fontFamily: Typography.fontFamily.semibold,
     textTransform: 'capitalize',
-  },
-  reassignButton: {
-    borderColor: BrandColors.primary,
-    backgroundColor: BrandColors.primary + '20',
-  },
-  reassignButtonText: {
-    color: BrandColors.primary,
   },
   symptom: {
     fontSize: Typography.fontSize.base,

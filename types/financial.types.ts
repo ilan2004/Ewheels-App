@@ -265,6 +265,9 @@ export interface DailyCash {
   date: string;
   opening_cash: number;
   closing_cash: number;
+  notes?: string;
+  is_verified?: boolean;
+  verified_by?: string;
   created_at: string;
 }
 

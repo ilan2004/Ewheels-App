@@ -2,6 +2,7 @@ import { canBypassLocationFilter } from '@/lib/permissions';
 import { supabase } from '@/lib/supabase';
 import { UserRole } from '@/types';
 import {
+  DailyCash,
   Expense,
   ExpenseForm,
   ExpensesFilters,
@@ -666,6 +667,160 @@ export class FinancialService {
         category: 'office_supplies'
       }
     ];
+  }
+  // CASH MANAGEMENT OPERATIONS
+  async getDailyCash(
+    date: string,
+    userRole: UserRole,
+    activeLocationId?: string | null
+  ): Promise<FinancialApiResponse<DailyCash>> {
+    if (this.isMockMode()) {
+      return {
+        success: true,
+        data: {
+          id: 'mock-daily-cash',
+          date,
+          opening_cash: 1000,
+          closing_cash: 0,
+          created_at: new Date().toISOString()
+        } as DailyCash
+      };
+    }
+
+    try {
+      let query = this.applyScopeToQuery(
+        'daily_cash',
+        supabase.from('daily_cash').select('*').eq('date', date),
+        userRole,
+        activeLocationId
+      );
+
+      const { data, error } = await query.maybeSingle();
+
+      if (error) throw error;
+
+      return { success: true, data: data || null };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch daily cash'
+      };
+    }
+  }
+
+  async updateDailyCash(
+    date: string,
+    data: Partial<DailyCash>,
+    userRole: UserRole,
+    activeLocationId?: string | null
+  ): Promise<FinancialApiResponse<DailyCash>> {
+    if (this.isMockMode()) {
+      return {
+        success: true,
+        data: {
+          id: 'mock-daily-cash',
+          date,
+          opening_cash: 1000,
+          closing_cash: 0,
+          created_at: new Date().toISOString(),
+          ...data
+        } as DailyCash
+      };
+    }
+
+    try {
+      // Check if record exists
+      const existing = await this.getDailyCash(date, userRole, activeLocationId);
+
+      let result;
+      if (existing.data) {
+        // Update
+        let query = this.applyScopeToQuery(
+          'daily_cash',
+          supabase.from('daily_cash').update(data).eq('id', existing.data.id),
+          userRole,
+          activeLocationId
+        );
+        result = await query.select().single();
+      } else {
+        // Insert
+        const dataWithLocation = this.addLocationToData({ ...data, date }, userRole, activeLocationId);
+        result = await supabase.from('daily_cash').insert([dataWithLocation]).select().single();
+      }
+
+      if (result.error) throw result.error;
+      return { success: true, data: result.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update daily cash'
+      };
+    }
+  }
+
+  async getCashSales(
+    date: string,
+    userRole: UserRole,
+    activeLocationId?: string | null
+  ): Promise<FinancialApiResponse<Sale[]>> {
+    if (this.isMockMode()) {
+      return { success: true, data: [] };
+    }
+
+    try {
+      let query = this.applyScopeToQuery(
+        'sales',
+        supabase.from('sales')
+          .select('*')
+          .eq('sale_date', date)
+          .eq('payment_method', 'cash')
+          .eq('payment_status', 'paid')
+          .order('created_at', { ascending: false }),
+        userRole,
+        activeLocationId
+      );
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return { success: true, data: data || [] };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch cash sales'
+      };
+    }
+  }
+
+  async getCashExpenses(
+    date: string,
+    userRole: UserRole,
+    activeLocationId?: string | null
+  ): Promise<FinancialApiResponse<Expense[]>> {
+    if (this.isMockMode()) {
+      return { success: true, data: [] };
+    }
+
+    try {
+      let query = this.applyScopeToQuery(
+        'expenses',
+        supabase.from('expenses')
+          .select('*')
+          .eq('expense_date', date)
+          .eq('payment_method', 'cash')
+          .order('created_at', { ascending: false }),
+        userRole,
+        activeLocationId
+      );
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return { success: true, data: data || [] };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch cash expenses'
+      };
+    }
   }
 }
 
