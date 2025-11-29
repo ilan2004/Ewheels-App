@@ -1,4 +1,4 @@
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { IconSymbol, IconSymbolName } from '@/components/ui/icon-symbol';
 import { BorderRadius, Colors, Shadows, Spacing, Typography } from '@/constants/design-system';
 import { useAuthStore } from '@/stores/authStore';
 import { Image } from 'expo-image';
@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 
 interface ProfileItemProps {
-  icon: string;
+  icon: IconSymbolName;
   title: string;
   subtitle?: string;
   onPress?: () => void;
@@ -74,8 +74,9 @@ export default function FrontDeskProfile() {
     );
   };
 
-  const firstName = user?.firstName || 'John';
-  const lastName = user?.lastName || 'Doe';
+  const firstName = user?.firstName || '';
+  const lastName = user?.lastName || '';
+  const fullName = `${firstName} ${lastName}`.trim() || 'Front Desk Manager';
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -83,12 +84,12 @@ export default function FrontDeskProfile() {
       <View style={styles.header}>
         <View style={styles.avatarContainer}>
           <Image
-            source={{ uri: 'https://ui-avatars.com/api/?name=John+Doe&background=3B82F6&color=fff&size=120' }}
+            source={{ uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=3B82F6&color=fff&size=120` }}
             style={styles.avatar}
           />
         </View>
 
-        <Text style={styles.name}>{firstName} {lastName}</Text>
+        <Text style={styles.name}>{fullName}</Text>
         <Text style={styles.role}>Front Desk Manager</Text>
       </View>
 

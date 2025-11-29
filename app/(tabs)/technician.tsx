@@ -10,6 +10,7 @@ import {
   View
 } from 'react-native';
 
+import { JobCard } from '@/components/JobCard';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -70,120 +71,10 @@ const MetricCard: React.FC<MetricCardProps> = ({
   );
 };
 
-interface TaskItemProps {
-  ticket: ServiceTicket;
-  onPress: () => void;
-}
 
-const TaskItem: React.FC<TaskItemProps> = ({ ticket, onPress }) => {
-  const isOverdue = ticket.dueDate && new Date(ticket.dueDate) < new Date();
-  const isDueToday = ticket.dueDate &&
-    new Date(ticket.dueDate).toDateString() === new Date().toDateString();
+// ... MetricCard code ...
 
-  const getStatusColor = () => {
-    switch (ticket.status) {
-      case 'assigned': return '#3B82F6';
-      case 'in_progress': return '#8B5CF6';
-      case 'completed': return '#10B981';
-      default: return '#6B7280';
-    }
-  };
-
-  const getStatusIcon = () => {
-    switch (ticket.status) {
-      case 'assigned': return 'doc.text';
-      case 'in_progress': return 'gearshape';
-      case 'completed': return 'checkmark.circle';
-      default: return 'doc.text';
-    }
-  };
-
-  return (
-    <TouchableOpacity style={styles.taskItem} onPress={onPress}>
-      <View style={styles.taskHeader}>
-        <View style={styles.taskTitleRow}>
-          <IconSymbol
-            name={getStatusIcon()}
-            size={20}
-            color={getStatusColor()}
-          />
-          <Text style={styles.taskNumber}>{ticket.ticketNumber}</Text>
-        </View>
-        <View style={styles.taskBadges}>
-          {isOverdue && (
-            <View style={[styles.badge, styles.overdueBadge]}>
-              <Text style={[styles.badgeText, { color: '#DC2626' }]}>Overdue</Text>
-            </View>
-          )}
-          {isDueToday && !isOverdue && (
-            <View style={[styles.badge, styles.dueTodayBadge]}>
-              <Text style={[styles.badgeText, { color: '#D97706' }]}>Due Today</Text>
-            </View>
-          )}
-          {ticket.priority === 1 && (
-            <View style={[styles.badge, styles.highPriorityBadge]}>
-              <Text style={[styles.badgeText, { color: '#DC2626' }]}>High Priority</Text>
-            </View>
-          )}
-        </View>
-      </View>
-
-      <Text style={styles.taskSymptom} numberOfLines={2}>
-        {ticket.symptom}
-      </Text>
-
-      <View style={styles.taskMeta}>
-        <View style={styles.taskMetaRow}>
-          <IconSymbol name="person" size={14} color="#6B7280" />
-          <Text style={styles.taskMetaText}>
-            {ticket.customer?.name || 'N/A'}
-          </Text>
-        </View>
-        {ticket.vehicleRegNo && (
-          <View style={styles.taskMetaRow}>
-            <IconSymbol name="car" size={14} color="#6B7280" />
-            <Text style={styles.taskMetaText}>{ticket.vehicleRegNo}</Text>
-          </View>
-        )}
-        {ticket.dueDate && (
-          <View style={styles.taskMetaRow}>
-            <IconSymbol name="clock" size={14} color="#6B7280" />
-            <Text style={styles.taskMetaText}>
-              Due: {new Date(ticket.dueDate).toLocaleDateString()}
-            </Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.taskFooter}>
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor() + '20' }]}>
-          <Text style={[styles.statusBadgeText, { color: getStatusColor() }]}>
-            {ticket.status.replace('_', ' ')}
-          </Text>
-        </View>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={(e) => {
-            e.stopPropagation();
-            // Handle quick action based on status
-            if (ticket.status === 'assigned') {
-              // Start work
-              console.log('Start work on', ticket.id);
-            } else if (ticket.status === 'in_progress') {
-              // Update status
-              console.log('Update status for', ticket.id);
-            }
-          }}
-        >
-          <Text style={styles.actionButtonText}>
-            {ticket.status === 'assigned' ? 'Start' :
-              ticket.status === 'in_progress' ? 'Update' : 'View'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
-  );
-};
+// TaskItem removed, replaced by JobCard usage below
 
 export default function TechnicianScreen() {
   const { user } = useAuthStore();
@@ -393,10 +284,18 @@ export default function TechnicianScreen() {
             </ThemedText>
             <View style={styles.tasksList}>
               {ticketsByStatus.assigned.map((ticket) => (
-                <TaskItem
+                <JobCard
                   key={ticket.id}
                   ticket={ticket}
                   onPress={() => handleTicketPress(ticket.id)}
+                  actionButton={
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => console.log('Start work on', ticket.id)}
+                    >
+                      <Text style={styles.actionButtonText}>Start</Text>
+                    </TouchableOpacity>
+                  }
                 />
               ))}
             </View>
@@ -411,10 +310,18 @@ export default function TechnicianScreen() {
             </ThemedText>
             <View style={styles.tasksList}>
               {ticketsByStatus.inProgress.map((ticket) => (
-                <TaskItem
+                <JobCard
                   key={ticket.id}
                   ticket={ticket}
                   onPress={() => handleTicketPress(ticket.id)}
+                  actionButton={
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => console.log('Update status for', ticket.id)}
+                    >
+                      <Text style={styles.actionButtonText}>Update</Text>
+                    </TouchableOpacity>
+                  }
                 />
               ))}
             </View>
@@ -429,10 +336,18 @@ export default function TechnicianScreen() {
             </ThemedText>
             <View style={styles.tasksList}>
               {ticketsByStatus.completed.map((ticket) => (
-                <TaskItem
+                <JobCard
                   key={ticket.id}
                   ticket={ticket}
                   onPress={() => handleTicketPress(ticket.id)}
+                  actionButton={
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => handleTicketPress(ticket.id)}
+                    >
+                      <Text style={styles.actionButtonText}>View</Text>
+                    </TouchableOpacity>
+                  }
                 />
               ))}
             </View>

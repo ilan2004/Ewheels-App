@@ -14,14 +14,14 @@ import {
   View,
 } from 'react-native';
 
-import { StatusIcon } from '@/components/empty-states';
+import { JobCard } from '@/components/JobCard';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { BorderRadius, BrandColors, Colors, ComponentStyles, Spacing, Typography } from '@/constants/design-system';
 import { jobCardsService } from '@/services/jobCardsService';
 import { useAuthStore } from '@/stores/authStore';
-import { ServiceTicket, TicketFilters } from '@/types';
+import { TicketFilters } from '@/types';
 
 interface TechnicianFilters {
   status: 'all' | 'assigned' | 'in_progress' | 'completed';
@@ -143,163 +143,8 @@ const FilterModal: React.FC<FilterModalProps> = ({
   );
 };
 
-interface JobCardItemProps {
-  ticket: ServiceTicket;
-  onPress: () => void;
-  onStatusUpdate: (ticketId: string, status: string) => void;
-}
 
-const JobCardItem: React.FC<JobCardItemProps> = ({ ticket, onPress, onStatusUpdate }) => {
-  const dueDate = ticket.due_date || ticket.dueDate;
-  const isOverdue = dueDate && new Date(dueDate) < new Date();
-  const isDueToday = dueDate &&
-    new Date(dueDate).toDateString() === new Date().toDateString();
-
-  const getStatusColor = () => {
-    switch (ticket.status) {
-      case 'assigned': return '#3B82F6';
-      case 'in_progress': return '#8B5CF6';
-      case 'completed': return '#10B981';
-      default: return '#6B7280';
-    }
-  };
-
-  const getPriorityColor = () => {
-    switch (ticket.priority) {
-      case 1: return '#EF4444';
-      case 2: return '#F59E0B';
-      case 3: return '#6B7280';
-      default: return '#6B7280';
-    }
-  };
-
-  const getNextStatus = () => {
-    switch (ticket.status) {
-      case 'assigned': return 'in_progress';
-      case 'in_progress': return 'completed';
-      default: return null;
-    }
-  };
-
-  const getNextStatusText = () => {
-    switch (ticket.status) {
-      case 'assigned': return 'Start Work';
-      case 'in_progress': return 'Complete';
-      default: return null;
-    }
-  };
-
-  const handleQuickAction = () => {
-    const nextStatus = getNextStatus();
-    if (nextStatus) {
-      const actionText = nextStatus === 'in_progress' ? 'start working on' : 'mark as completed';
-      Alert.alert(
-        'Update Status',
-        `Are you sure you want to ${actionText} this job card?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Confirm',
-            onPress: () => onStatusUpdate(ticket.id, nextStatus),
-          },
-        ]
-      );
-    }
-  };
-
-  return (
-    <TouchableOpacity style={styles.jobCardItem} onPress={onPress}>
-      <View style={styles.jobCardHeader}>
-        <View style={styles.jobCardTitleRow}>
-          <View style={styles.ticketNumberContainer}>
-            <StatusIcon status={ticket.status as any} size="sm" />
-            <Text style={styles.jobCardNumber}>{ticket.ticket_number || ticket.ticketNumber}</Text>
-          </View>
-        </View>
-        <View style={styles.jobCardBadges}>
-          {isOverdue && (
-            <View style={[styles.badge, styles.overdueBadge]}>
-              <Text style={[styles.badgeText, { color: '#DC2626' }]}>Overdue</Text>
-            </View>
-          )}
-          {isDueToday && !isOverdue && (
-            <View style={[styles.badge, styles.dueTodayBadge]}>
-              <Text style={[styles.badgeText, { color: '#D97706' }]}>Due Today</Text>
-            </View>
-          )}
-          {ticket.priority && (
-            <View style={[styles.priorityDot, { backgroundColor: getPriorityColor() }]} />
-          )}
-        </View>
-      </View>
-
-      <Text style={styles.jobCardSymptom} numberOfLines={2}>
-        {ticket.customer_complaint || ticket.symptom}
-      </Text>
-
-      <View style={styles.jobCardMeta}>
-        {/* Customer - Enhanced visibility */}
-        <View style={styles.customerRow}>
-          <View style={styles.customerInfo}>
-            <Text style={styles.customerLabel}>Customer</Text>
-            <Text style={styles.customerName}>
-              {ticket.customer?.name || 'N/A'}
-            </Text>
-          </View>
-        </View>
-
-        {/* Vehicle Info */}
-        {(ticket.vehicle_reg_no || ticket.vehicleRegNo) && (
-          <View style={styles.jobCardMetaRow}>
-            <Text style={styles.jobCardMetaLabel}>Vehicle:</Text>
-            <Text style={styles.jobCardMetaValue}>{ticket.vehicle_reg_no || ticket.vehicleRegNo}</Text>
-          </View>
-        )}
-
-        {/* Due Date */}
-        {dueDate && (
-          <View style={styles.jobCardMetaRow}>
-            <Text style={styles.jobCardMetaLabel}>Due:</Text>
-            <Text style={[
-              styles.jobCardMetaValue,
-              { color: isOverdue ? '#EF4444' : isDueToday ? '#F59E0B' : '#111827' }
-            ]}>
-              {new Date(dueDate).toLocaleDateString()}
-            </Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.jobCardFooter}>
-        <View style={styles.jobCardFooterLeft}>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor() + '20' }]}>
-            <Text style={[styles.statusBadgeText, { color: getStatusColor() }]}>
-              {ticket.status.replace('_', ' ')}
-            </Text>
-          </View>
-          <Text style={styles.jobCardDate}>
-            {new Date(ticket.created_at || ticket.createdAt || new Date()).toLocaleDateString()}
-          </Text>
-        </View>
-
-        {/* Quick Action Button */}
-        {getNextStatus() && (
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: getStatusColor() + '20' }]}
-            onPress={(e) => {
-              e.stopPropagation();
-              handleQuickAction();
-            }}
-          >
-            <Text style={[styles.actionButtonText, { color: getStatusColor() }]}>
-              {getNextStatusText()}
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
-};
+// JobCardItem removed, replaced by JobCard usage below
 
 export default function TechnicianJobCardsScreen() {
   const { user } = useAuthStore();
@@ -470,14 +315,71 @@ export default function TechnicianJobCardsScreen() {
           </View>
         ) : (
           <View style={styles.jobCardsList}>
-            {ticketsData?.data.map((ticket) => (
-              <JobCardItem
-                key={ticket.id}
-                ticket={ticket}
-                onPress={() => handleJobCardPress(ticket.id)}
-                onStatusUpdate={handleStatusUpdate}
-              />
-            ))}
+            {ticketsData?.data.map((ticket) => {
+              const getNextStatus = () => {
+                switch (ticket.status) {
+                  case 'assigned': return 'in_progress';
+                  case 'in_progress': return 'completed';
+                  default: return null;
+                }
+              };
+
+              const getNextStatusText = () => {
+                switch (ticket.status) {
+                  case 'assigned': return 'Start Work';
+                  case 'in_progress': return 'Complete';
+                  default: return null;
+                }
+              };
+
+              const getStatusColor = () => {
+                switch (ticket.status) {
+                  case 'assigned': return '#3B82F6';
+                  case 'in_progress': return '#8B5CF6';
+                  case 'completed': return '#10B981';
+                  default: return '#6B7280';
+                }
+              };
+
+              const handleQuickAction = () => {
+                const nextStatus = getNextStatus();
+                if (nextStatus) {
+                  const actionText = nextStatus === 'in_progress' ? 'start working on' : 'mark as completed';
+                  Alert.alert(
+                    'Update Status',
+                    `Are you sure you want to ${actionText} this job card?`,
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Confirm',
+                        onPress: () => handleStatusUpdate(ticket.id, nextStatus),
+                      },
+                    ]
+                  );
+                }
+              };
+
+              return (
+                <JobCard
+                  key={ticket.id}
+                  ticket={ticket}
+                  onPress={() => handleJobCardPress(ticket.id)}
+                  actionButton={getNextStatus() ? (
+                    <TouchableOpacity
+                      style={[styles.actionButton, { backgroundColor: getStatusColor() + '20' }]}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleQuickAction();
+                      }}
+                    >
+                      <Text style={[styles.actionButtonText, { color: getStatusColor() }]}>
+                        {getNextStatusText()}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : undefined}
+                />
+              );
+            })}
             {!isLoading && ticketsData?.data.length === 0 && (
               <View style={styles.emptyContainer}>
                 <IconSymbol name="doc.text" size={48} color="#9CA3AF" />

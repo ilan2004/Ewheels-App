@@ -14,14 +14,15 @@ import {
   View,
 } from 'react-native';
 
-import { EmptySearchResults, StatusIcon } from '@/components/empty-states';
+import { EmptySearchResults } from '@/components/empty-states';
+import { JobCard } from '@/components/JobCard';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { BorderRadius, BrandColors, Colors, ComponentStyles, PriorityColors, Spacing, StatusColors, Typography } from '@/constants/design-system';
+import { BorderRadius, BrandColors, Colors, ComponentStyles, Spacing, Typography } from '@/constants/design-system';
 import { jobCardsService } from '@/services/jobCardsService';
 import { useAuthStore } from '@/stores/authStore';
-import { ServiceTicket, TicketFilters } from '@/types';
+import { TicketFilters } from '@/types';
 
 interface FilterModalProps {
   visible: boolean;
@@ -165,166 +166,8 @@ const FilterModal: React.FC<FilterModalProps> = ({
   );
 };
 
-interface JobCardItemProps {
-  ticket: ServiceTicket;
-  onPress: () => void;
-  onAssignPress: (ticketId: string) => void;
-  bulkMode?: boolean;
-  isSelected?: boolean;
-  onSelect?: (ticketId: string) => void;
-  getTechnicianName: (technicianId: string) => string;
-}
 
-const JobCardItem: React.FC<JobCardItemProps> = ({
-  ticket,
-  onPress,
-  onAssignPress,
-  bulkMode = false,
-  isSelected = false,
-  onSelect,
-  getTechnicianName
-}) => {
-  const dueDate = ticket.due_date || ticket.dueDate;
-  const isOverdue = dueDate && new Date(dueDate) < new Date();
-  const isDueToday = dueDate &&
-    new Date(dueDate).toDateString() === new Date().toDateString();
-
-  const getStatusColor = () => {
-    switch (ticket.status) {
-      case 'reported':
-        return StatusColors.reported;
-      case 'assigned':
-        return StatusColors.assigned;
-      case 'in_progress':
-        return StatusColors.in_progress;
-      case 'completed':
-        return StatusColors.completed;
-      case 'delivered':
-        return StatusColors.completed;
-      case 'on_hold':
-        return Colors.warning[500];
-      case 'waiting_approval':
-        return Colors.warning[600];
-      case 'cancelled':
-      case 'closed':
-        return Colors.neutral[600];
-      default:
-        return Colors.neutral[600];
-    }
-  };
-
-  const getPriorityColor = () => {
-    if (!ticket.priority) return Colors.neutral[500];
-    return PriorityColors[ticket.priority as 1 | 2 | 3] ?? Colors.neutral[500];
-  };
-
-  return (
-    <TouchableOpacity
-      style={[styles.jobCardItem, isSelected && styles.jobCardItemSelected]}
-      onPress={() => {
-        if (bulkMode && onSelect) {
-          onSelect(ticket.id);
-        } else {
-          onPress();
-        }
-      }}
-    >
-      <View style={styles.jobCardHeader}>
-        <View style={styles.jobCardTitleRow}>
-          {bulkMode && (
-            <View style={styles.selectionCheckbox}>
-              <IconSymbol
-                name={isSelected ? "checkmark.circle.fill" : "circle"}
-                size={20}
-                color={isSelected ? Colors.primary[600] : Colors.neutral[400]}
-              />
-            </View>
-          )}
-          <Text style={styles.jobCardNumber}>{ticket.ticket_number || ticket.ticketNumber}</Text>
-        </View>
-        <View style={styles.jobCardBadges}>
-          {isOverdue && (
-            <View style={[styles.badge, styles.overdueBadge]}>
-              <Text style={[styles.badgeText, { color: BrandColors.primary }]}>Overdue</Text>
-            </View>
-          )}
-          {isDueToday && !isOverdue && (
-            <View style={[styles.badge, styles.dueTodayBadge]}>
-              <Text style={[styles.badgeText, { color: BrandColors.title }]}>Due Today</Text>
-            </View>
-          )}
-          {ticket.priority && (
-            <View style={[styles.priorityDot, { backgroundColor: getPriorityColor() }]} />
-          )}
-        </View>
-      </View>
-
-      <Text style={styles.jobCardSymptom} numberOfLines={2}>
-        {ticket.customer_complaint || ticket.symptom}
-      </Text>
-
-      <View style={styles.jobCardMeta}>
-        {/* Customer - Enhanced visibility */}
-        <View style={styles.customerRow}>
-          <View style={styles.customerInfo}>
-            <Text style={styles.customerLabel}>Customer</Text>
-            <Text style={styles.customerName}>
-              {ticket.customer?.name || 'N/A'}
-            </Text>
-          </View>
-        </View>
-
-        {/* Vehicle Info */}
-        {(ticket.vehicle_reg_no || ticket.vehicleRegNo) && (
-          <View style={styles.jobCardMetaRow}>
-            <Text style={styles.jobCardMetaLabel}>Vehicle:</Text>
-            <Text style={styles.jobCardMetaValue}>{ticket.vehicle_reg_no || ticket.vehicleRegNo}</Text>
-          </View>
-        )}
-
-        {/* Assigned To - Enhanced visibility */}
-        {(ticket.assigned_to || ticket.assignedTo) && (
-          <View style={styles.assignedRow}>
-            <View style={styles.assignedInfo}>
-              <Text style={styles.assignedLabel}>Assigned to</Text>
-              <Text style={styles.assignedName}>{getTechnicianName(ticket.assigned_to || ticket.assignedTo || '')}</Text>
-            </View>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.jobCardFooter}>
-        <View style={styles.jobCardFooterLeft}>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor() + '20' }]}>
-            <StatusIcon status={ticket.status as any} size="sm" />
-            <Text style={[styles.statusBadgeText, { color: getStatusColor() }]}>
-              {ticket.status.replace('_', ' ')}
-            </Text>
-          </View>
-          <Text style={styles.jobCardDate}>
-            {new Date(ticket.created_at || ticket.createdAt).toLocaleDateString()}
-          </Text>
-        </View>
-
-        {/* Assign Technician Button - show for unassigned tickets */}
-        {!(ticket.assigned_to || ticket.assignedTo) && (
-          <TouchableOpacity
-            style={styles.assignButton}
-            onPress={(e) => {
-              e.stopPropagation();
-              onAssignPress(ticket.id);
-            }}
-          >
-            <IconSymbol name="person.badge.plus" size={16} color={Colors.primary[500]} />
-            <Text style={styles.assignButtonText}>
-              Assign
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
-};
+// JobCardItem removed, replaced by JobCard usage below
 
 export default function JobCardsScreen() {
   const { user } = useAuthStore();
@@ -544,15 +387,29 @@ export default function JobCardsScreen() {
         ) : (
           <View style={styles.jobCardsList}>
             {ticketsData?.data.map((ticket) => (
-              <JobCardItem
+              <JobCard
                 key={ticket.id}
                 ticket={ticket}
                 onPress={() => handleJobCardPress(ticket.id)}
-                onAssignPress={handleAssignPress}
-                bulkMode={bulkMode}
+                showSelection={bulkMode}
                 isSelected={selectedTickets.includes(ticket.id)}
-                onSelect={handleBulkSelect}
-                getTechnicianName={getTechnicianName}
+                onSelect={() => handleBulkSelect(ticket.id)}
+                technicianName={getTechnicianName(ticket.assigned_to || ticket.assignedTo || '')}
+                showTechnician={!!(ticket.assigned_to || ticket.assignedTo)}
+                actionButton={!(ticket.assigned_to || ticket.assignedTo) ? (
+                  <TouchableOpacity
+                    style={styles.assignButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleAssignPress(ticket.id);
+                    }}
+                  >
+                    <IconSymbol name="person.badge.plus" size={16} color={Colors.primary[500]} />
+                    <Text style={styles.assignButtonText}>
+                      Assign
+                    </Text>
+                  </TouchableOpacity>
+                ) : undefined}
               />
             ))}
             {!isLoading && ticketsData?.data.length === 0 && (

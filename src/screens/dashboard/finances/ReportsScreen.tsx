@@ -31,7 +31,7 @@ import {
 // --- Helper Functions ---
 
 const formatMoney = (amount: number) => {
-    return `Rs. ${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
 const getMonthName = (monthIndex: number) => {
@@ -262,55 +262,70 @@ export default function ReportsScreen() {
             {reportData && (
                 <>
                     {/* Summary Cards */}
+                    {/* Summary Cards */}
                     <View style={styles.summaryGrid}>
                         <View style={[styles.summaryCard, { borderLeftColor: FinancialColors.income.primary }]}>
-                            <Text style={styles.cardLabel}>Total Sales</Text>
-                            <Text style={[styles.cardValue, { color: FinancialColors.income.primary }]}>{formatMoney(reportData.totalSales)}</Text>
+                            <View style={styles.summaryHeader}>
+                                <IconSymbol name="arrow.down.circle.fill" size={24} color={FinancialColors.income.primary} />
+                                <Text style={styles.cardLabel}>Total Sales</Text>
+                            </View>
+                            <Text style={[styles.cardValue, { color: FinancialColors.income.text }]}>{formatMoney(reportData.totalSales)}</Text>
                             <Text style={styles.cardSubValue}>{reportData.salesCount} transactions</Text>
                         </View>
 
                         <View style={[styles.summaryCard, { borderLeftColor: FinancialColors.expense.primary }]}>
-                            <Text style={styles.cardLabel}>Total Expenses</Text>
-                            <Text style={[styles.cardValue, { color: FinancialColors.expense.primary }]}>{formatMoney(reportData.totalExpenses)}</Text>
+                            <View style={styles.summaryHeader}>
+                                <IconSymbol name="arrow.up.circle.fill" size={24} color={FinancialColors.expense.primary} />
+                                <Text style={styles.cardLabel}>Total Expenses</Text>
+                            </View>
+                            <Text style={[styles.cardValue, { color: FinancialColors.expense.text }]}>{formatMoney(reportData.totalExpenses)}</Text>
                             <Text style={styles.cardSubValue}>{reportData.expensesCount} transactions</Text>
                         </View>
 
                         <View style={[styles.summaryCard, { borderLeftColor: reportData.netProfit >= 0 ? FinancialColors.income.primary : FinancialColors.expense.primary }]}>
-                            <Text style={styles.cardLabel}>Net Profit</Text>
-                            <Text style={[styles.cardValue, { color: reportData.netProfit >= 0 ? FinancialColors.income.primary : FinancialColors.expense.primary }]}>
+                            <View style={styles.summaryHeader}>
+                                <IconSymbol name="chart.bar.fill" size={24} color={reportData.netProfit >= 0 ? FinancialColors.income.primary : FinancialColors.expense.primary} />
+                                <Text style={styles.cardLabel}>Net Profit</Text>
+                            </View>
+                            <Text style={[styles.cardValue, { color: reportData.netProfit >= 0 ? FinancialColors.income.text : FinancialColors.expense.text }]}>
                                 {formatMoney(reportData.netProfit)}
                             </Text>
                             <Text style={styles.cardSubValue}>{reportData.netProfit >= 0 ? 'Profit' : 'Loss'}</Text>
                         </View>
 
-                        <View style={[styles.summaryCard, { borderLeftColor: Colors.primary[600] }]}>
-                            <Text style={styles.cardLabel}>Report Period</Text>
-                            <Text style={[styles.cardValue, { color: Colors.primary[600], fontSize: 18 }]}>
-                                {getMonthName(selectedMonth)} {selectedYear}
+                        <View style={[styles.summaryCard, { borderLeftColor: BrandColors.primary }]}>
+                            <View style={styles.summaryHeader}>
+                                <IconSymbol name="calendar" size={24} color={BrandColors.primary} />
+                                <Text style={styles.cardLabel}>Period</Text>
+                            </View>
+                            <Text style={[styles.cardValue, { color: BrandColors.primary, fontSize: 16 }]}>
+                                {getMonthName(selectedMonth)}
                             </Text>
-                            <Text style={styles.cardSubValue}>{reportData.salesCount + reportData.expensesCount} Total Txns</Text>
+                            <Text style={styles.cardSubValue}>{selectedYear}</Text>
                         </View>
                     </View>
 
-                    {/* Detailed Summary */}
+                    {/* Detailed Summary - Horizontal Stats */}
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Detailed Summary</Text>
-                        <View style={styles.detailCard}>
-                            <View style={styles.detailRow}>
-                                <Text style={styles.detailLabel}>Sales Avg.</Text>
-                                <Text style={styles.detailValue}>
+                        <Text style={styles.sectionTitle}>Key Metrics</Text>
+                        <View style={styles.statsRowContainer}>
+                            <View style={styles.statItem}>
+                                <Text style={styles.statLabel}>Avg Sale</Text>
+                                <Text style={styles.statValue}>
                                     {formatMoney(reportData.salesCount > 0 ? reportData.totalSales / reportData.salesCount : 0)}
                                 </Text>
                             </View>
-                            <View style={styles.detailRow}>
-                                <Text style={styles.detailLabel}>Expenses Avg.</Text>
-                                <Text style={styles.detailValue}>
+                            <View style={styles.statDivider} />
+                            <View style={styles.statItem}>
+                                <Text style={styles.statLabel}>Avg Expense</Text>
+                                <Text style={styles.statValue}>
                                     {formatMoney(reportData.expensesCount > 0 ? reportData.totalExpenses / reportData.expensesCount : 0)}
                                 </Text>
                             </View>
-                            <View style={styles.detailRow}>
-                                <Text style={styles.detailLabel}>Profit Margin</Text>
-                                <Text style={styles.detailValue}>
+                            <View style={styles.statDivider} />
+                            <View style={styles.statItem}>
+                                <Text style={styles.statLabel}>Margin</Text>
+                                <Text style={[styles.statValue, { color: reportData.netProfit >= 0 ? FinancialColors.income.text : FinancialColors.expense.text }]}>
                                     {reportData.totalSales > 0 ? ((reportData.netProfit / reportData.totalSales) * 100).toFixed(1) : '0.0'}%
                                 </Text>
                             </View>
@@ -320,17 +335,24 @@ export default function ReportsScreen() {
                     {/* Category Breakdown */}
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Category Breakdown</Text>
-                        <View style={styles.splitView}>
+                        <View style={styles.stackedView}>
                             {/* Sales Categories */}
                             <View style={styles.splitCard}>
-                                <Text style={[styles.subHeader, { color: FinancialColors.income.primary }]}>Sales</Text>
+                                <View style={[styles.categoryHeader, { borderBottomColor: FinancialColors.income.primary }]}>
+                                    <Text style={[styles.subHeader, { color: FinancialColors.income.text }]}>Sales</Text>
+                                </View>
                                 {reportData.salesByCategory.map((item, index) => (
                                     <View key={index} style={styles.breakdownRow}>
                                         <View style={styles.breakdownInfo}>
-                                            <Text style={styles.breakdownLabel}>{item.category}</Text>
-                                            <Text style={styles.breakdownCount}>{item.count} txns</Text>
+                                            <View style={styles.breakdownHeaderRow}>
+                                                <Text style={styles.breakdownLabel}>{item.category}</Text>
+                                                <Text style={styles.breakdownAmount}>{formatMoney(item.amount)}</Text>
+                                            </View>
+                                            <View style={styles.progressBarContainer}>
+                                                <View style={[styles.progressBar, { width: `${(item.amount / reportData.totalSales) * 100}%`, backgroundColor: FinancialColors.income.primary }]} />
+                                            </View>
+                                            <Text style={styles.breakdownCount}>{item.count} txns • {((item.amount / reportData.totalSales) * 100).toFixed(1)}%</Text>
                                         </View>
-                                        <Text style={styles.breakdownAmount}>{formatMoney(item.amount)}</Text>
                                     </View>
                                 ))}
                                 {reportData.salesByCategory.length === 0 && <Text style={styles.emptyText}>No sales data</Text>}
@@ -338,14 +360,21 @@ export default function ReportsScreen() {
 
                             {/* Expenses Categories */}
                             <View style={styles.splitCard}>
-                                <Text style={[styles.subHeader, { color: FinancialColors.expense.primary }]}>Expenses</Text>
+                                <View style={[styles.categoryHeader, { borderBottomColor: FinancialColors.expense.primary }]}>
+                                    <Text style={[styles.subHeader, { color: FinancialColors.expense.text }]}>Expenses</Text>
+                                </View>
                                 {reportData.expensesByCategory.map((item, index) => (
                                     <View key={index} style={styles.breakdownRow}>
                                         <View style={styles.breakdownInfo}>
-                                            <Text style={styles.breakdownLabel}>{item.category}</Text>
-                                            <Text style={styles.breakdownCount}>{item.count} txns</Text>
+                                            <View style={styles.breakdownHeaderRow}>
+                                                <Text style={styles.breakdownLabel}>{item.category}</Text>
+                                                <Text style={styles.breakdownAmount}>{formatMoney(item.amount)}</Text>
+                                            </View>
+                                            <View style={styles.progressBarContainer}>
+                                                <View style={[styles.progressBar, { width: `${(item.amount / reportData.totalExpenses) * 100}%`, backgroundColor: FinancialColors.expense.primary }]} />
+                                            </View>
+                                            <Text style={styles.breakdownCount}>{item.count} txns • {((item.amount / reportData.totalExpenses) * 100).toFixed(1)}%</Text>
                                         </View>
-                                        <Text style={styles.breakdownAmount}>{formatMoney(item.amount)}</Text>
                                     </View>
                                 ))}
                                 {reportData.expensesByCategory.length === 0 && <Text style={styles.emptyText}>No expense data</Text>}
@@ -355,47 +384,49 @@ export default function ReportsScreen() {
 
                     {/* Payment & Cash Flow */}
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Payment & Cash Flow</Text>
+                        <Text style={styles.sectionTitle}>Cash Flow Analysis</Text>
 
-                        <View style={styles.detailCard}>
-                            <Text style={[styles.subHeader, { marginBottom: Spacing.sm }]}>Cash Management Summary</Text>
-                            <View style={styles.detailRow}>
-                                <Text style={styles.detailLabel}>Opening Balance (Sum)</Text>
-                                <Text style={styles.detailValue}>{formatMoney(reportData.cashSummary.openingTotal)}</Text>
-                            </View>
-                            <View style={styles.detailRow}>
-                                <Text style={styles.detailLabel}>Closing Balance (Sum)</Text>
-                                <Text style={styles.detailValue}>{formatMoney(reportData.cashSummary.closingTotal)}</Text>
-                            </View>
-                            <View style={styles.detailRow}>
-                                <Text style={styles.detailLabel}>Net Change</Text>
-                                <Text style={[styles.detailValue, { color: reportData.cashSummary.netChange >= 0 ? FinancialColors.income.primary : FinancialColors.expense.primary }]}>
-                                    {reportData.cashSummary.netChange >= 0 ? '+' : ''}{formatMoney(reportData.cashSummary.netChange)}
-                                </Text>
-                            </View>
-                        </View>
-
-                        <View style={[styles.splitView, { marginTop: 12 }]}>
-                            {/* Sales Methods */}
-                            <View style={styles.splitCard}>
-                                <Text style={styles.subHeader}>Sales by Method</Text>
-                                {reportData.salesByPaymentMethod.map((item, index) => (
-                                    <View key={index} style={styles.breakdownRow}>
-                                        <Text style={styles.breakdownLabel}>{item.method}</Text>
-                                        <Text style={styles.breakdownAmount}>{formatMoney(item.amount)}</Text>
-                                    </View>
-                                ))}
+                        <View style={styles.cashFlowContainer}>
+                            <View style={styles.detailCard}>
+                                <Text style={[styles.subHeader, { marginBottom: Spacing.md }]}>Cash Management</Text>
+                                <View style={styles.detailRow}>
+                                    <Text style={styles.detailLabel}>Opening Balance</Text>
+                                    <Text style={styles.detailValue}>{formatMoney(reportData.cashSummary.openingTotal)}</Text>
+                                </View>
+                                <View style={styles.detailRow}>
+                                    <Text style={styles.detailLabel}>Closing Balance</Text>
+                                    <Text style={styles.detailValue}>{formatMoney(reportData.cashSummary.closingTotal)}</Text>
+                                </View>
+                                <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
+                                    <Text style={styles.detailLabel}>Net Change</Text>
+                                    <Text style={[styles.detailValue, { color: reportData.cashSummary.netChange >= 0 ? FinancialColors.income.text : FinancialColors.expense.text }]}>
+                                        {reportData.cashSummary.netChange >= 0 ? '+' : ''}{formatMoney(reportData.cashSummary.netChange)}
+                                    </Text>
+                                </View>
                             </View>
 
-                            {/* Expenses Methods */}
-                            <View style={styles.splitCard}>
-                                <Text style={styles.subHeader}>Expenses by Method</Text>
-                                {reportData.expensesByPaymentMethod.map((item, index) => (
-                                    <View key={index} style={styles.breakdownRow}>
-                                        <Text style={styles.breakdownLabel}>{item.method}</Text>
-                                        <Text style={styles.breakdownAmount}>{formatMoney(item.amount)}</Text>
-                                    </View>
-                                ))}
+                            <View style={[styles.splitView, { marginTop: Spacing.lg }]}>
+                                {/* Sales Methods */}
+                                <View style={styles.splitCard}>
+                                    <Text style={styles.subHeader}>Sales by Method</Text>
+                                    {reportData.salesByPaymentMethod.map((item, index) => (
+                                        <View key={index} style={styles.breakdownRow}>
+                                            <Text style={styles.breakdownLabel}>{item.method}</Text>
+                                            <Text style={styles.breakdownAmount}>{formatMoney(item.amount)}</Text>
+                                        </View>
+                                    ))}
+                                </View>
+
+                                {/* Expenses Methods */}
+                                <View style={styles.splitCard}>
+                                    <Text style={styles.subHeader}>Expenses by Method</Text>
+                                    {reportData.expensesByPaymentMethod.map((item, index) => (
+                                        <View key={index} style={styles.breakdownRow}>
+                                            <Text style={styles.breakdownLabel}>{item.method}</Text>
+                                            <Text style={styles.breakdownAmount}>{formatMoney(item.amount)}</Text>
+                                        </View>
+                                    ))}
+                                </View>
                             </View>
                         </View>
                     </View>
@@ -495,51 +526,89 @@ const styles = StyleSheet.create({
     summaryGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: Spacing.sm,
-        marginBottom: 12,
+        gap: Spacing.md,
+        marginBottom: Spacing.lg,
     },
     summaryCard: {
         width: '48%', // Approx half width
         backgroundColor: BrandColors.surface,
-        padding: 12,
-        borderRadius: BorderRadius.lg,
+        padding: 16,
+        borderRadius: BorderRadius.xl,
         borderLeftWidth: 4,
-        ...Shadows.sm,
+        ...Shadows.md,
+        justifyContent: 'space-between',
+        minHeight: 110,
+    },
+    summaryHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 8,
     },
     cardLabel: {
-        fontSize: Typography.fontSize.xs,
-        color: Colors.neutral[500],
-        fontFamily: Typography.fontFamily.medium,
-        marginBottom: 4,
+        fontSize: Typography.fontSize.sm,
+        color: Colors.neutral[600],
+        fontFamily: Typography.fontFamily.semibold,
     },
     cardValue: {
-        fontSize: Typography.fontSize.base, // Slightly smaller to fit
+        fontSize: Typography.fontSize.lg,
         fontFamily: Typography.fontFamily.bold,
-        marginBottom: 2,
+        marginBottom: 4,
     },
     cardSubValue: {
         fontSize: Typography.fontSize.xs,
-        color: Colors.neutral[400],
+        color: Colors.neutral[500],
     },
     section: {
-        marginBottom: 12,
+        marginBottom: Spacing.xl,
     },
     sectionTitle: {
-        fontSize: Typography.fontSize.lg,
+        fontSize: Typography.fontSize.xl,
         fontFamily: Typography.fontFamily.bold,
         color: BrandColors.title,
-        marginBottom: Spacing.sm,
+        marginBottom: Spacing.md,
+        paddingHorizontal: 4,
+    },
+    statsRowContainer: {
+        flexDirection: 'row',
+        backgroundColor: BrandColors.surface,
+        borderRadius: BorderRadius.xl,
+        padding: Spacing.lg,
+        ...Shadows.sm,
+        justifyContent: 'space-around',
+        alignItems: 'center',
+    },
+    statItem: {
+        alignItems: 'center',
+        flex: 1,
+    },
+    statLabel: {
+        fontSize: Typography.fontSize.xs,
+        color: Colors.neutral[500],
+        marginBottom: 4,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    statValue: {
+        fontSize: Typography.fontSize.base,
+        fontFamily: Typography.fontFamily.bold,
+        color: BrandColors.ink,
+    },
+    statDivider: {
+        width: 1,
+        height: '80%',
+        backgroundColor: Colors.neutral[200],
     },
     detailCard: {
         backgroundColor: BrandColors.surface,
-        borderRadius: BorderRadius.lg,
-        padding: 12,
+        borderRadius: BorderRadius.xl,
+        padding: Spacing.lg,
         ...Shadows.sm,
     },
     detailRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingVertical: Spacing.xs,
+        paddingVertical: Spacing.sm,
         borderBottomWidth: 1,
         borderBottomColor: Colors.neutral[100],
     },
@@ -554,43 +623,66 @@ const styles = StyleSheet.create({
     },
     splitView: {
         flexDirection: 'row',
-        gap: Spacing.sm,
+        gap: Spacing.md,
+    },
+    stackedView: {
+        flexDirection: 'column',
+        gap: Spacing.md,
     },
     splitCard: {
         flex: 1,
         backgroundColor: BrandColors.surface,
-        borderRadius: BorderRadius.lg,
+        borderRadius: BorderRadius.xl,
         padding: 12,
         ...Shadows.sm,
     },
+    categoryHeader: {
+        borderBottomWidth: 2,
+        marginBottom: Spacing.md,
+        paddingBottom: Spacing.xs,
+    },
     subHeader: {
         fontSize: Typography.fontSize.base,
-        fontFamily: Typography.fontFamily.semibold,
-        marginBottom: Spacing.sm,
+        fontFamily: Typography.fontFamily.bold,
         color: BrandColors.title,
     },
     breakdownRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: Spacing.sm,
+        marginBottom: Spacing.md,
     },
     breakdownInfo: {
         flex: 1,
     },
+    breakdownHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 4,
+    },
     breakdownLabel: {
         fontSize: Typography.fontSize.sm,
         color: BrandColors.ink,
-        textTransform: 'capitalize',
-    },
-    breakdownCount: {
-        fontSize: Typography.fontSize.xs,
-        color: Colors.neutral[400],
+        fontFamily: Typography.fontFamily.medium,
+        flex: 1,
+        marginRight: 8,
     },
     breakdownAmount: {
         fontSize: Typography.fontSize.sm,
         fontFamily: Typography.fontFamily.semibold,
         color: BrandColors.ink,
+    },
+    progressBarContainer: {
+        height: 4,
+        backgroundColor: Colors.neutral[100],
+        borderRadius: 2,
+        marginBottom: 4,
+        overflow: 'hidden',
+    },
+    progressBar: {
+        height: '100%',
+        borderRadius: 2,
+    },
+    breakdownCount: {
+        fontSize: 10,
+        color: Colors.neutral[400],
     },
     emptyText: {
         fontSize: Typography.fontSize.sm,
@@ -606,5 +698,8 @@ const styles = StyleSheet.create({
     emptyStateText: {
         color: Colors.neutral[500],
         fontFamily: Typography.fontFamily.medium,
+    },
+    cashFlowContainer: {
+        gap: Spacing.md,
     },
 });
