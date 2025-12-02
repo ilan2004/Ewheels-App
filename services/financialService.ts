@@ -936,7 +936,7 @@ export class FinancialService {
         supabase.from('drawings')
           .select('*')
           .gte('created_at', startDate)
-          .lte('created_at', endDate)
+          .lte('created_at', endDate.includes('T') ? endDate : `${endDate}T23:59:59.999Z`)
           .order('created_at', { ascending: false }),
         userRole,
         activeLocationId

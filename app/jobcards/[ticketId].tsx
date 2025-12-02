@@ -21,7 +21,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TriageManagement } from '@/components/triage/TriageManagement';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { BorderRadius, BrandColors, ComponentStyles, PriorityColors, Spacing, StatusColors, Typography } from '@/constants/design-system';
+import { BorderRadius, BrandColors, Colors, ComponentStyles, PriorityColors, Spacing, StatusColors, Typography } from '@/constants/design-system';
 import { batteriesService } from '@/services/batteriesService';
 import { jobCardsService } from '@/services/jobCardsService';
 import { vehiclesService } from '@/services/vehiclesService';
@@ -370,6 +370,28 @@ export default function JobCardDetailScreen() {
 
   const nextStatusOptions = ticket ? getNextStatusOptions(ticket.status) : [];
 
+  // Due Date Logic
+  const dueDate = ticket?.due_date || ticket?.dueDate;
+  const now = new Date();
+  const due = dueDate ? new Date(dueDate) : null;
+
+  let daysRemaining = null;
+  let isOverdue = false;
+  let isDueToday = false;
+  let isDueTomorrow = false;
+
+  if (due) {
+    const diffTime = due.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    daysRemaining = diffDays;
+    isOverdue = diffTime < 0;
+    isDueToday = new Date(due).toDateString() === now.toDateString();
+    isDueTomorrow = !isDueToday && diffDays === 1;
+  }
+
+  const isUrgent = isOverdue || isDueToday || isDueTomorrow;
+
   return (
     <>
       <Stack.Screen
@@ -420,6 +442,29 @@ export default function JobCardDetailScreen() {
 
           {ticket && (
             <>
+              {/* Due Date Banner */}
+              {dueDate && (
+                <View style={[
+                  styles.dueDateBanner,
+                  isUrgent ? styles.dueDateBannerUrgent : styles.dueDateBannerNormal
+                ]}>
+                  <IconSymbol
+                    name={isUrgent ? "exclamationmark.circle.fill" : "calendar"}
+                    size={20}
+                    color={isUrgent ? Colors.error[600] : Colors.neutral[600]}
+                  />
+                  <Text style={[
+                    styles.dueDateText,
+                    isUrgent ? styles.dueDateTextUrgent : styles.dueDateTextNormal
+                  ]}>
+                    {isOverdue ? `Overdue by ${Math.abs(daysRemaining || 0)} days` :
+                      isDueToday ? 'Due Today' :
+                        isDueTomorrow ? 'Due Tomorrow' :
+                          `Due in ${daysRemaining} days (${new Date(dueDate).toLocaleDateString()})`}
+                  </Text>
+                </View>
+              )}
+
               {/* Status Progress */}
               <HorizontalServiceProgress
                 currentStatus={ticket.status}
@@ -1654,6 +1699,33 @@ const styles = StyleSheet.create({
     color: BrandColors.surface,
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.semibold,
+  },
+  dueDateBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    marginBottom: Spacing.md,
+    gap: Spacing.sm,
+    borderWidth: 1,
+  },
+  dueDateBannerUrgent: {
+    backgroundColor: Colors.error[50],
+    borderColor: Colors.error[200],
+  },
+  dueDateBannerNormal: {
+    backgroundColor: Colors.neutral[50],
+    borderColor: Colors.neutral[200],
+  },
+  dueDateText: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold as any,
+  },
+  dueDateTextUrgent: {
+    color: Colors.error[700],
+  },
+  dueDateTextNormal: {
+    color: Colors.neutral[700],
   },
 });
 

@@ -1,22 +1,21 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  Alert,
   ActivityIndicator,
+  Alert,
   ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BorderRadius, BrandColors, Colors, ComponentStyles, Spacing, StatusColors, Typography } from '@/constants/design-system';
 import { jobCardsService } from '@/services/jobCardsService';
-import { ServiceTicket, CustomerBringingType } from '@/types';
-import { BrandColors, Typography, Spacing, BorderRadius, ComponentStyles, StatusColors, Colors } from '@/constants/design-system';
+import { CustomerBringingType, ServiceTicket } from '@/types';
 
 interface TriageManagementProps {
   ticket: ServiceTicket;
@@ -35,21 +34,21 @@ const TRIAGE_OPTIONS: TriageOption[] = [
   {
     value: 'battery',
     label: 'Battery Only',
-    description: 'Customer brought battery for repair/diagnostics',
+    description: 'Issue reported with battery',
     icon: 'battery.100',
     color: Colors.success[500],
   },
   {
     value: 'vehicle',
     label: 'Vehicle Only',
-    description: 'Customer brought vehicle for repair/service',
+    description: 'Issue reported with vehicle',
     icon: 'car.fill',
     color: Colors.primary[500],
   },
   {
     value: 'both',
     label: 'Both Vehicle & Battery',
-    description: 'Customer brought both vehicle and battery',
+    description: 'Issues reported with both vehicle and battery',
     icon: 'wrench.and.screwdriver.fill',
     color: BrandColors.primary,
   },
@@ -63,7 +62,7 @@ export const TriageManagement: React.FC<TriageManagementProps> = ({
     ticket.customer_bringing || null
   );
   const [notes, setNotes] = useState('');
-  
+
   const queryClient = useQueryClient();
 
   const triageMutation = useMutation({
@@ -82,7 +81,7 @@ export const TriageManagement: React.FC<TriageManagementProps> = ({
       queryClient.invalidateQueries({ queryKey: ['vehicle-case'] });
       queryClient.invalidateQueries({ queryKey: ['battery-records'] });
       queryClient.invalidateQueries({ queryKey: ['battery-cases'] });
-      
+
       Alert.alert(
         'Triage Complete',
         'Job card has been successfully triaged and service cases created.',
@@ -147,7 +146,7 @@ export const TriageManagement: React.FC<TriageManagementProps> = ({
       <ThemedText type="subtitle" style={styles.sectionTitle}>
         <IconSymbol name="stethoscope" size={18} color={BrandColors.title} /> Triage & Case Management
       </ThemedText>
-      
+
       {/* Content Card */}
       <View style={styles.infoCard}>
         {/* Status Row */}
@@ -160,138 +159,138 @@ export const TriageManagement: React.FC<TriageManagementProps> = ({
             {ticket.status === 'reported' ? 'Pending Triage' : 'Triaged'}
           </Text>
         </View>
-        
+
         {ticket.status === 'reported' ? (
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Instructions */}
-              <View style={styles.instructionsCard}>
-                <IconSymbol name="info.circle.fill" size={16} color={BrandColors.ink + '60'} />
-                <Text style={styles.instructionsText}>
-                  Select what the customer brought for service. This will create the appropriate service cases and route the job card.
-                </Text>
-              </View>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {/* Instructions */}
+            <View style={styles.instructionsCard}>
+              <IconSymbol name="info.circle.fill" size={16} color={BrandColors.ink + '60'} />
+              <Text style={styles.instructionsText}>
+                Identify which components have issues to create the appropriate service cases and route the job card.
+              </Text>
+            </View>
 
-              {/* Triage Options */}
-              <Text style={styles.subSectionTitle}>Service Type Selection</Text>
-              <View style={styles.optionsContainer}>
-                {TRIAGE_OPTIONS.map((option) => (
-                  <TouchableOpacity
-                    key={option.value}
-                    style={[
-                      styles.optionCard,
-                      selectedOption === option.value && styles.optionCardSelected,
-                    ]}
-                    onPress={() => setSelectedOption(option.value)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.optionHeader}>
-                      {getOptionIcon(option)}
-                      <View style={styles.optionContent}>
-                        <Text style={styles.optionTitle}>{option.label}</Text>
-                        <Text style={styles.optionDescription}>{option.description}</Text>
-                      </View>
-                      {selectedOption === option.value && (
-                        <IconSymbol name="checkmark.circle.fill" size={20} color={option.color} />
-                      )}
+            {/* Triage Options */}
+            <Text style={styles.subSectionTitle}>Issue Identification</Text>
+            <View style={styles.optionsContainer}>
+              {TRIAGE_OPTIONS.map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.optionCard,
+                    selectedOption === option.value && styles.optionCardSelected,
+                  ]}
+                  onPress={() => setSelectedOption(option.value)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.optionHeader}>
+                    {getOptionIcon(option)}
+                    <View style={styles.optionContent}>
+                      <Text style={styles.optionTitle}>{option.label}</Text>
+                      <Text style={styles.optionDescription}>{option.description}</Text>
                     </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
+                    {selectedOption === option.value && (
+                      <IconSymbol name="checkmark.circle.fill" size={20} color={option.color} />
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
 
-              {/* Notes Input */}
-              <Text style={styles.subSectionTitle}>Triage Notes (Optional)</Text>
-              <TextInput
-                style={styles.notesInput}
-                placeholder="Add any initial observations or notes..."
-                placeholderTextColor={BrandColors.ink + '40'}
-                value={notes}
-                onChangeText={setNotes}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
+            {/* Notes Input */}
+            <Text style={styles.subSectionTitle}>Triage Notes (Optional)</Text>
+            <TextInput
+              style={styles.notesInput}
+              placeholder="Add any initial observations or notes..."
+              placeholderTextColor={BrandColors.ink + '40'}
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
 
-              {/* Action Button */}
-              <TouchableOpacity
-                style={[
-                  styles.triageButton,
-                  !isTriageReady && styles.triageButtonDisabled,
-                ]}
-                onPress={handleTriage}
-                disabled={!isTriageReady || triageMutation.isPending}
-                activeOpacity={0.8}
-              >
-                {triageMutation.isPending ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <>
-                    <IconSymbol name="checkmark.circle.fill" size={20} color="#FFFFFF" />
-                    <Text style={styles.triageButtonText}>
-                      Complete Triage & Create Cases
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </ScrollView>
-          ) : (
-            /* Already Triaged - Show Summary */
-            <>
-              {/* Service Type Row */}
-              {ticket.customer_bringing && (
-                <View style={styles.infoRow}>
-                  <View style={styles.infoLabelContainer}>
-                    <IconSymbol name="checkmark.circle.fill" size={16} color="#10B981" />
-                    <Text style={styles.infoLabel}>Service Type</Text>
-                  </View>
-                  <Text style={[styles.infoValue, { color: '#10B981', fontWeight: '600' }]}>
-                    {ticket.customer_bringing === 'both' ? 'Vehicle & Battery' : 
-                     ticket.customer_bringing === 'vehicle' ? 'Vehicle Only' : 'Battery Only'}
+            {/* Action Button */}
+            <TouchableOpacity
+              style={[
+                styles.triageButton,
+                !isTriageReady && styles.triageButtonDisabled,
+              ]}
+              onPress={handleTriage}
+              disabled={!isTriageReady || triageMutation.isPending}
+              activeOpacity={0.8}
+            >
+              {triageMutation.isPending ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <IconSymbol name="checkmark.circle.fill" size={20} color="#FFFFFF" />
+                  <Text style={styles.triageButtonText}>
+                    Complete Triage & Create Cases
                   </Text>
-                </View>
+                </>
               )}
-              
-              {/* Triaged Date Row */}
-              {ticket.triaged_at && (
-                <View style={styles.infoRow}>
-                  <View style={styles.infoLabelContainer}>
-                    <IconSymbol name="calendar.badge.checkmark" size={16} color="#6B7280" />
-                    <Text style={styles.infoLabel}>Triaged At</Text>
-                  </View>
-                  <Text style={styles.infoValue}>
-                    {new Date(ticket.triaged_at).toLocaleDateString('en-GB', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </Text>
-                </View>
-              )}
-              
-              {/* Notes Row */}
-              {ticket.triage_notes && (
-                <View style={styles.infoRow}>
-                  <View style={styles.infoLabelContainer}>
-                    <IconSymbol name="doc.text" size={16} color="#6B7280" />
-                    <Text style={styles.infoLabel}>Notes</Text>
-                  </View>
-                  <Text style={styles.infoValue}>{ticket.triage_notes}</Text>
-                </View>
-              )}
-              
-              {/* Cases Created Row */}
+            </TouchableOpacity>
+          </ScrollView>
+        ) : (
+          /* Already Triaged - Show Summary */
+          <>
+            {/* Service Type Row */}
+            {ticket.customer_bringing && (
               <View style={styles.infoRow}>
                 <View style={styles.infoLabelContainer}>
-                  <IconSymbol name="folder.badge.plus" size={16} color="#6B7280" />
-                  <Text style={styles.infoLabel}>Cases Created</Text>
+                  <IconSymbol name="checkmark.circle.fill" size={16} color="#10B981" />
+                  <Text style={styles.infoLabel}>Service Type</Text>
                 </View>
-                <Text style={styles.infoValue}>
-                  {[ticket.vehicle_case_id && 'Vehicle', ticket.battery_case_id && 'Battery'].filter(Boolean).join(', ') || 'None'}
+                <Text style={[styles.infoValue, { color: '#10B981', fontWeight: '600' }]}>
+                  {ticket.customer_bringing === 'both' ? 'Vehicle & Battery' :
+                    ticket.customer_bringing === 'vehicle' ? 'Vehicle Only' : 'Battery Only'}
                 </Text>
               </View>
-            </>
-          )}
+            )}
+
+            {/* Triaged Date Row */}
+            {ticket.triaged_at && (
+              <View style={styles.infoRow}>
+                <View style={styles.infoLabelContainer}>
+                  <IconSymbol name="calendar.badge.checkmark" size={16} color="#6B7280" />
+                  <Text style={styles.infoLabel}>Triaged At</Text>
+                </View>
+                <Text style={styles.infoValue}>
+                  {new Date(ticket.triaged_at).toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </Text>
+              </View>
+            )}
+
+            {/* Notes Row */}
+            {ticket.triage_notes && (
+              <View style={styles.infoRow}>
+                <View style={styles.infoLabelContainer}>
+                  <IconSymbol name="doc.text" size={16} color="#6B7280" />
+                  <Text style={styles.infoLabel}>Notes</Text>
+                </View>
+                <Text style={styles.infoValue}>{ticket.triage_notes}</Text>
+              </View>
+            )}
+
+            {/* Cases Created Row */}
+            <View style={styles.infoRow}>
+              <View style={styles.infoLabelContainer}>
+                <IconSymbol name="folder.badge.plus" size={16} color="#6B7280" />
+                <Text style={styles.infoLabel}>Cases Created</Text>
+              </View>
+              <Text style={styles.infoValue}>
+                {[ticket.vehicle_case_id && 'Vehicle', ticket.battery_case_id && 'Battery'].filter(Boolean).join(', ') || 'None'}
+              </Text>
+            </View>
+          </>
+        )}
       </View>
     </>
   );

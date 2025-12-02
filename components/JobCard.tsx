@@ -26,9 +26,24 @@ export const JobCard: React.FC<JobCardProps> = ({
     showTechnician = false,
 }) => {
     const dueDate = ticket.due_date || ticket.dueDate;
-    const isOverdue = dueDate && new Date(dueDate) < new Date();
-    const isDueToday = dueDate &&
-        new Date(dueDate).toDateString() === new Date().toDateString();
+    const now = new Date();
+    const due = dueDate ? new Date(dueDate) : null;
+
+    // Calculate days remaining
+    let daysRemaining = null;
+    let isOverdue = false;
+    let isDueToday = false;
+    let isDueTomorrow = false;
+
+    if (due) {
+        const diffTime = due.getTime() - now.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        daysRemaining = diffDays;
+        isOverdue = diffTime < 0;
+        isDueToday = new Date(due).toDateString() === now.toDateString();
+        isDueTomorrow = !isDueToday && diffDays === 1;
+    }
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -76,14 +91,26 @@ export const JobCard: React.FC<JobCardProps> = ({
                 </View>
 
                 <View style={styles.badges}>
-                    {isOverdue && (
-                        <View style={[styles.badge, styles.overdueBadge]}>
-                            <Text style={[styles.badgeText, { color: Colors.error[600] }]}>Overdue</Text>
-                        </View>
-                    )}
-                    {isDueToday && !isOverdue && (
-                        <View style={[styles.badge, styles.dueTodayBadge]}>
-                            <Text style={[styles.badgeText, { color: Colors.warning[600] }]}>Due Today</Text>
+                    {/* Due Date Badge */}
+                    {dueDate && (
+                        <View style={[
+                            styles.badge,
+                            (isOverdue || isDueToday || isDueTomorrow) ? styles.overdueBadge : styles.dueFutureBadge
+                        ]}>
+                            <IconSymbol
+                                name="calendar"
+                                size={10}
+                                color={(isOverdue || isDueToday || isDueTomorrow) ? Colors.error[600] : Colors.neutral[600]}
+                            />
+                            <Text style={[
+                                styles.badgeText,
+                                { color: (isOverdue || isDueToday || isDueTomorrow) ? Colors.error[600] : Colors.neutral[600] }
+                            ]}>
+                                {isOverdue ? 'Overdue' :
+                                    isDueToday ? 'Due Today' :
+                                        isDueTomorrow ? 'Due Tomorrow' :
+                                            `Due in ${daysRemaining} days`}
+                            </Text>
                         </View>
                     )}
                     {ticket.priority && (
@@ -210,9 +237,18 @@ const styles = StyleSheet.create({
     },
     overdueBadge: {
         backgroundColor: Colors.error[50],
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
     },
     dueTodayBadge: {
         backgroundColor: Colors.warning[50],
+    },
+    dueFutureBadge: {
+        backgroundColor: Colors.neutral[100],
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
     },
     badgeText: {
         fontSize: 10,

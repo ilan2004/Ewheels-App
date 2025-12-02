@@ -24,6 +24,7 @@ export interface User {
   lastName?: string;
   role: UserRole;
   imageUrl?: string;
+  expoPushToken?: string;
   createdAt: string;
   updatedAt: string;
 }

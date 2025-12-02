@@ -9,6 +9,7 @@ import 'react-native-reanimated';
 import { SplashScreen } from '@/components/splash-screen';
 import { Colors } from '@/constants/design-system';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useAuthStore } from '@/stores/authStore';
 
 // Create a client instance for React Query
@@ -45,6 +46,7 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const { checkAuthState, initialized } = useAuthStore();
+  usePushNotifications(); // Initialize push notifications
   const [splashAnimationFinished, setSplashAnimationFinished] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
 

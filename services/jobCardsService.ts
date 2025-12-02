@@ -822,6 +822,13 @@ export class JobCardsService {
 
       if (error) throw error;
 
+      // Notify floor managers
+      if (data) {
+        // We need customer name for the notification
+        const customerName = data.customer?.name || 'Unknown Customer';
+        notificationService.notifyFloorManagers(data.id, data.ticket_number, customerName);
+      }
+
       return data;
     } catch (error) {
       console.error('Error creating ticket:', error);

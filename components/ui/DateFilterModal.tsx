@@ -1,3 +1,4 @@
+import CustomCalendar from '@/components/ui/CustomCalendar';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import {
     BorderRadius,
@@ -7,7 +8,6 @@ import {
     Spacing,
     Typography,
 } from '@/constants/design-system';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useEffect, useState } from 'react';
 import {
     Modal,
@@ -52,20 +52,30 @@ export default function DateFilterModal({
     const handleDateChange = (event: any, selectedDate?: Date) => {
         if (!selectedDate) return;
 
+        // Strip time component for comparison
+        const dateOnly = new Date(selectedDate);
+        dateOnly.setHours(0, 0, 0, 0);
+
         if (mode === 'single') {
             setStartDate(selectedDate);
             setEndDate(selectedDate); // For single mode, start and end are same
         } else {
             if (activeDateSelection === 'start') {
                 setStartDate(selectedDate);
-                // If start date is after end date, update end date to match
-                if (selectedDate > endDate) {
+                // Only update end date if it's strictly before the new start date
+                const currentEnd = new Date(endDate);
+                currentEnd.setHours(0, 0, 0, 0);
+
+                if (dateOnly > currentEnd) {
                     setEndDate(selectedDate);
                 }
             } else {
                 setEndDate(selectedDate);
-                // If end date is before start date, update start date to match
-                if (selectedDate < startDate) {
+                // Only update start date if it's strictly after the new end date
+                const currentStart = new Date(startDate);
+                currentStart.setHours(0, 0, 0, 0);
+
+                if (dateOnly < currentStart) {
                     setStartDate(selectedDate);
                 }
             }
@@ -127,14 +137,9 @@ export default function DateFilterModal({
 
                             {/* Date Picker */}
                             <View style={styles.pickerContainer}>
-                                <DateTimePicker
+                                <CustomCalendar
                                     value={mode === 'single' ? startDate : (activeDateSelection === 'start' ? startDate : endDate)}
-                                    mode="date"
-                                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                                    onChange={handleDateChange}
-                                    style={styles.datePicker}
-                                    textColor={BrandColors.ink}
-                                    themeVariant="light"
+                                    onChange={(date) => handleDateChange(null, date)}
                                 />
                             </View>
 
@@ -228,7 +233,7 @@ const styles = StyleSheet.create({
     },
     datePicker: {
         width: '100%',
-        height: 200, // Fixed height for spinner
+        // height removed as CustomCalendar determines its own height
     },
     footer: {
         flexDirection: 'row',

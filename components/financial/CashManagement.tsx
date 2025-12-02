@@ -366,6 +366,30 @@ export default function CashManagement() {
                             : `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`}
                     </Text>
                 </TouchableOpacity>
+
+                <View style={styles.quickDateButtons}>
+                    <TouchableOpacity
+                        style={styles.quickDateButton}
+                        onPress={() => {
+                            const today = new Date();
+                            setStartDate(today);
+                            setEndDate(today);
+                        }}
+                    >
+                        <Text style={styles.quickDateButtonText}>Today</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.quickDateButton}
+                        onPress={() => {
+                            const yesterday = new Date();
+                            yesterday.setDate(yesterday.getDate() - 1);
+                            setStartDate(yesterday);
+                            setEndDate(yesterday);
+                        }}
+                    >
+                        <Text style={styles.quickDateButtonText}>Yesterday</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <DateFilterModal
@@ -499,6 +523,24 @@ const styles = StyleSheet.create({
         marginHorizontal: Spacing.sm,
         color: Colors.neutral[500],
         fontSize: Typography.fontSize.sm,
+    },
+    quickDateButtons: {
+        flexDirection: 'row',
+        marginLeft: Spacing.md,
+        gap: Spacing.xs,
+    },
+    quickDateButton: {
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        backgroundColor: Colors.neutral[100],
+        borderRadius: BorderRadius.base,
+        borderWidth: 1,
+        borderColor: Colors.neutral[200],
+    },
+    quickDateButtonText: {
+        fontSize: Typography.fontSize.xs,
+        color: Colors.neutral[600],
+        fontFamily: Typography.fontFamily.medium,
     },
     scrollContent: {
         padding: Spacing.base,
