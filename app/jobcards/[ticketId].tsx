@@ -1,23 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Dimensions,
   Image,
-  Modal,
-  Platform,
   RefreshControl,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { StatusIcon } from '@/components/empty-states';
 import { HorizontalServiceProgress } from '@/components/progress/HorizontalServiceProgress';
@@ -33,293 +27,8 @@ import { jobCardsService } from '@/services/jobCardsService';
 import { vehiclesService } from '@/services/vehiclesService';
 import { useAuthStore } from '@/stores/authStore';
 
-
-
-// Image Viewer Modal Component
-interface ImageViewerModalProps {
-  visible: boolean;
-  onClose: () => void;
-  images: Array<{ id: string; url: string; name: string }>;
-  initialIndex: number;
-}
-
-const ImageViewerModal: React.FC<ImageViewerModalProps> = ({
-  visible,
-  onClose,
-  images,
-  initialIndex,
-}) => {
-  const [currentIndex, setCurrentIndex] = useState(initialIndex);
-  const screenWidth = Dimensions.get('window').width;
-  const screenHeight = Dimensions.get('window').height;
-
-  useEffect(() => {
-    setCurrentIndex(initialIndex);
-  }, [initialIndex, visible]);
-
-  const goToPrevious = () => {
-    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
-  };
-
-  const goToNext = () => {
-    setCurrentIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
-  };
-
-  if (!images.length) return null;
-
-  return (
-    <Modal visible={visible} animationType="fade" presentationStyle="fullScreen">
-      <View style={styles.imageViewerContainer}>
-        <StatusBar hidden />
-
-        {/* Header */}
-        <View style={styles.imageViewerHeader}>
-          <TouchableOpacity onPress={onClose} style={styles.imageViewerCloseButton}>
-            <IconSymbol name="xmark" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-          <View style={styles.imageViewerTitle}>
-            <Text style={styles.imageViewerTitleText}>
-              {currentIndex + 1} of {images.length}
-            </Text>
-            <Text style={styles.imageViewerSubtitle} numberOfLines={1}>
-              {images[currentIndex]?.name}
-            </Text>
-          </View>
-          <View style={styles.imageViewerSpacer} />
-        </View>
-
-        {/* Image */}
-        <View style={styles.imageViewerContent}>
-          <Image
-            source={{ uri: images[currentIndex]?.url }}
-            style={[styles.fullScreenImage, { width: screenWidth, height: screenHeight - 100 }]}
-            resizeMode="contain"
-          />
-        </View>
-
-        {/* Navigation */}
-        {images.length > 1 && (
-          <>
-            <TouchableOpacity
-              style={[styles.imageNavButton, styles.imageNavButtonLeft]}
-              onPress={goToPrevious}
-            >
-              <IconSymbol name="chevron.left" size={32} color="#FFFFFF" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.imageNavButton, styles.imageNavButtonRight]}
-              onPress={goToNext}
-            >
-              <IconSymbol name="chevron.right" size={32} color="#FFFFFF" />
-            </TouchableOpacity>
-          </>
-        )}
-
-        {/* Bottom indicators */}
-        {images.length > 1 && (
-          <View style={styles.imageIndicators}>
-            {images.map((_, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.imageIndicator,
-                  index === currentIndex && styles.imageIndicatorActive,
-                ]}
-                onPress={() => setCurrentIndex(index)}
-              />
-            ))}
-          </View>
-        )}
-      </View>
-    </Modal>
-  );
-};
-
-// Audio Player Modal Component
-interface AudioPlayerModalProps {
-  visible: boolean;
-  onClose: () => void;
-  audio: { id: string; url: string; name: string; duration?: number } | null;
-}
-
-const AudioPlayerModal: React.FC<AudioPlayerModalProps> = ({
-  visible,
-  onClose,
-  audio,
-}) => {
-  const insets = useSafeAreaInsets();
-  const audioPlayer = useAudioPlayer(audio?.url || null);
-  const playerStatus = useAudioPlayerStatus(audioPlayer);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Set audio mode for better iOS/Android compatibility
-    const configureAudio = async () => {
-      try {
-        await setAudioModeAsync({
-          playsInSilentMode: true,
-          allowsRecording: false,
-        });
-      } catch (e) {
-        console.log('Failed to set audio mode:', e);
-      }
-    };
-
-    configureAudio();
-
-    return () => {
-      try {
-        audioPlayer.remove();
-      } catch (error) {
-        console.log('Audio player cleanup error:', error);
-      }
-    };
-  }, [audioPlayer]);
-
-  useEffect(() => {
-    if (!visible) {
-      audioPlayer.pause();
-      setError(null);
-    }
-  }, [visible, audioPlayer]);
-
-  const togglePlayback = async () => {
-    try {
-      if (playerStatus?.playing) {
-        audioPlayer.pause();
-      } else {
-        audioPlayer.play();
-      }
-    } catch (err) {
-      console.error('Playback error:', err);
-      setError('Playback failed. Please try again.');
-    }
-  };
-
-  const seekTo = async (positionMs: number) => {
-    try {
-      audioPlayer.seekTo(positionMs / 1000); // expo-audio uses seconds
-    } catch (err) {
-      console.error('Seek error:', err);
-    }
-  };
-
-  const formatTime = (milliseconds: number) => {
-    const seconds = Math.floor(milliseconds / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  const handleClose = () => {
-    try {
-      audioPlayer.pause();
-    } catch (error) {
-      console.log('Audio pause error:', error);
-    }
-    onClose();
-  };
-
-  if (!audio) return null;
-
-  return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <View style={[styles.audioPlayerContainer, { paddingTop: Platform.OS === 'android' ? insets.top : 0 }]}>
-        {/* Header */}
-        <View style={styles.audioPlayerHeader}>
-          <TouchableOpacity onPress={handleClose}>
-            <Text style={styles.audioPlayerCancel}>Done</Text>
-          </TouchableOpacity>
-          <Text style={styles.audioPlayerTitle}>Audio Player</Text>
-          <View style={styles.audioPlayerSpacer} />
-        </View>
-
-        {/* Content */}
-        <View style={styles.audioPlayerContent}>
-          {/* Audio Info */}
-          <View style={styles.audioInfo}>
-            <View style={styles.audioIcon}>
-              <IconSymbol name="waveform" size={48} color="#10B981" />
-            </View>
-            <Text style={styles.audioFileName} numberOfLines={2}>
-              {audio.name}
-            </Text>
-            <Text style={styles.audioDuration}>
-              {audio.duration ? `${audio.duration}s` : 'Audio file'}
-            </Text>
-            {audio.name.toLowerCase().includes('.wav') && (
-              <Text style={styles.audioWarning}>
-                ⚠️ WAV files may have limited compatibility
-              </Text>
-            )}
-          </View>
-
-          {/* Error Display */}
-          {error && (
-            <View style={styles.audioError}>
-              <Text style={styles.audioErrorText}>{error}</Text>
-              <Text style={styles.audioErrorSubtext}>
-                Recommended formats: MP3, M4A, AAC. WAV files may have compatibility issues.
-              </Text>
-            </View>
-          )}
-
-          {/* Controls */}
-          <View style={styles.audioControls}>
-            {/* Progress Bar */}
-            <View style={styles.progressContainer}>
-              <Text style={styles.timeText}>{formatTime((playerStatus?.currentTime || 0) * 1000)}</Text>
-              <View style={styles.progressBar}>
-                <TouchableOpacity
-                  style={styles.progressTrack}
-                  onPress={(e) => {
-                    const duration = playerStatus?.duration || 0;
-                    if (duration > 0) {
-                      const { locationX } = e.nativeEvent;
-                      const progressBarWidth = 250; // Approximate width
-                      const newPosition = (locationX / progressBarWidth) * duration * 1000;
-                      seekTo(newPosition);
-                    }
-                  }}
-                >
-                  <View style={styles.progressBackground} />
-                  <View
-                    style={[
-                      styles.progressFill,
-                      { width: (playerStatus?.duration && playerStatus?.currentTime) ? `${((playerStatus.currentTime / playerStatus.duration) * 100)}%` : '0%' }
-                    ]}
-                  />
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.timeText}>{formatTime((playerStatus?.duration || 0) * 1000)}</Text>
-            </View>
-
-            {/* Play/Pause Button */}
-            <TouchableOpacity
-              style={[
-                styles.playButton,
-                isLoading && styles.playButtonDisabled,
-              ]}
-              onPress={togglePlayback}
-              disabled={isLoading || !!error}
-            >
-              {isLoading ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <IconSymbol
-                  name={playerStatus?.isPlaying ? 'pause.fill' : 'play.fill'}
-                  size={32}
-                  color="#FFFFFF"
-                />
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-};
+import { AudioPlayerModal } from '@/components/modals/AudioPlayerModal';
+import { ImageViewerModal } from '@/components/modals/ImageViewerModal';
 
 export default function JobCardDetailScreen() {
   const { user } = useAuthStore();
@@ -508,6 +217,77 @@ export default function JobCardDetailScreen() {
     }
   }, [attachments, imageUrls, audioUrls]);
 
+  // Local state for optimistic updates
+  const [localCompleted, setLocalCompleted] = React.useState<string[]>([]);
+
+  // Sync local state with ticket data
+  React.useEffect(() => {
+    if (ticket?.completed_complaints) {
+      setLocalCompleted(ticket.completed_complaints.map((c: string) => c.trim()));
+    } else {
+      setLocalCompleted([]);
+    }
+  }, [ticket?.completed_complaints]);
+
+  // Parse complaints
+  const complaints = React.useMemo(() => {
+    if (!ticket) return [];
+
+    const rawComplaint: any = ticket.customer_complaint || (ticket as any).symptom;
+    let parsedComplaints: string[] = [];
+
+    if (Array.isArray(rawComplaint)) {
+      parsedComplaints = rawComplaint.map((c: string) => c.trim());
+    } else if (typeof rawComplaint === 'string') {
+      try {
+        const parsed = JSON.parse(rawComplaint);
+        if (Array.isArray(parsed)) parsedComplaints = parsed.map((c: any) => String(c).trim());
+        else parsedComplaints = [rawComplaint.trim()];
+      } catch (e) {
+        if (rawComplaint.trim().startsWith('[') && rawComplaint.trim().endsWith(']')) {
+          try {
+            const fixed = rawComplaint.replace(/'/g, '"');
+            const parsed = JSON.parse(fixed);
+            if (Array.isArray(parsed)) parsedComplaints = parsed.map((c: any) => String(c).trim());
+            else parsedComplaints = [rawComplaint.trim()];
+          } catch (e2) {
+            parsedComplaints = [rawComplaint.trim()];
+          }
+        } else {
+          parsedComplaints = [rawComplaint.trim()];
+        }
+      }
+    }
+    return parsedComplaints;
+  }, [ticket]);
+
+  const handleToggleComplaint = async (complaint: string) => {
+    if (!ticket) return;
+
+    const targetComplaint = complaint.trim();
+    const isCompleted = localCompleted.includes(targetComplaint);
+
+    // Optimistic update
+    const newCompleted = isCompleted
+      ? localCompleted.filter(c => c !== targetComplaint)
+      : [...localCompleted, targetComplaint];
+
+    setLocalCompleted(newCompleted);
+  };
+
+  const handleSaveComplaints = async () => {
+    if (!ticket) return;
+
+    try {
+      await jobCardsService.updateCompletedComplaints(ticket.id, localCompleted);
+      Alert.alert('Success', 'Complaint checklist updated successfully');
+      refetch(); // Refresh data to ensure sync
+    } catch (error) {
+      console.error('Error saving complaints:', error);
+      Alert.alert('Error', 'Failed to save complaint checklist');
+    }
+  };
+
   const getStatusColor = (status: string) => {
     return StatusColors[status as keyof typeof StatusColors]?.primary || BrandColors.primary;
   };
@@ -641,41 +421,74 @@ export default function JobCardDetailScreen() {
           {ticket && (
             <>
               {/* Status Progress */}
-              <View style={styles.section}>
-                <HorizontalServiceProgress
-                  currentStatus={ticket.status}
-                />
-              </View>
+              <HorizontalServiceProgress
+                currentStatus={ticket.status}
+              />
 
-              {/* Ticket Info */}
-              <View style={styles.section}>
-                <View style={styles.ticketCard}>
-                  <View style={styles.ticketHeader}>
-                    <View style={styles.ticketHeaderLeft}>
-                      <View style={styles.ticketNumberContainer}>
-                        <IconSymbol name="doc.text.fill" size={20} color="#3B82F6" />
-                        <Text style={styles.ticketNumber}>{ticket.ticket_number || ticket.ticketNumber}</Text>
+              {/* Ticket Header Card */}
+              <View style={styles.ticketCard}>
+                <View style={styles.ticketHeader}>
+                  <View style={styles.ticketHeaderLeft}>
+                    <View style={styles.ticketNumberContainer}>
+                      <IconSymbol name="doc.text.fill" size={20} color="#3B82F6" />
+                      <Text style={styles.ticketNumber}>{ticket.ticket_number || ticket.ticketNumber}</Text>
+                    </View>
+                    <View style={styles.ticketBadges}>
+                      <View style={[styles.statusBadge, { backgroundColor: getStatusColor(ticket.status) + '20' }]}>
+                        <StatusIcon status={ticket.status as any} size="sm" />
+                        <Text style={[styles.statusText, { color: getStatusColor(ticket.status) }]}>
+                          {ticket.status.replace('_', ' ')}
+                        </Text>
                       </View>
-                      <View style={styles.ticketBadges}>
-                        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(ticket.status) + '20' }]}>
-                          <StatusIcon status={ticket.status as any} size="sm" />
-                          <Text style={[styles.statusText, { color: getStatusColor(ticket.status) }]}>
-                            {ticket.status.replace('_', ' ')}
-                          </Text>
-                        </View>
+                      <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(ticket.priority) }]}>
+                        <IconSymbol name="exclamationmark.circle.fill" size={14} color="#FFFFFF" />
+                        <Text style={styles.priorityText}>{getPriorityText(ticket.priority)}</Text>
                       </View>
                     </View>
                   </View>
-
-                  <Text style={styles.symptom}>{ticket.customer_complaint || ticket.symptom}</Text>
-                  {ticket.description && (
-                    <Text style={styles.description}>{ticket.description}</Text>
-                  )}
                 </View>
               </View>
 
-              {/* Customer Info */}
-              <View style={styles.section}>
+              {/* Customer Complaint Card */}
+              <View style={styles.ticketCard}>
+                <ThemedText type="subtitle" style={styles.sectionTitle}>
+                  <IconSymbol name="exclamationmark.bubble.fill" size={18} color={BrandColors.title} /> Customer Complaint
+                </ThemedText>
+                <View style={styles.complaintList}>
+                  {complaints.map((complaint, index) => {
+                    const isCompleted = localCompleted.includes(complaint);
+                    return (
+                      <TouchableOpacity
+                        key={index}
+                        style={styles.complaintItem}
+                        onPress={() => handleToggleComplaint(complaint)}
+                      >
+                        <View style={[styles.checkbox, isCompleted && styles.checkboxChecked]}>
+                          {isCompleted && <IconSymbol name="checkmark" size={12} color="#FFFFFF" />}
+                        </View>
+                        <Text style={[styles.symptomText, isCompleted && styles.symptomTextCompleted]}>
+                          {complaint}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                {/* Save Button for Complaints */}
+                <TouchableOpacity
+                  style={[
+                    styles.saveButton,
+                    JSON.stringify(localCompleted.sort()) === JSON.stringify((ticket.completed_complaints || []).map((c: string) => c.trim()).sort()) && styles.saveButtonDisabled
+                  ]}
+                  onPress={handleSaveComplaints}
+                  disabled={JSON.stringify(localCompleted.sort()) === JSON.stringify((ticket.completed_complaints || []).map((c: string) => c.trim()).sort())}
+                >
+                  <Text style={styles.saveButtonText}>Save Checklist Changes</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Customer Info Card */}
+              <View style={styles.ticketCard}>
                 <ThemedText type="subtitle" style={styles.sectionTitle}>
                   <IconSymbol name="person.fill" size={18} color={BrandColors.title} /> Customer Information
                 </ThemedText>
@@ -713,9 +526,9 @@ export default function JobCardDetailScreen() {
                 </View>
               </View>
 
-              {/* Customer Bringing */}
+              {/* Customer Bringing Card */}
               {ticket.customer_bringing && (
-                <View style={styles.section}>
+                <View style={styles.ticketCard}>
                   <ThemedText type="subtitle" style={styles.sectionTitle}>
                     <IconSymbol name="shippingbox" size={18} color={BrandColors.title} /> What Customer Brought
                   </ThemedText>
@@ -734,8 +547,8 @@ export default function JobCardDetailScreen() {
                 </View>
               )}
 
-              {/* Triage Management - Show for all tickets, but only actionable for 'reported' */}
-              <View style={styles.section}>
+              {/* Triage Management Card */}
+              <View style={styles.ticketCard}>
                 <TriageManagement
                   ticket={ticket}
                   onTriageComplete={() => {
@@ -745,9 +558,9 @@ export default function JobCardDetailScreen() {
                 />
               </View>
 
-              {/* Vehicle Details */}
+              {/* Vehicle Details Card */}
               {(ticket.customer_bringing === 'vehicle' || ticket.customer_bringing === 'both') && vehicleRecord && (
-                <View style={styles.section}>
+                <View style={styles.ticketCard}>
                   <ThemedText type="subtitle" style={styles.sectionTitle}>
                     <IconSymbol name="car.fill" size={18} color={BrandColors.title} /> Vehicle Details
                   </ThemedText>
@@ -883,9 +696,9 @@ export default function JobCardDetailScreen() {
                 </View>
               )}
 
-              {/* Battery Details */}
+              {/* Battery Details Card */}
               {(ticket.customer_bringing === 'battery' || ticket.customer_bringing === 'both') && batteryRecords.length > 0 && (
-                <View style={styles.section}>
+                <View style={styles.ticketCard}>
                   <ThemedText type="subtitle" style={styles.sectionTitle}>
                     <IconSymbol name="battery.100" size={18} color={BrandColors.title} /> Battery Details ({batteryRecords.length} {batteryRecords.length === 1 ? 'Battery' : 'Batteries'})
                   </ThemedText>
@@ -1019,9 +832,9 @@ export default function JobCardDetailScreen() {
                 </View>
               )}
 
-              {/* Description */}
+              {/* Description Card */}
               {ticket.description && (
-                <View style={styles.section}>
+                <View style={styles.ticketCard}>
                   <ThemedText type="subtitle" style={styles.sectionTitle}>
                     <IconSymbol name="doc.text" size={18} color={BrandColors.title} /> Description
                   </ThemedText>
@@ -1031,9 +844,9 @@ export default function JobCardDetailScreen() {
                 </View>
               )}
 
-              {/* Intake Media */}
+              {/* Intake Media Card */}
               {attachments.length > 0 && (
-                <View style={styles.section}>
+                <View style={styles.ticketCard}>
                   <ThemedText type="subtitle" style={styles.sectionTitle}>
                     <IconSymbol name="camera" size={18} color={BrandColors.title} /> Intake Media
                   </ThemedText>
@@ -1130,8 +943,8 @@ export default function JobCardDetailScreen() {
               )}
 
 
-              {/* Assignment Info */}
-              <View style={styles.section}>
+              {/* Assignment Info Card */}
+              <View style={styles.ticketCard}>
                 <ThemedText type="subtitle" style={styles.sectionTitle}>
                   <IconSymbol name="person.badge.clock" size={18} color={BrandColors.title} /> Assignment Details
                 </ThemedText>
@@ -1216,9 +1029,9 @@ export default function JobCardDetailScreen() {
                 )}
               </View>
 
-              {/* Status Actions */}
+              {/* Status Actions Card */}
               {nextStatusOptions.length > 0 && (
-                <View style={styles.section}>
+                <View style={styles.ticketCard}>
                   <ThemedText type="subtitle" style={styles.sectionTitle}>
                     <IconSymbol name="arrow.forward.circle" size={18} color={BrandColors.title} /> Status Actions
                   </ThemedText>
@@ -1260,8 +1073,8 @@ export default function JobCardDetailScreen() {
                 </View>
               )}
 
-              {/* Status Updates - Progress Timeline */}
-              <View style={styles.section}>
+              {/* Status Updates - Progress Timeline Card */}
+              <View style={styles.ticketCard}>
                 <ThemedText type="subtitle" style={styles.sectionTitle}>
                   <IconSymbol name="clock" size={18} color={BrandColors.title} /> Progress Updates
                 </ThemedText>
@@ -1311,7 +1124,7 @@ export default function JobCardDetailScreen() {
           onClose={() => setShowAudioPlayer(false)}
           audio={selectedAudio}
         />
-      </ThemedView>
+      </ThemedView >
     </>
   );
 }
@@ -1325,7 +1138,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
+    padding: Spacing.lg,
     paddingBottom: Spacing['3xl'],
+    gap: Spacing.lg,
   },
   section: {
     padding: Spacing.lg,
@@ -1373,6 +1188,20 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
     gap: Spacing.xs,
+  },
+  priorityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+    gap: Spacing.xs,
+  },
+  priorityText: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.semibold,
+    color: '#FFFFFF',
+    textTransform: 'capitalize',
   },
   secondaryAssignButton: {
     flexDirection: 'row',
@@ -1765,255 +1594,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 12,
   },
-  assignButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  // Image Viewer Modal Styles
-  imageViewerContainer: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
-  imageViewerHeader: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  imageViewerCloseButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  imageViewerTitle: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  imageViewerTitleText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  imageViewerSubtitle: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    opacity: 0.8,
-    marginTop: 4,
-  },
-  imageViewerSpacer: {
-    width: 44,
-  },
-  imageViewerContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fullScreenImage: {
-    width: '100%',
-    height: '100%',
-  },
-  imageNavButton: {
-    position: 'absolute',
-    top: '50%',
-    transform: [{ translateY: -25 }],
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  },
-  imageNavButtonLeft: {
-    left: 20,
-  },
-  imageNavButtonRight: {
-    right: 20,
-  },
-  imageIndicators: {
-    position: 'absolute',
-    bottom: 30,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-    zIndex: 1000,
-  },
-  imageIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
-  },
-  imageIndicatorActive: {
-    backgroundColor: '#FFFFFF',
-  },
-  // Audio Player Modal Styles
-  audioPlayerContainer: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  audioPlayerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    paddingTop: 60,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  audioPlayerCancel: {
-    fontSize: 16,
-    color: '#3B82F6',
-    fontWeight: '600',
-  },
-  audioPlayerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  audioPlayerSpacer: {
-    width: 60,
-  },
-  audioPlayerContent: {
-    flex: 1,
-    padding: 30,
-    justifyContent: 'center',
-  },
-  audioInfo: {
-    alignItems: 'center',
-    marginBottom: 50,
-  },
-  audioIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#F0FDF4',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  audioFileName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  audioDuration: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  audioWarning: {
-    fontSize: 12,
-    color: '#F59E0B',
-    textAlign: 'center',
-    marginTop: 8,
-    fontWeight: '500',
-  },
-  audioError: {
-    backgroundColor: '#FEF2F2',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#FECACA',
-  },
-  audioErrorText: {
-    color: '#DC2626',
-    fontSize: 14,
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  audioErrorSubtext: {
-    color: '#6B7280',
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  retryButton: {
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 6,
-    alignSelf: 'center',
-  },
-  retryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  audioControls: {
-    alignItems: 'center',
-  },
-  progressContainer: {
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  progressBar: {
-    width: '100%',
-    marginVertical: 15,
-  },
-  progressTrack: {
-    width: '100%',
-    height: 4,
-    position: 'relative',
-  },
-  progressBackground: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#E5E7EB',
-    borderRadius: 2,
-  },
-  progressFill: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    height: '100%',
-    backgroundColor: '#10B981',
-    borderRadius: 2,
-  },
-  timeText: {
-    fontSize: 14,
-    color: '#6B7280',
-    fontWeight: '500',
-    minWidth: 50,
-    textAlign: 'center',
-  },
-  playButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#10B981',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  playButtonDisabled: {
-    backgroundColor: '#9CA3AF',
-    shadowOpacity: 0.1,
-  },
   batteryCardHeader: {
     fontSize: 16,
     fontWeight: '600',
@@ -2024,4 +1604,57 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
+  complaintList: {
+    gap: 12,
+    marginBottom: Spacing.sm,
+    marginTop: 8,
+  },
+  complaintItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 4,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: BrandColors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  checkboxChecked: {
+    backgroundColor: BrandColors.primary,
+  },
+  symptomText: {
+    flex: 1,
+    fontSize: 16, // Increased from sm (14)
+    fontWeight: '500',
+    color: '#1F2937', // Darker for better contrast
+    lineHeight: 24,
+  },
+  symptomTextCompleted: {
+    textDecorationLine: 'line-through',
+    color: '#9CA3AF',
+  },
+  saveButton: {
+    backgroundColor: BrandColors.primary,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    marginTop: Spacing.md,
+  },
+  saveButtonDisabled: {
+    backgroundColor: BrandColors.ink + '20',
+  },
+  saveButtonText: {
+    color: BrandColors.surface,
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+  },
 });
+
+

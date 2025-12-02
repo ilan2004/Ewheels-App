@@ -1,15 +1,15 @@
+import DateFilterModal from '@/components/ui/DateFilterModal';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import {
     BorderRadius,
     BrandColors,
     Colors,
-    FinancialColors,
     Shadows,
     Spacing,
     Typography,
 } from '@/constants/design-system';
 import { useCashManagement } from '@/hooks/useFinancial';
-import { Expense, Sale } from '@/types/financial.types';
+import { DailyCash } from '@/types/financial.types';
 import React, { useEffect, useState } from 'react';
 import {
     Alert,
@@ -24,41 +24,104 @@ import {
 } from 'react-native';
 
 export default function CashManagement() {
-    const { dailyCash, cashSales, cashExpenses, loading, error, fetchData, updateDailyCash } = useCashManagement();
+    const {
+        dailyCashRecords,
+        drawings,
+        loading,
+        fetchDailyRecords,
+        updateDailyCash,
+        fetchData,
+        calculateRealTimeBalances,
+        timeline
+    } = useCashManagement();
 
-    const [selectedDate, setSelectedDate] = useState(new Date());
-    const [activeTab, setActiveTab] = useState<'sales' | 'expenses'>('sales');
+    const [activeTab, setActiveTab] = useState<'overview' | 'drawings' | 'timeline'>('overview');
     const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedDailyCash, setSelectedDailyCash] = useState<DailyCash | null>(null);
     const [editFormData, setEditFormData] = useState({
         opening_cash: '0',
         closing_cash: '0',
         notes: ''
     });
 
-    useEffect(() => {
-        fetchData(selectedDate.toISOString().split('T')[0]);
-    }, [selectedDate]);
+    // Date Filtering State
+    const [startDate, setStartDate] = useState(() => {
+        const d = new Date();
+        d.setDate(d.getDate() - 30);
+        return d;
+    });
+    const [endDate, setEndDate] = useState(new Date());
+    const [showDateModal, setShowDateModal] = useState(false);
 
     useEffect(() => {
-        if (dailyCash) {
-            setEditFormData({
-                opening_cash: dailyCash.opening_cash.toString(),
-                closing_cash: dailyCash.closing_cash.toString(),
-                notes: dailyCash.notes || ''
-            });
+        const startStr = startDate.toISOString().split('T')[0];
+        const endStr = endDate.toISOString().split('T')[0];
+
+        if (activeTab === 'timeline') {
+            // For timeline, we focus on the start date (selected date)
+            fetchData(startStr);
         } else {
-            setEditFormData({
-                opening_cash: '0',
-                closing_cash: '0',
-                notes: ''
-            });
+            fetchDailyRecords(startStr, endStr);
         }
-    }, [dailyCash]);
 
-    const changeDate = (days: number) => {
-        const newDate = new Date(selectedDate);
-        newDate.setDate(selectedDate.getDate() + days);
-        setSelectedDate(newDate);
+        // Fetch today's real-time data for KPI cards if in overview
+        if (activeTab === 'overview') {
+            fetchData(new Date().toISOString().split('T')[0]);
+        }
+    }, [activeTab, startDate, endDate]);
+
+    // Calculate Totals for KPI Cards
+    const totalCashBalance = dailyCashRecords.reduce((sum, record) => sum + (record.cash_balance || 0), 0);
+    const totalHdfcBalance = dailyCashRecords.reduce((sum, record) => sum + (record.hdfc_balance || 0), 0);
+    const totalIndianBankBalance = dailyCashRecords.reduce((sum, record) => sum + (record.indian_bank_balance || 0), 0);
+    const totalBalance = totalCashBalance + totalHdfcBalance + totalIndianBankBalance;
+
+    // Latest Record for KPI Cards (Real-time preferred)
+    const realTimeBalances = calculateRealTimeBalances();
+    const latestRecord = dailyCashRecords.length > 0 ? dailyCashRecords[0] : null;
+
+    const currentHdfcBalance = realTimeBalances?.hdfc_balance ?? (latestRecord?.hdfc_balance || 0);
+    const currentIndianBankBalance = realTimeBalances?.indian_bank_balance ?? (latestRecord?.indian_bank_balance || 0);
+    const currentCashBalance = realTimeBalances?.cash_balance ?? (latestRecord?.cash_balance || 0);
+
+    const currentTotalBalance = currentCashBalance + currentHdfcBalance + currentIndianBankBalance;
+
+    const handleEditPress = (record: DailyCash) => {
+        setSelectedDailyCash(record);
+        setEditFormData({
+            opening_cash: record.opening_cash.toString(),
+            closing_cash: record.closing_cash.toString(),
+            notes: record.notes || ''
+        });
+        setShowEditModal(true);
+    };
+
+    const handleSaveDailyCash = async () => {
+        if (!selectedDailyCash) return;
+
+        const opening = parseFloat(editFormData.opening_cash) || 0;
+        const closing = parseFloat(editFormData.closing_cash) || 0;
+
+        const result = await updateDailyCash(selectedDailyCash.date, {
+            opening_cash: opening,
+            closing_cash: closing,
+            notes: editFormData.notes
+        });
+
+        if (result.success) {
+            Alert.alert('Success', 'Daily cash updated successfully');
+            setShowEditModal(false);
+            const startStr = startDate.toISOString().split('T')[0];
+            const endStr = endDate.toISOString().split('T')[0];
+            fetchDailyRecords(startStr, endStr);
+        } else {
+            Alert.alert('Error', result.error || 'Failed to update daily cash');
+        }
+    };
+
+    const handleDateApply = (start: Date, end: Date) => {
+        setStartDate(start);
+        setEndDate(end);
     };
 
     const formatCurrency = (amount: number): string => {
@@ -70,157 +133,265 @@ export default function CashManagement() {
         }).format(amount);
     };
 
-    const totalCashSales = cashSales.reduce((sum, sale) => sum + (sale.total_amount || 0), 0);
-    const totalCashExpenses = cashExpenses.reduce((sum, expense) => sum + (expense.total_amount || 0), 0);
-    const openingBalance = dailyCash?.opening_cash || 0;
-    const closingBalance = dailyCash?.closing_cash || 0;
-    const expectedClosing = openingBalance + totalCashSales - totalCashExpenses;
-    const difference = closingBalance - expectedClosing;
-    const isBalanced = Math.abs(difference) < 1;
-
-    const handleSaveDailyCash = async () => {
-        const opening = parseFloat(editFormData.opening_cash) || 0;
-        const closing = parseFloat(editFormData.closing_cash) || 0;
-
-        const result = await updateDailyCash(selectedDate.toISOString().split('T')[0], {
-            opening_cash: opening,
-            closing_cash: closing,
-            notes: editFormData.notes
-        });
-
-        if (result.success) {
-            Alert.alert('Success', 'Daily cash updated successfully');
-            setShowEditModal(false);
-        } else {
-            Alert.alert('Error', result.error || 'Failed to update daily cash');
-        }
+    const formatDate = (dateString: string) => {
+        return new Date(dateString).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     };
 
-    const renderTransactionItem = ({ item }: { item: Sale | Expense }) => {
-        const isSale = 'sale_number' in item;
-        const amount = isSale ? (item as Sale).total_amount : (item as Expense).total_amount || (item as Expense).amount;
-        const description = item.description;
-        const time = new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-        return (
-            <View style={styles.transactionCard}>
-                <View style={styles.transactionLeft}>
-                    <View style={[styles.iconContainer, { backgroundColor: isSale ? FinancialColors.income.background : FinancialColors.expense.background }]}>
-                        <IconSymbol
-                            size={20}
-                            name={isSale ? 'arrow.down.left' : 'arrow.up.right'}
-                            color={isSale ? FinancialColors.income.primary : FinancialColors.expense.primary}
-                        />
+    const renderOverviewTab = () => (
+        <View>
+            {/* KPI Cards */}
+            <View style={styles.summaryGrid}>
+                <View style={[styles.summaryCard, { backgroundColor: '#F3E8FF' }]}>
+                    <View style={styles.cardHeader}>
+                        <View style={[styles.iconContainer, { backgroundColor: '#E9D5FF' }]}>
+                            <IconSymbol name="wallet.pass.fill" size={20} color="#6B21A8" />
+                        </View>
+                        <Text style={[styles.summaryLabel, { color: '#6B21A8' }]}>Total Balance</Text>
                     </View>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.transactionTitle} numberOfLines={1} ellipsizeMode="tail">{description}</Text>
-                        <Text style={styles.transactionTime}>{time}</Text>
-                    </View>
+                    <Text style={[styles.summaryValue, { color: '#6B21A8' }]}>{formatCurrency(currentTotalBalance)}</Text>
                 </View>
-                <Text style={[styles.transactionAmount, { color: isSale ? FinancialColors.income.primary : FinancialColors.expense.primary }]}>
-                    {isSale ? '+' : '-'}{formatCurrency(amount)}
-                </Text>
+                <View style={[styles.summaryCard, { backgroundColor: '#E0F2FE' }]}>
+                    <View style={styles.cardHeader}>
+                        <View style={[styles.iconContainer, { backgroundColor: '#BAE6FD' }]}>
+                            <IconSymbol name="building.columns.fill" size={20} color="#0369A1" />
+                        </View>
+                        <Text style={[styles.summaryLabel, { color: '#0369A1' }]}>HDFC Bank</Text>
+                    </View>
+                    <Text style={[styles.summaryValue, { color: '#0369A1' }]}>{formatCurrency(currentHdfcBalance)}</Text>
+                </View>
+                <View style={[styles.summaryCard, { backgroundColor: '#FFEDD5' }]}>
+                    <View style={styles.cardHeader}>
+                        <View style={[styles.iconContainer, { backgroundColor: '#FED7AA' }]}>
+                            <IconSymbol name="building.columns.fill" size={20} color="#C2410C" />
+                        </View>
+                        <Text style={[styles.summaryLabel, { color: '#C2410C' }]}>Indian Bank</Text>
+                    </View>
+                    <Text style={[styles.summaryValue, { color: '#C2410C' }]}>{formatCurrency(currentIndianBankBalance)}</Text>
+                </View>
+                <View style={[styles.summaryCard, { backgroundColor: '#DCFCE7' }]}>
+                    <View style={styles.cardHeader}>
+                        <View style={[styles.iconContainer, { backgroundColor: '#BBF7D0' }]}>
+                            <IconSymbol name="banknote.fill" size={20} color="#15803D" />
+                        </View>
+                        <Text style={[styles.summaryLabel, { color: '#15803D' }]}>Cash Balance</Text>
+                    </View>
+                    <Text style={[styles.summaryValue, { color: '#15803D' }]}>{formatCurrency(currentCashBalance)}</Text>
+                </View>
             </View>
-        );
-    };
+
+            {/* Daily Records List (Card Style) */}
+            <Text style={styles.sectionTitle}>Daily Records</Text>
+
+            {dailyCashRecords.length === 0 ? (
+                <View style={styles.emptyState}>
+                    <IconSymbol name="doc.text.magnifyingglass" size={48} color={Colors.neutral[400]} />
+                    <Text style={styles.emptyText}>No records found for this period.</Text>
+                </View>
+            ) : (
+                dailyCashRecords.map((record) => (
+                    <TouchableOpacity key={record.id} style={styles.recordCard} onPress={() => handleEditPress(record)}>
+                        <View style={styles.recordHeader}>
+                            <View style={styles.dateContainer}>
+                                <IconSymbol name="calendar" size={16} color={Colors.neutral[500]} style={{ marginRight: 6 }} />
+                                <Text style={styles.recordDate}>{formatDate(record.date)}</Text>
+                            </View>
+                            <View style={[styles.statusBadge, record.is_verified ? styles.statusVerified : styles.statusPending]}>
+                                <Text style={[styles.statusText, { color: record.is_verified ? Colors.success[700] : Colors.warning[700] }]}>
+                                    {record.is_verified ? 'Verified' : 'Pending'}
+                                </Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.divider} />
+
+                        <View style={styles.balanceGrid}>
+                            <View style={styles.balanceItem}>
+                                <Text style={styles.balanceLabel}>Opening</Text>
+                                <Text style={styles.balanceValue}>{formatCurrency(record.opening_cash)}</Text>
+                            </View>
+                            <View style={styles.balanceItem}>
+                                <Text style={styles.balanceLabel}>Closing</Text>
+                                <Text style={[styles.balanceValue, { fontWeight: 'bold' }]}>{formatCurrency(record.closing_cash)}</Text>
+                            </View>
+                            <View style={styles.balanceItem}>
+                                <Text style={styles.balanceLabel}>Cash Bal</Text>
+                                <Text style={[styles.balanceValue, { color: Colors.success[600] }]}>{formatCurrency(record.cash_balance || 0)}</Text>
+                            </View>
+                        </View>
+
+                        <View style={[styles.balanceGrid, { marginTop: 8 }]}>
+                            <View style={styles.balanceItem}>
+                                <Text style={styles.balanceLabel}>HDFC</Text>
+                                <Text style={[styles.balanceValue, { color: '#0369A1' }]}>{formatCurrency(record.hdfc_balance || 0)}</Text>
+                            </View>
+                            <View style={styles.balanceItem}>
+                                <Text style={styles.balanceLabel}>Indian Bank</Text>
+                                <Text style={[styles.balanceValue, { color: '#C2410C' }]}>{formatCurrency(record.indian_bank_balance || 0)}</Text>
+                            </View>
+                            <View style={styles.balanceItem}>
+                                {/* Spacer */}
+                            </View>
+                        </View>
+                    </TouchableOpacity>
+                ))
+            )}
+        </View>
+    );
+
+
+
+    const renderDrawingsTab = () => (
+        <View>
+            <View style={styles.tableHeader}>
+                <Text style={[styles.columnHeader, { width: 80 }]}>Date</Text>
+                <Text style={[styles.columnHeader, { flex: 1 }]}>Partner</Text>
+                <Text style={[styles.columnHeader, { width: 60 }]}>Source</Text>
+                <Text style={[styles.columnHeader, { width: 70 }]}>Type</Text>
+                <Text style={[styles.columnHeader, { width: 80, textAlign: 'right' }]}>Amount</Text>
+            </View>
+
+            {drawings.length === 0 ? (
+                <Text style={styles.emptyText}>No drawings found for this period.</Text>
+            ) : (
+                drawings.map((drawing) => (
+                    <View key={drawing.id} style={styles.tableRow}>
+                        <Text style={[styles.cellText, { width: 80 }]}>{formatDate(drawing.created_at)}</Text>
+                        <Text style={[styles.cellText, { flex: 1 }]}>{drawing.partner_name}</Text>
+                        <Text style={[styles.cellText, { width: 60, textTransform: 'capitalize' }]}>{drawing.source.replace('_', ' ')}</Text>
+                        <Text style={[styles.cellText, { width: 70, textTransform: 'capitalize', color: drawing.type === 'deposit' ? Colors.success[600] : Colors.error[600] }]}>
+                            {drawing.type}
+                        </Text>
+                        <Text style={[styles.cellText, { width: 80, textAlign: 'right', fontWeight: 'bold' }]}>
+                            {formatCurrency(drawing.amount)}
+                        </Text>
+                    </View>
+                ))
+            )}
+        </View>
+    );
+
+    const renderTimelineTab = () => (
+        <View>
+            <View style={styles.tableHeader}>
+                <Text style={[styles.columnHeader, { width: 60 }]}>Time</Text>
+                <Text style={[styles.columnHeader, { flex: 1 }]}>Description</Text>
+                <Text style={[styles.columnHeader, { width: 70 }]}>Type</Text>
+                <Text style={[styles.columnHeader, { width: 80, textAlign: 'right' }]}>Amount</Text>
+                <Text style={[styles.columnHeader, { width: 80, textAlign: 'right' }]}>Balance</Text>
+            </View>
+
+            {timeline.length === 0 ? (
+                <Text style={styles.emptyText}>No transactions found for this date.</Text>
+            ) : (
+                timeline.map((item) => {
+                    const isPositive = item.type === 'sale' || item.type === 'investment' || (item.type === 'drawing' && item.drawing_type === 'deposit');
+                    const balance = item.method === 'cash' ? item.running_balance?.cash
+                        : item.method === 'indian_bank' ? item.running_balance?.indian_bank
+                            : item.running_balance?.hdfc;
+
+                    return (
+                        <View key={item.id} style={styles.tableRow}>
+                            <Text style={[styles.cellText, { width: 60 }]}>
+                                {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </Text>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.cellText} numberOfLines={1}>{item.description}</Text>
+                                <Text style={[styles.cellText, { fontSize: 10, color: Colors.neutral[500] }]}>
+                                    {item.method === 'hdfc' || item.method === 'hdfc_bank' ? 'HDFC'
+                                        : item.method === 'indian_bank' ? 'Indian Bank'
+                                            : 'Cash'}
+                                </Text>
+                            </View>
+                            <View style={[styles.badgeContainer, {
+                                backgroundColor: item.type === 'sale' ? '#DCFCE7'
+                                    : item.type === 'expense' ? '#FEE2E2'
+                                        : item.type === 'investment' ? '#DBEAFE'
+                                            : '#F3E8FF'
+                            }]}>
+                                <Text style={[styles.badgeText, {
+                                    color: item.type === 'sale' ? '#15803D'
+                                        : item.type === 'expense' ? '#B91C1C'
+                                            : item.type === 'investment' ? '#1D4ED8'
+                                                : '#7E22CE'
+                                }]}>
+                                    {item.type === 'drawing' ? (item.drawing_type === 'deposit' ? 'Dep' : 'W/D') : item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                                </Text>
+                            </View>
+                            <Text style={[styles.cellText, { width: 80, textAlign: 'right', color: isPositive ? Colors.success[600] : Colors.error[600] }]}>
+                                {isPositive ? '+' : '-'}{formatCurrency(item.amount)}
+                            </Text>
+                            <Text style={[styles.cellText, { width: 80, textAlign: 'right', fontWeight: 'bold' }]}>
+                                {formatCurrency(balance || 0)}
+                            </Text>
+                        </View>
+                    );
+                })
+            )}
+        </View>
+    );
 
     return (
         <View style={styles.container}>
-            {/* Header */}
+            {/* Header / Tabs */}
             <View style={styles.header}>
-                <View style={styles.dateSelector}>
-                    <TouchableOpacity onPress={() => changeDate(-1)} style={styles.arrowButton}>
-                        <IconSymbol name="chevron.left" size={20} color={BrandColors.primary} />
+                <View style={styles.tabs}>
+                    <TouchableOpacity
+                        style={[styles.tab, activeTab === 'overview' && styles.activeTab]}
+                        onPress={() => setActiveTab('overview')}
+                    >
+                        <Text style={[styles.tabText, activeTab === 'overview' && styles.activeTabText]}>Overview</Text>
                     </TouchableOpacity>
-                    <View style={styles.dateDisplay}>
-                        <IconSymbol name="calendar" size={16} color={Colors.neutral[500]} style={{ marginRight: 6 }} />
-                        <Text style={styles.dateText}>{selectedDate.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</Text>
-                    </View>
-                    <TouchableOpacity onPress={() => changeDate(1)} style={styles.arrowButton}>
-                        <IconSymbol name="chevron.right" size={20} color={BrandColors.primary} />
+                    <TouchableOpacity
+                        style={[styles.tab, activeTab === 'timeline' && styles.activeTab]}
+                        onPress={() => setActiveTab('timeline')}
+                    >
+                        <Text style={[styles.tabText, activeTab === 'timeline' && styles.activeTabText]}>Timeline</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.tab, activeTab === 'drawings' && styles.activeTab]}
+                        onPress={() => setActiveTab('drawings')}
+                    >
+                        <Text style={[styles.tabText, activeTab === 'drawings' && styles.activeTabText]}>Drawings</Text>
                     </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={styles.editButton} onPress={() => setShowEditModal(true)}>
-                    <Text style={styles.editButtonText}>Edit Balances</Text>
+            </View>
+
+            {/* Date Filter */}
+            <View style={styles.filterContainer}>
+                <TouchableOpacity style={styles.dateButton} onPress={() => setShowDateModal(true)}>
+                    <IconSymbol name="calendar" size={16} color={Colors.neutral[600]} style={{ marginRight: 6 }} />
+                    <Text style={styles.dateButtonText}>
+                        {activeTab === 'timeline'
+                            ? startDate.toLocaleDateString()
+                            : `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`}
+                    </Text>
                 </TouchableOpacity>
             </View>
 
+            <DateFilterModal
+                visible={showDateModal}
+                onClose={() => setShowDateModal(false)}
+                onApply={handleDateApply}
+                initialStartDate={startDate}
+                initialEndDate={endDate}
+                mode={activeTab === 'timeline' ? 'single' : 'range'}
+            />
+
             <ScrollView
                 contentContainerStyle={styles.scrollContent}
-                refreshControl={<RefreshControl refreshing={loading} onRefresh={() => fetchData(selectedDate.toISOString().split('T')[0])} />}
+                refreshControl={<RefreshControl refreshing={loading} onRefresh={() => {
+                    const startStr = startDate.toISOString().split('T')[0];
+                    const endStr = endDate.toISOString().split('T')[0];
+                    if (activeTab === 'timeline') {
+                        // For timeline, we usually want a single day, or the range. 
+                        // User said "selected date". Let's assume start date is the selected date for timeline.
+                        fetchData(startStr);
+                    } else {
+                        fetchDailyRecords(startStr, endStr);
+                    }
+                }} />}
             >
-                {/* Summary Cards */}
-                <View style={styles.summaryGrid}>
-                    <View style={styles.summaryCard}>
-                        <Text style={styles.summaryLabel}>Opening Cash</Text>
-                        <Text style={styles.summaryValue}>{formatCurrency(openingBalance)}</Text>
-                    </View>
-                    <View style={styles.summaryCard}>
-                        <Text style={styles.summaryLabel}>Closing Cash</Text>
-                        <Text style={styles.summaryValue}>{formatCurrency(closingBalance)}</Text>
-                    </View>
-                    <View style={styles.summaryCard}>
-                        <Text style={styles.summaryLabel}>Cash Sales</Text>
-                        <Text style={[styles.summaryValue, { color: FinancialColors.income.primary }]}>+{formatCurrency(totalCashSales)}</Text>
-                    </View>
-                    <View style={styles.summaryCard}>
-                        <Text style={styles.summaryLabel}>Cash Expenses</Text>
-                        <Text style={[styles.summaryValue, { color: FinancialColors.expense.primary }]}>-{formatCurrency(totalCashExpenses)}</Text>
-                    </View>
-                </View>
-
-                {/* Discrepancy Card */}
-                <View style={[styles.discrepancyCard, !isBalanced ? styles.discrepancyError : styles.discrepancySuccess]}>
-                    <View style={styles.discrepancyRow}>
-                        <Text style={styles.discrepancyLabel}>Expected Closing:</Text>
-                        <Text style={styles.discrepancyValue}>{formatCurrency(expectedClosing)}</Text>
-                    </View>
-                    <View style={styles.discrepancyRow}>
-                        <Text style={styles.discrepancyLabel}>Difference:</Text>
-                        <Text style={[styles.discrepancyValue, !isBalanced ? { color: Colors.error[600] } : { color: Colors.success[600] }]}>
-                            {formatCurrency(difference)}
-                        </Text>
-                    </View>
-                    {!isBalanced && (
-                        <Text style={styles.discrepancyWarning}>
-                            <IconSymbol name="exclamationmark.triangle.fill" size={14} color={Colors.error[600]} /> Closing balance does not match expected value.
-                        </Text>
-                    )}
-                </View>
-
-                {/* Transactions List */}
-                <View style={styles.transactionsContainer}>
-                    <View style={styles.tabs}>
-                        <TouchableOpacity
-                            style={[styles.tab, activeTab === 'sales' && styles.activeTab]}
-                            onPress={() => setActiveTab('sales')}
-                        >
-                            <Text style={[styles.tabText, activeTab === 'sales' && styles.activeTabText]}>Cash Sales ({cashSales.length})</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.tab, activeTab === 'expenses' && styles.activeTab]}
-                            onPress={() => setActiveTab('expenses')}
-                        >
-                            <Text style={[styles.tabText, activeTab === 'expenses' && styles.activeTabText]}>Cash Expenses ({cashExpenses.length})</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.listContent}>
-                        {activeTab === 'sales' ? (
-                            cashSales.length > 0 ? (
-                                cashSales.map(item => <View key={item.id}>{renderTransactionItem({ item })}</View>)
-                            ) : (
-                                <Text style={styles.emptyText}>No cash sales for this date</Text>
-                            )
-                        ) : (
-                            cashExpenses.length > 0 ? (
-                                cashExpenses.map(item => <View key={item.id}>{renderTransactionItem({ item })}</View>)
-                            ) : (
-                                <Text style={styles.emptyText}>No cash expenses for this date</Text>
-                            )
-                        )}
-                    </View>
-                </View>
+                {activeTab === 'overview' ? renderOverviewTab() : activeTab === 'timeline' ? renderTimelineTab() : renderDrawingsTab()}
             </ScrollView>
 
             {/* Edit Modal */}
@@ -277,123 +448,12 @@ const styles = StyleSheet.create({
         backgroundColor: BrandColors.surface,
     },
     header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: Spacing.base,
         backgroundColor: Colors.white,
         borderBottomWidth: 1,
         borderBottomColor: Colors.neutral[200],
-    },
-    dateSelector: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: Colors.white,
-        borderRadius: BorderRadius.base,
-        padding: 4,
-        borderWidth: 1,
-        borderColor: Colors.neutral[200],
-    },
-    arrowButton: {
-        padding: Spacing.xs,
-    },
-    dateDisplay: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: Spacing.sm,
-        minWidth: 140,
-        justifyContent: 'center',
-    },
-    dateText: {
-        fontSize: Typography.fontSize.sm,
-        fontFamily: Typography.fontFamily.semibold,
-        color: BrandColors.title,
-    },
-    editButton: {
-        backgroundColor: BrandColors.primary + '15',
-        paddingHorizontal: Spacing.md,
-        paddingVertical: Spacing.sm,
-        borderRadius: BorderRadius.base,
-    },
-    editButtonText: {
-        color: BrandColors.primary,
-        fontFamily: Typography.fontFamily.semibold,
-        fontSize: Typography.fontSize.sm,
-    },
-    scrollContent: {
-        padding: Spacing.base,
-    },
-    summaryGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: Spacing.sm,
-        marginBottom: Spacing.md,
-    },
-    summaryCard: {
-        width: '48%',
-        backgroundColor: Colors.white,
-        padding: Spacing.md,
-        borderRadius: BorderRadius.lg,
-        ...Shadows.sm,
-    },
-    summaryLabel: {
-        fontSize: Typography.fontSize.xs,
-        color: Colors.neutral[500],
-        fontFamily: Typography.fontFamily.medium,
-        marginBottom: 4,
-    },
-    summaryValue: {
-        fontSize: Typography.fontSize.lg,
-        color: BrandColors.title,
-        fontFamily: Typography.fontFamily.bold,
-    },
-    discrepancyCard: {
-        backgroundColor: Colors.white,
-        padding: Spacing.md,
-        borderRadius: BorderRadius.lg,
-        marginBottom: Spacing.md,
-        borderWidth: 1,
-        ...Shadows.sm,
-    },
-    discrepancySuccess: {
-        borderColor: Colors.success[200],
-        backgroundColor: Colors.success[50],
-    },
-    discrepancyError: {
-        borderColor: Colors.error[200],
-        backgroundColor: Colors.error[50],
-    },
-    discrepancyRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 4,
-    },
-    discrepancyLabel: {
-        fontSize: Typography.fontSize.sm,
-        color: Colors.neutral[600],
-        fontFamily: Typography.fontFamily.medium,
-    },
-    discrepancyValue: {
-        fontSize: Typography.fontSize.sm,
-        fontFamily: Typography.fontFamily.bold,
-        color: BrandColors.title,
-    },
-    discrepancyWarning: {
-        fontSize: Typography.fontSize.xs,
-        color: Colors.error[600],
-        marginTop: Spacing.xs,
-        fontFamily: Typography.fontFamily.medium,
-    },
-    transactionsContainer: {
-        backgroundColor: Colors.white,
-        borderRadius: BorderRadius.lg,
-        ...Shadows.sm,
-        overflow: 'hidden',
     },
     tabs: {
         flexDirection: 'row',
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.neutral[200],
     },
     tab: {
         flex: 1,
@@ -413,23 +473,52 @@ const styles = StyleSheet.create({
         color: BrandColors.primary,
         fontFamily: Typography.fontFamily.semibold,
     },
-    listContent: {
+    filterContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: Spacing.sm,
+        backgroundColor: Colors.white,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.neutral[200],
+    },
+    dateButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        backgroundColor: Colors.neutral[100],
+        borderRadius: BorderRadius.base,
+    },
+    dateButtonText: {
+        fontSize: Typography.fontSize.sm,
+        color: BrandColors.ink,
+        fontFamily: Typography.fontFamily.medium,
+    },
+    dateSeparator: {
+        marginHorizontal: Spacing.sm,
+        color: Colors.neutral[500],
+        fontSize: Typography.fontSize.sm,
+    },
+    scrollContent: {
         padding: Spacing.base,
     },
-    transactionCard: {
+    summaryGrid: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: Spacing.sm,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.neutral[100],
-    },
-    transactionLeft: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
+        flexWrap: 'wrap',
         gap: Spacing.sm,
-        marginRight: Spacing.sm,
+        marginBottom: Spacing.md,
+    },
+    summaryCard: {
+        width: '48%',
+        padding: Spacing.md,
+        borderRadius: BorderRadius.lg,
+        ...Shadows.sm,
+    },
+    cardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: Spacing.xs,
     },
     iconContainer: {
         width: 32,
@@ -437,25 +526,125 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
+        marginRight: Spacing.xs,
     },
-    transactionTitle: {
-        fontSize: Typography.fontSize.sm,
+    summaryLabel: {
+        fontSize: Typography.fontSize.xs,
         fontFamily: Typography.fontFamily.medium,
+        flex: 1,
+    },
+    summaryValue: {
+        fontSize: Typography.fontSize.lg,
+        fontFamily: Typography.fontFamily.bold,
+        marginTop: 4,
+    },
+    sectionTitle: {
+        fontSize: Typography.fontSize.md,
+        fontFamily: Typography.fontFamily.bold,
+        color: BrandColors.title,
+        marginBottom: Spacing.sm,
+        marginTop: Spacing.sm,
+    },
+    recordCard: {
+        backgroundColor: Colors.white,
+        borderRadius: BorderRadius.lg,
+        padding: Spacing.md,
+        marginBottom: Spacing.sm,
+        ...Shadows.sm,
+        borderWidth: 1,
+        borderColor: Colors.neutral[100],
+    },
+    recordHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: Spacing.sm,
+    },
+    dateContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    recordDate: {
+        fontSize: Typography.fontSize.sm,
+        fontFamily: Typography.fontFamily.semibold,
         color: BrandColors.title,
     },
-    transactionTime: {
+    statusBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: BorderRadius.full,
+    },
+    statusVerified: {
+        backgroundColor: Colors.success[100],
+    },
+    statusPending: {
+        backgroundColor: Colors.warning[100],
+    },
+    statusText: {
+        fontSize: Typography.fontSize.xs,
+        fontFamily: Typography.fontFamily.medium,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: Colors.neutral[100],
+        marginBottom: Spacing.sm,
+    },
+    balanceGrid: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    balanceItem: {
+        flex: 1,
+    },
+    balanceLabel: {
         fontSize: Typography.fontSize.xs,
         color: Colors.neutral[500],
+        marginBottom: 2,
     },
-    transactionAmount: {
+    balanceValue: {
         fontSize: Typography.fontSize.sm,
-        fontFamily: Typography.fontFamily.bold,
-        flexShrink: 0,
+        fontFamily: Typography.fontFamily.medium,
+        color: BrandColors.ink,
+    },
+    tableHeader: {
+        flexDirection: 'row',
+        paddingVertical: Spacing.sm,
+        paddingHorizontal: Spacing.sm,
+        backgroundColor: Colors.neutral[100],
+        borderTopLeftRadius: BorderRadius.base,
+        borderTopRightRadius: BorderRadius.base,
+    },
+    columnHeader: {
+        fontSize: Typography.fontSize.xs,
+        fontFamily: Typography.fontFamily.semibold,
+        color: Colors.neutral[600],
+    },
+    tableRow: {
+        flexDirection: 'row',
+        paddingVertical: Spacing.sm,
+        paddingHorizontal: Spacing.sm,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.neutral[100],
+        backgroundColor: Colors.white,
+        alignItems: 'center',
+    },
+    cellText: {
+        fontSize: Typography.fontSize.xs,
+        fontFamily: Typography.fontFamily.medium,
+        color: BrandColors.ink,
+    },
+    emptyState: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: Spacing.xl,
+        backgroundColor: Colors.white,
+        borderRadius: BorderRadius.lg,
+        marginTop: Spacing.md,
     },
     emptyText: {
         textAlign: 'center',
         color: Colors.neutral[500],
-        padding: Spacing.lg,
+        marginTop: Spacing.md,
         fontFamily: Typography.fontFamily.medium,
     },
     modalContainer: {
@@ -510,5 +699,17 @@ const styles = StyleSheet.create({
     textArea: {
         height: 80,
         textAlignVertical: 'top',
+    },
+    badgeContainer: {
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: BorderRadius.sm,
+        width: 70,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    badgeText: {
+        fontSize: 10,
+        fontFamily: Typography.fontFamily.bold,
     },
 });

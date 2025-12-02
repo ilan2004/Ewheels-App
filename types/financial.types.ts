@@ -265,9 +265,30 @@ export interface DailyCash {
   date: string;
   opening_cash: number;
   closing_cash: number;
+  cash_balance: number;
+  hdfc_balance: number;
+  indian_bank_balance: number;
   notes?: string;
   is_verified?: boolean;
   verified_by?: string;
+  created_at: string;
+}
+
+export interface Drawing {
+  id: string;
+  amount: number;
+  type: 'withdrawal' | 'deposit';
+  source: 'cash' | 'hdfc' | 'indian_bank';
+  partner_name: string;
+  created_at: string;
+}
+
+export interface Investment {
+  id: string;
+  amount: number;
+  target_account: 'cash' | 'hdfc' | 'indian_bank';
+  description?: string;
+  date: string;
   created_at: string;
 }
 
@@ -308,5 +329,20 @@ export interface ReportData {
     year: number;
     startDate: string;
     endDate: string;
+  };
+}
+
+export interface TransactionItem {
+  id: string;
+  date: string;
+  type: 'sale' | 'expense' | 'investment' | 'drawing';
+  description: string;
+  amount: number;
+  method: 'cash' | 'hdfc' | 'indian_bank' | 'hdfc_bank' | 'upi' | 'card' | 'other';
+  drawing_type?: 'deposit' | 'withdrawal';
+  running_balance?: {
+    cash: number;
+    hdfc: number;
+    indian_bank: number;
   };
 }

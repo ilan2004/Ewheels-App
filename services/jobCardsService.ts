@@ -6,8 +6,7 @@ import {
   PaginatedResponse,
   ServiceTicket,
   TechnicianWorkload,
-  TicketFilters,
-  UpdateTicketForm
+  TicketFilters
 } from '@/types';
 
 export class JobCardsService {
@@ -115,26 +114,26 @@ export class JobCardsService {
 
   private generateMockTickets(limit: number = 10): ServiceTicket[] {
     const ticketTemplates = [
-      { complaint: 'Battery not charging properly', priority: 1, status: 'reported' },
-      { complaint: 'Motor making grinding noise', priority: 1, status: 'assigned' },
-      { complaint: 'Brake system malfunction', priority: 1, status: 'in_progress' },
-      { complaint: 'Display screen flickering', priority: 2, status: 'assigned' },
-      { complaint: 'Throttle response delayed', priority: 2, status: 'in_progress' },
-      { complaint: 'Headlight not working', priority: 3, status: 'triaged' },
-      { complaint: 'Horn not functioning', priority: 3, status: 'assigned' },
-      { complaint: 'Seat adjustment broken', priority: 3, status: 'reported' },
-      { complaint: 'Mirror loose and vibrating', priority: 3, status: 'in_progress' },
-      { complaint: 'USB charging port dead', priority: 3, status: 'assigned' },
-      { complaint: 'Side stand not locking', priority: 2, status: 'in_progress' },
-      { complaint: 'Speedometer showing wrong reading', priority: 2, status: 'reported' },
-      { complaint: 'Turn indicators not blinking', priority: 2, status: 'assigned' },
-      { complaint: 'Suspension making noise', priority: 2, status: 'triaged' },
-      { complaint: 'Chain needs lubrication', priority: 3, status: 'reported' },
-      { complaint: 'Battery level indicator stuck', priority: 3, status: 'in_progress' },
-      { complaint: 'Footrest adjustment issue', priority: 3, status: 'assigned' },
-      { complaint: 'Storage compartment lock broken', priority: 3, status: 'triaged' },
-      { complaint: 'Wheel alignment needed', priority: 2, status: 'assigned' },
-      { complaint: 'Key remote not working', priority: 3, status: 'in_progress' },
+      { complaint: ['Battery not charging properly'], priority: 1, status: 'reported' },
+      { complaint: ['Motor making grinding noise'], priority: 1, status: 'assigned' },
+      { complaint: ['Brake system malfunction'], priority: 1, status: 'in_progress' },
+      { complaint: ['Display screen flickering'], priority: 2, status: 'assigned' },
+      { complaint: ['Throttle response delayed'], priority: 2, status: 'in_progress' },
+      { complaint: ['Headlight not working'], priority: 3, status: 'triaged' },
+      { complaint: ['Horn not functioning'], priority: 3, status: 'assigned' },
+      { complaint: ['Seat adjustment broken'], priority: 3, status: 'reported' },
+      { complaint: ['Mirror loose and vibrating'], priority: 3, status: 'in_progress' },
+      { complaint: ['USB charging port dead'], priority: 3, status: 'assigned' },
+      { complaint: ['Side stand not locking'], priority: 2, status: 'in_progress' },
+      { complaint: ['Speedometer showing wrong reading'], priority: 2, status: 'reported' },
+      { complaint: ['Turn indicators not blinking'], priority: 2, status: 'assigned' },
+      { complaint: ['Suspension making noise'], priority: 2, status: 'triaged' },
+      { complaint: ['Chain needs lubrication'], priority: 3, status: 'reported' },
+      { complaint: ['Battery level indicator stuck'], priority: 3, status: 'in_progress' },
+      { complaint: ['Footrest adjustment issue'], priority: 3, status: 'assigned' },
+      { complaint: ['Storage compartment lock broken'], priority: 3, status: 'triaged' },
+      { complaint: ['Wheel alignment needed'], priority: 2, status: 'assigned' },
+      { complaint: ['Key remote not working'], priority: 3, status: 'in_progress' },
     ];
 
     const customers = [
@@ -193,9 +192,9 @@ export class JobCardsService {
         customer_id: customerId, // Legacy field
         vehicleRegNo: vehicleNo,
         vehicle_reg_no: vehicleNo, // Legacy field
-        symptom: template.complaint,
+        symptom: template.complaint[0],
         customer_complaint: template.complaint, // Legacy field
-        description: `Customer reports: ${template.complaint}. Initial assessment required.`,
+        description: `Customer reports: ${template.complaint.join(', ')}. Initial assessment required.`,
         customer_bringing: customerBringing,
         // Add case IDs based on what customer is bringing
         vehicle_case_id: (customerBringing === 'vehicle' || customerBringing === 'both') ? `vehicle_case_${String(index + 1).padStart(3, '0')}` : null,
@@ -306,7 +305,7 @@ export class JobCardsService {
         filteredTickets = filteredTickets.filter(t =>
           t.ticket_number.toLowerCase().includes(searchLower) ||
           (t.symptom?.toLowerCase() || '').includes(searchLower) ||
-          t.customer_complaint.toLowerCase().includes(searchLower)
+          t.customer_complaint.some(c => c.toLowerCase().includes(searchLower))
         );
       }
 
@@ -357,7 +356,11 @@ export class JobCardsService {
       }
 
       if (filters.search) {
-        query = query.or(`ticket_number.ilike.%${filters.search}%,symptom.ilike.%${filters.search}%,customer_complaint.ilike.%${filters.search}%`);
+        // For array column search in Supabase, we might need a different approach or just search text fields
+        // Assuming customer_complaint is text[]
+        query = query.or(`ticket_number.ilike.%${filters.search}%,symptom.ilike.%${filters.search}%`);
+        // Note: Searching inside text[] array via OR with other fields might be complex in simple PostgREST.
+        // We'll stick to simple fields for now or use a specific RPC if needed.
       }
 
       if (filters.dueDate) {
@@ -379,9 +382,9 @@ export class JobCardsService {
           case 'tomorrow':
             const dayAfterTomorrow = new Date(today);
             dayAfterTomorrow.setDate(today.getDate() + 2);
-            tomorrow = new Date(today);
-            tomorrow.setDate(today.getDate() + 1);
-            query = query.gte('due_date', tomorrow.toISOString()).lt('due_date', dayAfterTomorrow.toISOString());
+            const tomorrowStart = new Date(today);
+            tomorrowStart.setDate(today.getDate() + 1);
+            query = query.gte('due_date', tomorrowStart.toISOString()).lt('due_date', dayAfterTomorrow.toISOString());
             break;
           case 'this_week':
             const weekEnd = new Date(today);
@@ -650,97 +653,85 @@ export class JobCardsService {
 
   // Get single ticket by ID
   async getTicketById(id: string): Promise<ServiceTicket | null> {
-    if (this.isMockMode()) {
-      const tickets = this.getMockTickets(50);
-      return tickets.find(t => t.id === id) || null;
-    }
-
     try {
-      const { data: ticket, error } = await supabase
+      const { data, error } = await supabase
         .from('service_tickets')
         .select(`
           *,
-          customer:customers(*)
+          customer:customers(*),
+          vehicle_record:vehicle_records!service_tickets_vehicle_record_id_fkey(*),
+          vehicle_case:vehicle_cases!service_tickets_vehicle_case_id_fkey(*),
+          battery_case:battery_cases!service_tickets_battery_case_id_fkey(*)
         `)
         .eq('id', id)
         .single();
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          return null; // Ticket not found
-        }
-        throw error;
-      }
+      if (error) throw error;
 
-      // Try to use foreign key relationship first, fall back to separate query
-      let ticketWithCreator = ticket;
-
-      // If the database supports foreign key relationships, try using them
-      try {
-        const { data: ticketWithJoin, error: joinError } = await supabase
-          .from('service_tickets')
-          .select(`
-            *,
-            customer:customers(*),
-            creator:profiles!fk_service_tickets_created_by(user_id, username, email)
-          `)
-          .eq('id', id)
-          .single();
-
-        if (!joinError && ticketWithJoin) {
-          ticketWithCreator = ticketWithJoin;
-        } else {
-          // Fall back to separate query for creator
-          let creator = null;
-          if (ticket?.created_by) {
-            try {
-              const { data: creatorData, error: creatorError } = await supabase
-                .from('profiles')
-                .select('user_id, username, email')
-                .eq('user_id', ticket.created_by)
-                .single();
-
-              if (!creatorError) {
-                creator = creatorData;
-              }
-            } catch (creatorError) {
-              console.log('Could not fetch creator info:', creatorError);
-            }
-          }
-
-          ticketWithCreator = {
-            ...ticket,
-            creator
-          };
-        }
-      } catch (joinError) {
-        // If join fails, fall back to separate query
-        let creator = null;
-        if (ticket?.created_by) {
-          try {
-            const { data: creatorData, error: creatorError } = await supabase
-              .from('profiles')
-              .select('user_id, username, email')
-              .eq('user_id', ticket.created_by)
-              .single();
-
-            if (!creatorError) {
-              creator = creatorData;
-            }
-          } catch (creatorError) {
-            console.log('Could not fetch creator info:', creatorError);
-          }
-        }
-
-        ticketWithCreator = {
-          ...ticket,
-          creator
-        };
-      }
-
-      return ticketWithCreator;
+      return data;
     } catch (error) {
-      console.error('Error fetching ticket by ID:', error);
+      console.error('Error fetching ticket:', error);
+      return null;
+    }
+  }
+
+  // Toggle complaint completion status
+  async toggleComplaint(ticketId: string, complaint: string, isCompleted: boolean): Promise<void> {
+    try {
+      // First get current completed complaints
+      const { data: ticket, error: fetchError } = await supabase
+        .from('service_tickets')
+        .select('completed_complaints')
+        .eq('id', ticketId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      let completed = (ticket.completed_complaints || []).map((c: string) => c.trim());
+      const targetComplaint = complaint.trim();
+
+      if (isCompleted) {
+        // Add if not exists
+        if (!completed.includes(targetComplaint)) {
+          completed = [...completed, targetComplaint];
+        }
+      } else {
+        // Remove if exists
+        completed = completed.filter((c: string) => c !== targetComplaint);
+      }
+
+      const { error: updateError } = await supabase
+        .from('service_tickets')
+        .update({ completed_complaints: completed })
+        .eq('id', ticketId);
+
+      if (updateError) throw updateError;
+    } catch (error) {
+      console.error('Error toggling complaint:', error);
+      throw error;
+    }
+  }
+
+  // Update completed complaints list
+  async updateCompletedComplaints(ticketId: string, completedComplaints: string[]): Promise<void> {
+    if (this.isMockMode()) {
+      console.log(`Mock: Updating completed complaints for ticket ${ticketId}`, completedComplaints);
+      const ticket = await this.getTicketById(ticketId);
+      if (ticket) {
+        ticket.completed_complaints = completedComplaints;
+      }
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('service_tickets')
+        .update({ completed_complaints: completedComplaints })
+        .eq('id', ticketId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating completed complaints:', error);
       throw error;
     }
   }
@@ -813,13 +804,13 @@ export class JobCardsService {
       const { data, error } = await supabase
         .from('service_tickets')
         .insert({
-          customer_id: ticketData.customerId,
-          symptom: ticketData.symptom,
+          customer_id: ticketData.customer_id,
+          customer_complaint: ticketData.customer_complaint,
           description: ticketData.description,
-          vehicle_make: ticketData.vehicleMake,
-          vehicle_model: ticketData.vehicleModel,
-          vehicle_reg_no: ticketData.vehicleRegNo,
-          vehicle_year: ticketData.vehicleYear,
+          vehicle_make: ticketData.vehicle_make,
+          vehicle_model: ticketData.vehicle_model,
+          vehicle_reg_no: ticketData.vehicle_reg_no,
+          vehicle_year: ticketData.vehicle_year,
           priority: ticketData.priority || 3,
           status: 'reported',
         })
@@ -837,30 +828,6 @@ export class JobCardsService {
       throw error;
     }
   }
-
-  // Update ticket
-  async updateTicket(id: string, updates: UpdateTicketForm): Promise<ServiceTicket> {
-    try {
-      const { data, error } = await supabase
-        .from('service_tickets')
-        .update(updates)
-        .eq('id', id)
-        .select(`
-          *,
-          customer:customers(*)
-        `)
-        .single();
-
-      if (error) throw error;
-
-      return data;
-    } catch (error) {
-      console.error('Error updating ticket:', error);
-      throw error;
-    }
-  }
-
-  // Assign ticket to technician
   async assignTicket(ticketId: string, technicianId: string, dueDate?: string): Promise<ServiceTicket> {
     try {
       const updates: any = {

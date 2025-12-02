@@ -3,11 +3,13 @@ import { supabase } from '@/lib/supabase';
 import { UserRole } from '@/types';
 import {
   DailyCash,
+  Drawing,
   Expense,
   ExpenseForm,
   ExpensesFilters,
   FinancialApiResponse,
   FinancialKPIs,
+  Investment,
   PaginatedFinancialResponse,
   RecentTransaction,
   Sale,
@@ -682,6 +684,10 @@ export class FinancialService {
           date,
           opening_cash: 1000,
           closing_cash: 0,
+          cash_balance: 15000,
+          hdfc_balance: 25000,
+          indian_bank_balance: 10000,
+          is_verified: false,
           created_at: new Date().toISOString()
         } as DailyCash
       };
@@ -708,6 +714,69 @@ export class FinancialService {
     }
   }
 
+  async getDailyCashRecords(
+    startDate: string,
+    endDate: string,
+    userRole: UserRole,
+    activeLocationId?: string | null
+  ): Promise<FinancialApiResponse<DailyCash[]>> {
+    if (this.isMockMode()) {
+      return this.getMockDailyCashRecords(startDate, endDate);
+    }
+
+    try {
+      let query = this.applyScopeToQuery(
+        'daily_cash',
+        supabase.from('daily_cash')
+          .select('*')
+          .gte('date', startDate)
+          .lte('date', endDate)
+          .order('date', { ascending: false }),
+        userRole,
+        activeLocationId
+      );
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return { success: true, data: data || [] };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch daily cash records'
+      };
+    }
+  }
+
+  private getMockDailyCashRecords(startDate: string, endDate: string): FinancialApiResponse<DailyCash[]> {
+    return {
+      success: true,
+      data: [
+        {
+          id: 'mock-daily-cash-1',
+          date: startDate,
+          opening_cash: 1000,
+          closing_cash: 0,
+          cash_balance: 15000,
+          hdfc_balance: 25000,
+          indian_bank_balance: 10000,
+          is_verified: false,
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 'mock-daily-cash-2',
+          date: endDate,
+          opening_cash: 1200,
+          closing_cash: 0,
+          cash_balance: 16000,
+          hdfc_balance: 26000,
+          indian_bank_balance: 11000,
+          is_verified: true,
+          created_at: new Date(Date.now() - 86400000).toISOString()
+        }
+      ]
+    };
+  }
+
   async updateDailyCash(
     date: string,
     data: Partial<DailyCash>,
@@ -722,6 +791,10 @@ export class FinancialService {
           date,
           opening_cash: 1000,
           closing_cash: 0,
+          cash_balance: 15000,
+          hdfc_balance: 25000,
+          indian_bank_balance: 10000,
+          is_verified: false,
           created_at: new Date().toISOString(),
           ...data
         } as DailyCash
@@ -763,6 +836,15 @@ export class FinancialService {
     userRole: UserRole,
     activeLocationId?: string | null
   ): Promise<FinancialApiResponse<Sale[]>> {
+    return this.getDailySales(date, userRole, activeLocationId, 'cash');
+  }
+
+  async getDailySales(
+    date: string,
+    userRole: UserRole,
+    activeLocationId?: string | null,
+    paymentMethod?: string
+  ): Promise<FinancialApiResponse<Sale[]>> {
     if (this.isMockMode()) {
       return { success: true, data: [] };
     }
@@ -773,12 +855,15 @@ export class FinancialService {
         supabase.from('sales')
           .select('*')
           .eq('sale_date', date)
-          .eq('payment_method', 'cash')
           .eq('payment_status', 'paid')
           .order('created_at', { ascending: false }),
         userRole,
         activeLocationId
       );
+
+      if (paymentMethod) {
+        query = query.eq('payment_method', paymentMethod);
+      }
 
       const { data, error } = await query;
       if (error) throw error;
@@ -786,7 +871,7 @@ export class FinancialService {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch cash sales'
+        error: error instanceof Error ? error.message : 'Failed to fetch daily sales'
       };
     }
   }
@@ -795,6 +880,15 @@ export class FinancialService {
     date: string,
     userRole: UserRole,
     activeLocationId?: string | null
+  ): Promise<FinancialApiResponse<Expense[]>> {
+    return this.getDailyExpenses(date, userRole, activeLocationId, 'cash');
+  }
+
+  async getDailyExpenses(
+    date: string,
+    userRole: UserRole,
+    activeLocationId?: string | null,
+    paymentMethod?: string
   ): Promise<FinancialApiResponse<Expense[]>> {
     if (this.isMockMode()) {
       return { success: true, data: [] };
@@ -806,7 +900,43 @@ export class FinancialService {
         supabase.from('expenses')
           .select('*')
           .eq('expense_date', date)
-          .eq('payment_method', 'cash')
+          .order('created_at', { ascending: false }),
+        userRole,
+        activeLocationId
+      );
+
+      if (paymentMethod) {
+        query = query.eq('payment_method', paymentMethod);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return { success: true, data: data || [] };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch daily expenses'
+      };
+    }
+  }
+
+  async getDrawings(
+    startDate: string,
+    endDate: string,
+    userRole: UserRole,
+    activeLocationId?: string | null
+  ): Promise<FinancialApiResponse<Drawing[]>> {
+    if (this.isMockMode()) {
+      return this.getMockDrawings();
+    }
+
+    try {
+      let query = this.applyScopeToQuery(
+        'drawings',
+        supabase.from('drawings')
+          .select('*')
+          .gte('created_at', startDate)
+          .lte('created_at', endDate)
           .order('created_at', { ascending: false }),
         userRole,
         activeLocationId
@@ -818,9 +948,82 @@ export class FinancialService {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch cash expenses'
+        error: error instanceof Error ? error.message : 'Failed to fetch drawings'
       };
     }
+  }
+
+  async getInvestments(
+    startDate: string,
+    endDate: string,
+    userRole: UserRole,
+    activeLocationId?: string | null
+  ): Promise<FinancialApiResponse<Investment[]>> {
+    if (this.isMockMode()) {
+      return this.getMockInvestments();
+    }
+
+    try {
+      let query = this.applyScopeToQuery(
+        'investments',
+        supabase.from('investments')
+          .select('*')
+          .gte('date', startDate)
+          .lte('date', endDate)
+          .order('date', { ascending: false }),
+        userRole,
+        activeLocationId
+      );
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return { success: true, data: data || [] };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch investments'
+      };
+    }
+  }
+
+  private getMockInvestments(): FinancialApiResponse<Investment[]> {
+    return {
+      success: true,
+      data: [
+        {
+          id: '1',
+          amount: 50000,
+          target_account: 'hdfc',
+          description: 'Initial Capital',
+          date: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        }
+      ]
+    };
+  }
+
+  private getMockDrawings(): FinancialApiResponse<Drawing[]> {
+    return {
+      success: true,
+      data: [
+        {
+          id: '1',
+          amount: 5000,
+          type: 'withdrawal',
+          source: 'cash',
+          partner_name: 'Partner A',
+          created_at: new Date().toISOString()
+        },
+        {
+          id: '2',
+          amount: 10000,
+          type: 'deposit',
+          source: 'hdfc',
+          partner_name: 'Partner B',
+          created_at: new Date(Date.now() - 86400000).toISOString()
+        }
+      ]
+    };
   }
 }
 

@@ -49,7 +49,8 @@ export interface ServiceTicket {
   customer?: Customer;
 
   // Problem description
-  customer_complaint: string;
+  customer_complaint: string[];
+  completed_complaints?: string[];
   description?: string | null;
 
   // What customer is bringing for service
@@ -183,7 +184,7 @@ export interface PaginatedResponse<T> {
 // Form types
 export interface CreateTicketForm {
   customer_id: string;
-  customer_complaint: string;
+  customer_complaint: string[];
   description?: string | null;
   vehicle_make?: string | null;
   vehicle_model?: string | null;
@@ -193,7 +194,7 @@ export interface CreateTicketForm {
 }
 
 export interface UpdateTicketForm {
-  customer_complaint?: string;
+  customer_complaint?: string[];
   description?: string | null;
   priority?: number | null;
   status?: ServiceTicketStatus;

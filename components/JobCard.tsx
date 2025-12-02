@@ -93,7 +93,26 @@ export const JobCard: React.FC<JobCardProps> = ({
             </View>
 
             <Text style={styles.symptom} numberOfLines={2}>
-                {ticket.customer_complaint || ticket.symptom}
+                {(() => {
+                    const rawComplaint = ticket.customer_complaint || ticket.symptom;
+                    if (Array.isArray(rawComplaint)) return rawComplaint.join(', ');
+                    if (typeof rawComplaint === 'string') {
+                        try {
+                            const parsed = JSON.parse(rawComplaint);
+                            if (Array.isArray(parsed)) return parsed.join(', ');
+                        } catch (e) {
+                            if (rawComplaint.trim().startsWith('[') && rawComplaint.trim().endsWith(']')) {
+                                try {
+                                    const fixed = rawComplaint.replace(/'/g, '"');
+                                    const parsed = JSON.parse(fixed);
+                                    if (Array.isArray(parsed)) return parsed.join(', ');
+                                } catch (e2) { }
+                            }
+                        }
+                        return rawComplaint;
+                    }
+                    return '';
+                })()}
             </Text>
 
             <View style={styles.meta}>

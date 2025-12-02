@@ -1,6 +1,7 @@
 import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
 import { Platform, View } from 'react-native';
+import { EdgeInsets, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { Logo } from '@/components/logo';
@@ -11,7 +12,9 @@ import { useAuthStore } from '@/stores/authStore';
 
 // Define common screen options to avoid repetition
 // Uses BrandColors for app-wide chrome
-const getCommonScreenOptions = (colorScheme: any, accentColor: string) => ({
+// Define common screen options to avoid repetition
+// Uses BrandColors for app-wide chrome
+const getCommonScreenOptions = (colorScheme: any, accentColor: string, insets: EdgeInsets) => ({
   tabBarActiveTintColor: BrandColors.primary,
   tabBarInactiveTintColor: BrandColors.surface + '80', // 50% opacity for inactive
   headerShown: true,
@@ -40,8 +43,8 @@ const getCommonScreenOptions = (colorScheme: any, accentColor: string) => ({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 8,
-    height: Platform.OS === 'ios' ? 90 : 80, // Increased from 70 for Android
-    paddingBottom: Platform.OS === 'ios' ? 25 : 20, // Increased from 10 for Android
+    height: Platform.OS === 'ios' ? 90 : 60 + insets.bottom, // Dynamic height based on safe area
+    paddingBottom: Platform.OS === 'ios' ? 25 : insets.bottom, // Dynamic padding based on safe area
     paddingTop: 8,
   },
   tabBarLabelStyle: {
@@ -85,6 +88,7 @@ const getAllHiddenScreens = () => [
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const { user, loading } = useAuthStore();
+  const insets = useSafeAreaInsets();
 
   if (loading) {
     return null;
@@ -103,7 +107,7 @@ export default function TabLayout() {
     const hiddenScreens = allScreens.filter(screen => !visibleScreens.includes(screen));
 
     return (
-      <Tabs screenOptions={getCommonScreenOptions(colorScheme, BrandColors.primary)}>
+      <Tabs screenOptions={getCommonScreenOptions(colorScheme, BrandColors.primary, insets)}>
         <Tabs.Screen
           name="technician-jobcards"
           options={{
@@ -155,7 +159,7 @@ export default function TabLayout() {
     const hiddenScreens = allScreens.filter(screen => !visibleScreens.includes(screen));
 
     return (
-      <Tabs screenOptions={getCommonScreenOptions(colorScheme, BrandColors.primary)}>
+      <Tabs screenOptions={getCommonScreenOptions(colorScheme, BrandColors.primary, insets)}>
         <Tabs.Screen
           name="dashboard"
           options={{
@@ -206,7 +210,7 @@ export default function TabLayout() {
     const hiddenScreens = allScreens.filter(screen => !visibleScreens.includes(screen));
 
     return (
-      <Tabs screenOptions={getCommonScreenOptions(colorScheme, BrandColors.primary)}>
+      <Tabs screenOptions={getCommonScreenOptions(colorScheme, BrandColors.primary, insets)}>
         <Tabs.Screen
           name="front-desk-dashboard"
           options={{
@@ -266,7 +270,7 @@ export default function TabLayout() {
     const hiddenScreens = allScreens.filter(screen => !visibleScreens.includes(screen));
 
     return (
-      <Tabs screenOptions={getCommonScreenOptions(colorScheme, BrandColors.primary)}>
+      <Tabs screenOptions={getCommonScreenOptions(colorScheme, BrandColors.primary, insets)}>
         <Tabs.Screen
           name="dashboard"
           options={{
@@ -314,7 +318,7 @@ export default function TabLayout() {
 
   // FALLBACK: Basic navigation for unknown roles
   return (
-    <Tabs screenOptions={getCommonScreenOptions(colorScheme, BrandColors.primary)}>
+    <Tabs screenOptions={getCommonScreenOptions(colorScheme, BrandColors.primary, insets)}>
       <Tabs.Screen
         name="dashboard"
         options={{
