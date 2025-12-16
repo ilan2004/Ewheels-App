@@ -521,6 +521,23 @@ export const useCashManagement = () => {
     }
   }, [user, activeLocation]);
 
+  const createDailyCash = useCallback(async (data: Partial<DailyCash>) => {
+    if (!user) return { success: false, error: 'User not authenticated' };
+
+    try {
+      const response = await financialService.createDailyCash(data, user.role, activeLocation?.id);
+      if (response.success && response.data) {
+        setDailyCash(response.data);
+      }
+      return response;
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create daily cash record'
+      };
+    }
+  }, [user, activeLocation]);
+
   return {
     dailyCash,
     dailyCashRecords,
@@ -535,6 +552,7 @@ export const useCashManagement = () => {
     fetchData,
     fetchDailyRecords,
     updateDailyCash,
+    createDailyCash,
     calculateRealTimeBalances
   };
 };

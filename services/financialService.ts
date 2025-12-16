@@ -777,6 +777,47 @@ export class FinancialService {
     };
   }
 
+  async createDailyCash(
+    data: Partial<DailyCash>,
+    userRole: UserRole,
+    activeLocationId?: string | null
+  ): Promise<FinancialApiResponse<DailyCash>> {
+    if (this.isMockMode()) {
+      return {
+        success: true,
+        data: {
+          id: 'mock-daily-cash-new',
+          date: data.date || new Date().toISOString().split('T')[0],
+          opening_cash: data.opening_cash || 0,
+          closing_cash: 0,
+          cash_balance: data.opening_cash || 0,
+          hdfc_balance: data.hdfc_balance || 0,
+          indian_bank_balance: data.indian_bank_balance || 0,
+          is_verified: false,
+          created_at: new Date().toISOString(),
+          ...data
+        } as DailyCash
+      };
+    }
+
+    try {
+      const dataWithLocation = this.addLocationToData(data, userRole, activeLocationId);
+      const { data: newRecord, error } = await supabase
+        .from('daily_cash')
+        .insert([dataWithLocation])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { success: true, data: newRecord };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create daily cash record'
+      };
+    }
+  }
+
   async updateDailyCash(
     date: string,
     data: Partial<DailyCash>,
