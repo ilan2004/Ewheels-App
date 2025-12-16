@@ -1,21 +1,20 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Modal,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Alert,
-  ActivityIndicator,
-  Animated,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors, Typography, Spacing, BorderRadius, Shadows, BrandColors, StatusColors } from '@/constants/design-system';
-import { useMediaHubStore, ServiceTicket } from '@/stores/mediaHubStore';
+import { BorderRadius, BrandColors, Colors, Shadows, Spacing, StatusColors, Typography } from '@/constants/design-system';
 import { jobCardsService } from '@/services/jobCardsService';
+import { ServiceTicket, useMediaHubStore } from '@/stores/mediaHubStore';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Animated,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
 interface TicketAssignmentDialogProps {
   visible: boolean;
@@ -66,7 +65,7 @@ const TicketAssignmentDialog: React.FC<TicketAssignmentDialogProps> = ({
     try {
       setLoading(true);
       const response = await jobCardsService.getRecentTickets(100);
-      setTickets(response);
+      setTickets(response as any);
     } catch (error) {
       console.error('Failed to load tickets:', error);
       Alert.alert('Error', 'Failed to load service tickets');
@@ -81,9 +80,9 @@ const TicketAssignmentDialog: React.FC<TicketAssignmentDialogProps> = ({
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(ticket => 
-        ticket.ticket_number.toLowerCase().includes(query) ||
-        ticket.customer_complaint.toLowerCase().includes(query)
+      filtered = filtered.filter(ticket =>
+        (ticket.ticket_number || '').toLowerCase().includes(query) ||
+        (ticket.customer_complaint || '').toLowerCase().includes(query)
       );
     }
 
@@ -104,7 +103,7 @@ const TicketAssignmentDialog: React.FC<TicketAssignmentDialogProps> = ({
     try {
       setAssigning(true);
       await assignMediaToTicket(selectedMediaIds, selectedTicketId);
-      
+
       Alert.alert('Success', 'Media files assigned successfully');
       onAssignComplete?.();
       onClose();
@@ -129,7 +128,7 @@ const TicketAssignmentDialog: React.FC<TicketAssignmentDialogProps> = ({
   ];
 
   if (!visible) return null;
-  
+
   return (
     <View style={styles.overlay}>
       <Animated.View
@@ -146,189 +145,189 @@ const TicketAssignmentDialog: React.FC<TicketAssignmentDialogProps> = ({
           }
         ]}
       >
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <View style={styles.iconContainer}>
-                <IconSymbol name="doc.text" size={20} color={BrandColors.primary} />
-              </View>
-              <View>
-                <Text style={styles.title}>Assign to Ticket</Text>
-                <Text style={styles.subtitle}>
-                  {selectedMediaIds.length} file{selectedMediaIds.length !== 1 ? 's' : ''} selected
-                </Text>
-              </View>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <View style={styles.iconContainer}>
+              <IconSymbol name="doc.text" size={20} color={BrandColors.primary} />
             </View>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={onClose}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <IconSymbol name="xmark" size={20} color={Colors.neutral[600]} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Search and Filters */}
-          <View style={styles.filtersSection}>
-            {/* Search Bar */}
-            <View style={styles.searchContainer}>
-              <IconSymbol name="magnifyingglass" size={16} color={Colors.neutral[500]} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search by ticket number or complaint..."
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholderTextColor={Colors.neutral[400]}
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity
-                  style={styles.clearSearch}
-                  onPress={() => setSearchQuery('')}
-                >
-                  <IconSymbol name="xmark.circle.fill" size={16} color={Colors.neutral[400]} />
-                </TouchableOpacity>
-              )}
+            <View>
+              <Text style={styles.title}>Assign to Ticket</Text>
+              <Text style={styles.subtitle}>
+                {selectedMediaIds.length} file{selectedMediaIds.length !== 1 ? 's' : ''} selected
+              </Text>
             </View>
-
-            {/* Status Filter */}
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              style={styles.statusFilters}
-              contentContainerStyle={styles.statusFiltersContent}
-            >
-              {statusOptions.map((option) => (
-                <TouchableOpacity
-                  key={option.value}
-                  style={[
-                    styles.statusFilterButton,
-                    statusFilter === option.value && styles.statusFilterButtonActive
-                  ]}
-                  onPress={() => setStatusFilter(option.value)}
-                >
-                  <Text style={[
-                    styles.statusFilterText,
-                    statusFilter === option.value && styles.statusFilterTextActive
-                  ]}>
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
           </View>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={onClose}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <IconSymbol name="xmark" size={20} color={Colors.neutral[600]} />
+          </TouchableOpacity>
+        </View>
 
-          {/* Tickets List */}
-          <View style={styles.listContainer}>
-            {loading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={BrandColors.primary} />
-                <Text style={styles.loadingText}>Loading tickets...</Text>
-              </View>
-            ) : filteredTickets.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <IconSymbol name="doc.text" size={48} color={Colors.neutral[300]} />
-                <Text style={styles.emptyTitle}>No tickets found</Text>
-                <Text style={styles.emptySubtitle}>
-                  {searchQuery || statusFilter !== 'all' 
-                    ? 'Try adjusting your filters'
-                    : 'No service tickets available'}
-                </Text>
-              </View>
-            ) : (
-              <ScrollView 
-                style={styles.ticketsList}
-                showsVerticalScrollIndicator={false}
+        {/* Search and Filters */}
+        <View style={styles.filtersSection}>
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <IconSymbol name="magnifyingglass" size={16} color={Colors.neutral[500]} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by ticket number or complaint..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholderTextColor={Colors.neutral[400]}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                style={styles.clearSearch}
+                onPress={() => setSearchQuery('')}
               >
-                {filteredTickets.map((ticket) => (
-                  <TouchableOpacity
-                    key={ticket.id}
-                    style={[
-                      styles.ticketItem,
-                      selectedTicketId === ticket.id && styles.ticketItemSelected
-                    ]}
-                    onPress={() => setSelectedTicketId(ticket.id)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.ticketContent}>
-                      <View style={styles.ticketHeader}>
-                        <Text style={styles.ticketNumber}>
-                          #{ticket.ticket_number}
-                        </Text>
-                        <View style={[
-                          styles.statusBadge,
-                          { backgroundColor: getStatusColor(ticket.status) + '20' }
-                        ]}>
-                          <Text style={[
-                            styles.statusBadgeText,
-                            { color: getStatusColor(ticket.status) }
-                          ]}>
-                            {ticket.status.replace('_', ' ')}
-                          </Text>
-                        </View>
-                      </View>
-                      <Text style={styles.ticketComplaint} numberOfLines={2}>
-                        {ticket.customer_complaint}
-                      </Text>
-                      <View style={styles.ticketMeta}>
-                        <IconSymbol name="calendar" size={12} color={Colors.neutral[500]} />
-                        <Text style={styles.ticketDate}>
-                          {new Date(ticket.created_at).toLocaleDateString()}
-                        </Text>
-                        <View style={styles.priorityIndicator}>
-                          <IconSymbol 
-                            name={ticket.priority === 1 ? "exclamationmark.triangle.fill" : "circle.fill"} 
-                            size={8} 
-                            color={ticket.priority === 1 ? Colors.error[500] : Colors.neutral[400]} 
-                          />
-                        </View>
-                      </View>
-                    </View>
-                    {selectedTicketId === ticket.id && (
-                      <View style={styles.selectedIndicator}>
-                        <IconSymbol name="checkmark.circle.fill" size={20} color={Colors.success[600]} />
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+                <IconSymbol name="xmark.circle.fill" size={16} color={Colors.neutral[400]} />
+              </TouchableOpacity>
             )}
           </View>
 
-          {/* Footer */}
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={onClose}
-              disabled={assigning}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[
-                styles.assignButton,
-                (!selectedTicketId || assigning) && styles.assignButtonDisabled
-              ]}
-              onPress={handleAssign}
-              disabled={!selectedTicketId || assigning}
-            >
-              <LinearGradient
-                colors={[BrandColors.primary, BrandColors.primary + 'E0']}
-                style={styles.assignButtonGradient}
+          {/* Status Filter */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.statusFilters}
+            contentContainerStyle={styles.statusFiltersContent}
+          >
+            {statusOptions.map((option) => (
+              <TouchableOpacity
+                key={option.value}
+                style={[
+                  styles.statusFilterButton,
+                  statusFilter === option.value && styles.statusFilterButtonActive
+                ]}
+                onPress={() => setStatusFilter(option.value)}
               >
-                {assigning ? (
-                  <ActivityIndicator size="small" color={Colors.white} />
-                ) : (
-                  <>
-                    <IconSymbol name="paperclip" size={16} color={Colors.white} />
-                    <Text style={styles.assignButtonText}>
-                      Assign {selectedMediaIds.length} file{selectedMediaIds.length !== 1 ? 's' : ''}
+                <Text style={[
+                  styles.statusFilterText,
+                  statusFilter === option.value && styles.statusFilterTextActive
+                ]}>
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Tickets List */}
+        <View style={styles.listContainer}>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={BrandColors.primary} />
+              <Text style={styles.loadingText}>Loading tickets...</Text>
+            </View>
+          ) : filteredTickets.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <IconSymbol name="doc.text" size={48} color={Colors.neutral[300]} />
+              <Text style={styles.emptyTitle}>No tickets found</Text>
+              <Text style={styles.emptySubtitle}>
+                {searchQuery || statusFilter !== 'all'
+                  ? 'Try adjusting your filters'
+                  : 'No service tickets available'}
+              </Text>
+            </View>
+          ) : (
+            <ScrollView
+              style={styles.ticketsList}
+              showsVerticalScrollIndicator={false}
+            >
+              {filteredTickets.map((ticket) => (
+                <TouchableOpacity
+                  key={ticket.id}
+                  style={[
+                    styles.ticketItem,
+                    selectedTicketId === ticket.id && styles.ticketItemSelected
+                  ]}
+                  onPress={() => setSelectedTicketId(ticket.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.ticketContent}>
+                    <View style={styles.ticketHeader}>
+                      <Text style={styles.ticketNumber}>
+                        #{ticket.ticket_number}
+                      </Text>
+                      <View style={[
+                        styles.statusBadge,
+                        { backgroundColor: getStatusColor(ticket.status) + '20' }
+                      ]}>
+                        <Text style={[
+                          styles.statusBadgeText,
+                          { color: getStatusColor(ticket.status) }
+                        ]}>
+                          {ticket.status.replace('_', ' ')}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={styles.ticketComplaint} numberOfLines={2}>
+                      {ticket.customer_complaint}
                     </Text>
-                  </>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
+                    <View style={styles.ticketMeta}>
+                      <IconSymbol name="calendar" size={12} color={Colors.neutral[500]} />
+                      <Text style={styles.ticketDate}>
+                        {new Date(ticket.created_at).toLocaleDateString()}
+                      </Text>
+                      <View style={styles.priorityIndicator}>
+                        <IconSymbol
+                          name={ticket.priority === 1 ? "exclamationmark.triangle.fill" : "circle.fill"}
+                          size={8}
+                          color={ticket.priority === 1 ? Colors.error[500] : Colors.neutral[400]}
+                        />
+                      </View>
+                    </View>
+                  </View>
+                  {selectedTicketId === ticket.id && (
+                    <View style={styles.selectedIndicator}>
+                      <IconSymbol name="checkmark.circle.fill" size={20} color={Colors.success[600]} />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+        </View>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={onClose}
+            disabled={assigning}
+          >
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.assignButton,
+              (!selectedTicketId || assigning) && styles.assignButtonDisabled
+            ]}
+            onPress={handleAssign}
+            disabled={!selectedTicketId || assigning}
+          >
+            <LinearGradient
+              colors={[BrandColors.primary, BrandColors.primary + 'E0']}
+              style={styles.assignButtonGradient}
+            >
+              {assigning ? (
+                <ActivityIndicator size="small" color={Colors.white} />
+              ) : (
+                <>
+                  <IconSymbol name="paperclip" size={16} color={Colors.white} />
+                  <Text style={styles.assignButtonText}>
+                    Assign {selectedMediaIds.length} file{selectedMediaIds.length !== 1 ? 's' : ''}
+                  </Text>
+                </>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
       </Animated.View>
     </View>
   );

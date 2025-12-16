@@ -1,17 +1,16 @@
+import { calculateInvoiceTotals } from '@/lib/invoiceCalculations';
 import { supabase } from '@/lib/supabase';
 import {
-  Invoice,
-  InvoiceItem,
   CreateInvoiceRequest,
   CreateInvoiceResponse,
+  CreatePaymentRequest,
+  Invoice,
   InvoiceFilters,
   InvoiceListResponse,
-  InvoiceStatus,
-  InvoiceWithPayments,
   InvoicePayment,
-  CreatePaymentRequest,
+  InvoiceStatus,
+  InvoiceWithPayments
 } from '@/types/invoice';
-import { calculateInvoiceTotals } from '@/lib/invoiceCalculations';
 
 export class InvoiceService {
   /**
@@ -40,7 +39,7 @@ export class InvoiceService {
       const lastNumber = data[0].number;
       const match = lastNumber.match(/INV-(\d+)/);
       const nextNumber = match ? parseInt(match[1]) + 1 : 1;
-      
+
       return `INV-${nextNumber.toString().padStart(4, '0')}`;
     } catch (error) {
       console.error('Error generating invoice number:', error);
@@ -60,7 +59,7 @@ export class InvoiceService {
 
       // Calculate totals
       const totals = calculateInvoiceTotals(request.items);
-      
+
       // Generate invoice number
       const number = await this.generateInvoiceNumber(request.location_id);
 
@@ -71,12 +70,15 @@ export class InvoiceService {
         customer: request.customer,
         totals: {
           subtotal: totals.subtotal,
-          total_discount: totals.totalDiscount,
-          total_tax: totals.totalTax,
-          total: totals.total,
+          discount_total: totals.discount_total,
+          sgst_total: totals.sgst_total,
+          cgst_total: totals.cgst_total,
+          shipping_amount: totals.shipping_amount,
+          adjustment_amount: totals.adjustment_amount,
+          grand_total: totals.grand_total,
         },
         currency: request.currency || 'USD',
-        balance_due: totals.total,
+        balance_due: totals.grand_total,
         due_date: request.due_date,
         notes: request.notes,
         terms: request.terms,
@@ -106,16 +108,16 @@ export class InvoiceService {
 
       // Fetch the complete invoice with items
       const completeInvoice = await this.getInvoiceById(invoice.id);
-      
-      return { 
-        success: true, 
-        data: completeInvoice || invoice 
+
+      return {
+        success: true,
+        data: completeInvoice || invoice
       };
     } catch (error) {
       console.error('Error creating invoice:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to create invoice' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create invoice'
       };
     }
   }
@@ -141,19 +143,19 @@ export class InvoiceService {
       if (filters.status) {
         query = query.eq('status', filters.status);
       }
-      
+
       if (filters.customer_name) {
         query = query.ilike('customer->>name', `%${filters.customer_name}%`);
       }
-      
+
       if (filters.date_from) {
         query = query.gte('created_at', filters.date_from);
       }
-      
+
       if (filters.date_to) {
         query = query.lte('created_at', filters.date_to);
       }
-      
+
       if (filters.location_id) {
         query = query.eq('location_id', filters.location_id);
       }
@@ -213,7 +215,7 @@ export class InvoiceService {
     try {
       const { error } = await supabase
         .from('invoices')
-        .update({ 
+        .update({
           status,
           updated_at: new Date().toISOString()
         })
@@ -291,10 +293,10 @@ export class InvoiceService {
         .single();
 
       if (error) throw error;
-      
+
       // Calculate total payments
       const totalPayments = data.payments?.reduce(
-        (sum: number, payment: InvoicePayment) => sum + payment.amount, 
+        (sum: number, payment: InvoicePayment) => sum + payment.amount,
         0
       ) || 0;
 
@@ -401,15 +403,16 @@ export class InvoiceService {
       const duplicateRequest: CreateInvoiceRequest = {
         customer: originalInvoice.customer,
         items: originalInvoice.items?.map(item => ({
-          line_id: item.line_id,
           description: item.description,
           quantity: item.quantity,
           unit_price: item.unit_price,
           discount: item.discount,
-          tax_rate: item.tax_rate,
+          sgst_rate: item.sgst_rate,
+          cgst_rate: item.cgst_rate,
           subtotal: item.subtotal,
           discount_amount: item.discount_amount,
-          tax_amount: item.tax_amount,
+          sgst_amount: item.sgst_amount,
+          cgst_amount: item.cgst_amount,
           total: item.total,
         })) || [],
         currency: originalInvoice.currency,

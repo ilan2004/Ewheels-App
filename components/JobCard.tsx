@@ -128,9 +128,9 @@ export const JobCard: React.FC<JobCardProps> = ({
                             const parsed = JSON.parse(rawComplaint);
                             if (Array.isArray(parsed)) return parsed.join(', ');
                         } catch (e) {
-                            if (rawComplaint.trim().startsWith('[') && rawComplaint.trim().endsWith(']')) {
+                            if ((rawComplaint as string).trim().startsWith('[') && (rawComplaint as string).trim().endsWith(']')) {
                                 try {
-                                    const fixed = rawComplaint.replace(/'/g, '"');
+                                    const fixed = (rawComplaint as string).replace(/'/g, '"');
                                     const parsed = JSON.parse(fixed);
                                     if (Array.isArray(parsed)) return parsed.join(', ');
                                 } catch (e2) { }

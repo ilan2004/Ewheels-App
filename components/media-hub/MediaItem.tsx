@@ -1,16 +1,16 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Dimensions,
-} from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import React from 'react';
+import {
+  Dimensions,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors, Typography, Spacing } from '@/constants/design-system';
+import { Colors, Spacing, Typography } from '@/constants/design-system';
 import { MediaItem as MediaItemType } from '@/stores/mediaHubStore';
 
 interface MediaItemProps {
@@ -24,10 +24,10 @@ interface MediaItemProps {
 
 const { width: screenWidth } = Dimensions.get('window');
 
-export default function MediaItem({ 
-  item, 
-  onPress, 
-  onLongPress, 
+export default function MediaItem({
+  item,
+  onPress,
+  onLongPress,
   selected = false,
   showTicket = true,
   size = 'medium'
@@ -153,7 +153,7 @@ export default function MediaItem({
             />
           </LinearGradient>
         )}
-        
+
         {/* Duration Badge */}
         {item.durationSeconds && item.durationSeconds > 0 && (
           <View style={styles.durationBadge}>
@@ -162,7 +162,7 @@ export default function MediaItem({
             </Text>
           </View>
         )}
-        
+
         {/* Selection Indicator */}
         {selected && (
           <View style={styles.selectionIndicator}>
@@ -183,20 +183,20 @@ export default function MediaItem({
         ]} numberOfLines={1}>
           {displayName}
         </Text>
-        
+
         {!isCompact && (
           <>
             <Text style={styles.mediaDate}>
               {new Date(item.createdAt).toLocaleString()}
             </Text>
-            
+
             <View style={styles.mediaMetaRow}>
               {item.fileSize && (
                 <Text style={styles.mediaMeta}>
                   {formatFileSize(item.fileSize)}
                 </Text>
               )}
-              
+
               {showTicket && item.ticketId && (
                 <View style={styles.ticketBadge}>
                   <IconSymbol
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   durationText: {
     color: Colors.white,
     fontSize: Typography.fontSize.xs,
-    fontFamily: Typography.fontFamily.mono,
+    fontFamily: (Typography.fontFamily as any).mono,
   },
   selectionIndicator: {
     position: 'absolute',
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   },
   uploadProgress: {
     fontSize: Typography.fontSize.xs,
-    fontFamily: Typography.fontFamily.mono,
+    fontFamily: (Typography.fontFamily as any).mono,
     color: Colors.warning[600],
   },
 });

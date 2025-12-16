@@ -464,7 +464,7 @@ export default function LibrarySection() {
                 contentContainerStyle={styles.jobCardsScrollContent}
               >
                 {availableJobCards
-                  .filter(card => {
+                  .filter((card: any) => {
                     const query = jobCardSearchQuery.toLowerCase();
                     return (
                       (card.ticket_number || card.ticketNumber || '').toLowerCase().includes(query) ||

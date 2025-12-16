@@ -1,23 +1,21 @@
-import { supabase } from '@/lib/supabase';
-import { 
-  ServiceTicket, 
-  DashboardKPIs, 
-  TechnicianWorkload, 
-  TicketFilters,
-  PaginatedResponse,
-  CreateTicketForm,
-  UpdateTicketForm,
-  Customer,
-  User,
-  UserRole,
-} from '@/types';
 import { canBypassLocationFilter } from '@/lib/permissions';
-import { Location } from '@/stores/locationStore';
+import { supabase } from '@/lib/supabase';
+import {
+  CreateTicketForm,
+  Customer,
+  DashboardKPIs,
+  PaginatedResponse,
+  ServiceTicket,
+  TechnicianWorkload,
+  TicketFilters,
+  User,
+  UserRole
+} from '@/types';
 
 // Tables that should be scoped by location
 const SCOPED_TABLES = new Set([
   'customers',
-  'service_tickets', 
+  'service_tickets',
   'battery_records',
   'vehicle_cases',
   'quotes',
@@ -27,12 +25,12 @@ const SCOPED_TABLES = new Set([
 
 export class DataService {
   // Apply location scoping to a query based on user role and active location
-  private applyScopeToQuery<T extends { eq: (col: string, val: any) => T }>(
+  private applyScopeToQuery(
     tableName: string,
-    query: T,
+    query: any,
     userRole: UserRole,
     activeLocationId?: string | null
-  ): T {
+  ): any {
     // Admins and front desk managers can see all locations
     if (canBypassLocationFilter(userRole)) {
       return query;
@@ -105,14 +103,14 @@ export class DataService {
     if (this.isMockMode()) {
       return this.getMockKPIs();
     }
-    
+
     try {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const todayISO = today.toISOString();
-      
+
       const openStatuses = ['reported', 'triaged', 'assigned', 'in_progress'];
-      
+
       // Build base queries with location scoping
       const openTicketsQuery = this.applyScopeToQuery(
         'service_tickets',
@@ -205,7 +203,7 @@ export class DataService {
         ticket_number: 'EV001',
         customer_id: 'cust1',
         vehicle_reg_no: 'KA01AB1234',
-        customer_complaint: 'Battery not charging properly',
+        customer_complaint: ['Battery not charging properly'],
         status: 'in_progress',
         priority: 1,
         due_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
@@ -213,13 +211,13 @@ export class DataService {
         updated_at: new Date().toISOString(),
         created_by: 'user1',
         updated_by: 'user1',
-        customer: { 
-          id: 'cust1', 
-          name: 'Rajesh Kumar', 
-          contact: '+91 9876543210', 
-          email: 'rajesh@email.com', 
-          created_at: new Date().toISOString(), 
-          updated_at: new Date().toISOString() 
+        customer: {
+          id: 'cust1',
+          name: 'Rajesh Kumar',
+          contact: '+91 9876543210',
+          email: 'rajesh@email.com',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         },
         location: {
           id: 'default',
@@ -232,7 +230,7 @@ export class DataService {
         ticket_number: 'EV002',
         customer_id: 'cust2',
         vehicle_reg_no: 'KA02CD5678',
-        customer_complaint: 'Motor overheating issue',
+        customer_complaint: ['Motor overheating issue'],
         status: 'triaged',
         priority: 2,
         due_date: new Date().toISOString(),
@@ -240,13 +238,13 @@ export class DataService {
         updated_at: new Date().toISOString(),
         created_by: 'user1',
         updated_by: 'user1',
-        customer: { 
-          id: 'cust2', 
-          name: 'Priya Sharma', 
-          contact: '+91 9876543211', 
-          email: 'priya@email.com', 
-          created_at: new Date().toISOString(), 
-          updated_at: new Date().toISOString() 
+        customer: {
+          id: 'cust2',
+          name: 'Priya Sharma',
+          contact: '+91 9876543211',
+          email: 'priya@email.com',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         },
         location: {
           id: 'default',
@@ -270,21 +268,21 @@ export class DataService {
     if (this.isMockMode()) {
       const mockTickets = this.getMockTickets(50);
       let filteredTickets = mockTickets;
-      
+
       // Apply status filtering
       if (filters.status && filters.status !== 'all') {
         filteredTickets = filteredTickets.filter(t => t.status === filters.status);
       }
-      
+
       // Role-based filtering for technicians
       if (userRole === 'technician' && userId) {
         filteredTickets = filteredTickets.filter(t => t.created_by === userId); // Mock assignment
       }
-      
+
       const start = (page - 1) * pageSize;
       const end = start + pageSize;
       const paginatedData = filteredTickets.slice(start, end);
-      
+
       return {
         data: paginatedData,
         count: filteredTickets.length,
@@ -293,7 +291,7 @@ export class DataService {
         totalPages: Math.ceil(filteredTickets.length / pageSize),
       };
     }
-    
+
     try {
       let query = supabase
         .from('service_tickets')
@@ -335,7 +333,7 @@ export class DataService {
       if (filters.dueDate) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        
+
         switch (filters.dueDate) {
           case 'overdue':
             query = query.lt('due_date', today.toISOString());
@@ -395,15 +393,15 @@ export class DataService {
   ): Promise<ServiceTicket[]> {
     if (this.isMockMode()) {
       let tickets = this.getMockTickets(limit);
-      
+
       // Filter for technicians
       if (userRole === 'technician' && userId) {
         tickets = tickets.filter(t => t.created_by === userId);
       }
-      
+
       return tickets;
     }
-    
+
     try {
       let query = supabase
         .from('service_tickets')
@@ -484,31 +482,31 @@ export class DataService {
   ): Promise<Customer[]> {
     if (this.isMockMode()) {
       return [
-        { 
-          id: 'cust1', 
-          name: 'Rajesh Kumar', 
-          contact: '+91 9876543210', 
-          email: 'rajesh@email.com', 
-          created_at: new Date().toISOString(), 
-          updated_at: new Date().toISOString() 
+        {
+          id: 'cust1',
+          name: 'Rajesh Kumar',
+          contact: '+91 9876543210',
+          email: 'rajesh@email.com',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         },
-        { 
-          id: 'cust2', 
-          name: 'Priya Sharma', 
-          contact: '+91 9876543211', 
-          email: 'priya@email.com', 
-          created_at: new Date().toISOString(), 
-          updated_at: new Date().toISOString() 
+        {
+          id: 'cust2',
+          name: 'Priya Sharma',
+          contact: '+91 9876543211',
+          email: 'priya@email.com',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         },
       ];
     }
-    
+
     try {
       let query = supabase.from('customers').select('*');
-      
+
       // Apply location scoping
       query = this.applyScopeToQuery('customers', query, userRole, activeLocationId);
-      
+
       query = query.order('name');
 
       const { data, error } = await query;
@@ -539,15 +537,15 @@ export class DataService {
     if (this.isMockMode()) {
       return this.getMockTeamWorkload();
     }
-    
+
     try {
       const openStatuses = ['reported', 'triaged', 'assigned', 'in_progress'];
-      
+
       let query = supabase.from('service_tickets').select('assigned_to, id');
-      
+
       // Apply location scoping
       query = this.applyScopeToQuery('service_tickets', query, userRole, activeLocationId);
-      
+
       query = query.in('status', openStatuses);
 
       const { data, error } = await query;

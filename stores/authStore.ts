@@ -206,10 +206,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   checkAuthState: async () => {
     try {
+      console.log('[AuthStore] checkAuthState started');
       set({ loading: true });
 
       // In development mode, just set initialized to true if no session
       const { data: { session }, error } = await supabase.auth.getSession();
+      console.log('[AuthStore] getSession result:', { hasSession: !!session, error: error?.message });
 
       if (error) {
         console.warn('Supabase connection error (development mode):', error.message);
@@ -254,6 +256,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
             updatedAt: new Date().toISOString(),
           };
 
+          console.log('[AuthStore] Default profile created, setting initialized=true');
           set({ user: userWithRole, loading: false, initialized: true });
 
           // Initialize location data
@@ -279,6 +282,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           updatedAt: profile.updated_at || new Date().toISOString(),
         };
 
+        console.log('[AuthStore] User loaded, setting initialized=true');
         set({ user: userWithRole, loading: false, initialized: true });
 
         // Initialize location data
@@ -288,10 +292,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           console.warn('Failed to initialize location data:', error);
         }
       } else {
+        console.log('[AuthStore] No session found, setting initialized=true');
         set({ user: null, loading: false, initialized: true });
       }
     } catch (error) {
       console.warn('Error checking auth state (development mode):', error);
+      console.log('[AuthStore] Error caught, forcing initialized=true');
       set({ user: null, loading: false, initialized: true });
     }
   },

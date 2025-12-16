@@ -1,6 +1,7 @@
+
 import { supabase } from '@/lib/supabase';
 import {
-  CreateTicketForm,
+  CreateTicketForm, // Keeping original CreateTicketForm as 'Form' is not defined in the original types
   Customer,
   DashboardKPIs,
   PaginatedResponse,
@@ -8,6 +9,7 @@ import {
   TechnicianWorkload,
   TicketFilters
 } from '@/types';
+import { notificationService } from './notificationService';
 
 export class JobCardsService {
   // Check if we're in mock mode - only use mock when explicitly enabled
@@ -177,9 +179,9 @@ export class JobCardsService {
       const assignedTechnician = isAssigned ? technicians[Math.floor(Math.random() * technicians.length)] : undefined;
       const assignedDate = isAssigned ? new Date(createdDate.getTime() + Math.random() * 24 * 60 * 60 * 1000) : undefined;
 
-      const ticketId = `ticket_${String(index + 1).padStart(3, '0')}`;
-      const customerId = `customer_${String((index % customers.length) + 1).padStart(3, '0')}`;
-      const ticketNumber = `EV-${new Date().getFullYear()}-${String(Date.now() + index).slice(-6)}`;
+      const ticketId = `ticket_${String(index + 1).padStart(3, '0')} `;
+      const customerId = `customer_${String((index % customers.length) + 1).padStart(3, '0')} `;
+      const ticketNumber = `EV - ${new Date().getFullYear()} -${String(Date.now() + index).slice(-6)} `;
 
       // Randomly assign what customer is bringing
       const customerBringing = customerBringingOptions[Math.floor(Math.random() * customerBringingOptions.length)];
@@ -197,8 +199,8 @@ export class JobCardsService {
         description: `Customer reports: ${template.complaint.join(', ')}. Initial assessment required.`,
         customer_bringing: customerBringing,
         // Add case IDs based on what customer is bringing
-        vehicle_case_id: (customerBringing === 'vehicle' || customerBringing === 'both') ? `vehicle_case_${String(index + 1).padStart(3, '0')}` : null,
-        battery_case_id: (customerBringing === 'battery' || customerBringing === 'both') ? `battery_case_${String(index + 1).padStart(3, '0')}` : null,
+        vehicle_case_id: (customerBringing === 'vehicle' || customerBringing === 'both') ? `vehicle_case_${String(index + 1).padStart(3, '0')} ` : null,
+        battery_case_id: (customerBringing === 'battery' || customerBringing === 'both') ? `battery_case_${String(index + 1).padStart(3, '0')} ` : null,
         status: template.status as any,
         priority: template.priority,
         dueDate: dueDate.toISOString(),
@@ -224,7 +226,7 @@ export class JobCardsService {
           name: customer.name,
           contact: customer.contact,
           email: customer.email,
-          address: `${Math.floor(Math.random() * 999) + 1}, Sector ${Math.floor(Math.random() * 50) + 1}, ${['Bangalore', 'Mumbai', 'Delhi', 'Chennai', 'Hyderabad'][Math.floor(Math.random() * 5)]}`,
+          address: `${Math.floor(Math.random() * 999) + 1}, Sector ${Math.floor(Math.random() * 50) + 1}, ${['Bangalore', 'Mumbai', 'Delhi', 'Chennai', 'Hyderabad'][Math.floor(Math.random() * 5)]} `,
           vehicleRegNo: vehicleNo,
           createdAt: createdDate.toISOString(),
           created_at: createdDate.toISOString(), // Legacy field
@@ -260,9 +262,9 @@ export class JobCardsService {
       const { data, error } = await supabase
         .from('service_tickets')
         .select(`
-          *,
-          customer:customers(*)
-        `)
+  *,
+  customer: customers(*)
+    `)
         .order('created_at', { ascending: false })
         .limit(limit);
 
@@ -327,8 +329,8 @@ export class JobCardsService {
       let query = supabase
         .from('service_tickets')
         .select(`
-          *,
-          customer:customers(*)
+    *,
+    customer: customers(*)
         `, { count: 'exact' });
 
       // Apply filters
@@ -358,7 +360,7 @@ export class JobCardsService {
       if (filters.search) {
         // For array column search in Supabase, we might need a different approach or just search text fields
         // Assuming customer_complaint is text[]
-        query = query.or(`ticket_number.ilike.%${filters.search}%,symptom.ilike.%${filters.search}%`);
+        query = query.or(`ticket_number.ilike.% ${filters.search}%, symptom.ilike.% ${filters.search}% `);
         // Note: Searching inside text[] array via OR with other fields might be complex in simple PostgREST.
         // We'll stick to simple fields for now or use a specific RPC if needed.
       }
@@ -657,11 +659,11 @@ export class JobCardsService {
       const { data, error } = await supabase
         .from('service_tickets')
         .select(`
-          *,
-          customer:customers(*),
-          vehicle_record:vehicle_records!service_tickets_vehicle_record_id_fkey(*),
-          vehicle_case:vehicle_cases!service_tickets_vehicle_case_id_fkey(*),
-          battery_case:battery_cases!service_tickets_battery_case_id_fkey(*)
+  *,
+  customer: customers(*),
+    vehicle_record: vehicle_records!service_tickets_vehicle_record_id_fkey(*),
+      vehicle_case: vehicle_cases!service_tickets_vehicle_case_id_fkey(*),
+        battery_case: battery_cases!service_tickets_battery_case_id_fkey(*)
         `)
         .eq('id', id)
         .single();
@@ -747,8 +749,8 @@ export class JobCardsService {
       const { data, error } = await supabase
         .from('service_tickets')
         .select(`
-          *,
-          customer:customers(*)
+  *,
+  customer: customers(*)
         `)
         .eq('assigned_to', technicianId)
         .in('status', ['assigned', 'in_progress'])
@@ -766,7 +768,7 @@ export class JobCardsService {
   // Update ticket status
   async updateTicketStatus(ticketId: string, status: string): Promise<ServiceTicket | null> {
     if (this.isMockMode()) {
-      console.log(`Mock: Updated ticket ${ticketId} status to ${status}`);
+      console.log(`Mock: Updated ticket ${ticketId} status to ${status} `);
       const ticket = await this.getTicketById(ticketId);
       if (ticket) {
         ticket.status = status as any;
@@ -784,9 +786,9 @@ export class JobCardsService {
         })
         .eq('id', ticketId)
         .select(`
-          *,
-          customer:customers(*)
-        `)
+  *,
+  customer: customers(*)
+    `)
         .single();
 
       if (error) throw error;
@@ -815,9 +817,9 @@ export class JobCardsService {
           status: 'reported',
         })
         .select(`
-          *,
-          customer:customers(*)
-        `)
+    *,
+    customer: customers(*)
+      `)
         .single();
 
       if (error) throw error;
@@ -851,8 +853,8 @@ export class JobCardsService {
         .update(updates)
         .eq('id', ticketId)
         .select(`
-          *,
-          customer:customers(*)
+      *,
+      customer: customers(*)
         `)
         .single();
 
@@ -1011,8 +1013,8 @@ export class JobCardsService {
   async getCustomers(): Promise<Customer[]> {
     if (this.isMockMode()) {
       return [
-        { id: 'cust1', name: 'Rajesh Kumar', phone: '+91 9876543210', email: 'rajesh@email.com' },
-        { id: 'cust2', name: 'Priya Sharma', phone: '+91 9876543211', email: 'priya@email.com' },
+        { id: 'cust1', name: 'Rajesh Kumar', contact: '+91 9876543210', email: 'rajesh@email.com', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+        { id: 'cust2', name: 'Priya Sharma', contact: '+91 9876543211', email: 'priya@email.com', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
       ];
     }
 
@@ -1038,14 +1040,14 @@ export class JobCardsService {
     note?: string;
   }): Promise<{ vehicle_case_id?: string; battery_case_id?: string }> {
     if (this.isMockMode()) {
-      console.log(`Mock: Triaging ticket ${params.ticketId} to ${params.routeTo}`);
+      console.log(`Mock: Triaging ticket ${params.ticketId} to ${params.routeTo} `);
       // Mock successful triage
       const result: { vehicle_case_id?: string; battery_case_id?: string } = {};
       if (params.routeTo === 'vehicle' || params.routeTo === 'both') {
-        result.vehicle_case_id = `vehicle_case_${Date.now()}`;
+        result.vehicle_case_id = `vehicle_case_${Date.now()} `;
       }
       if (params.routeTo === 'battery' || params.routeTo === 'both') {
-        result.battery_case_id = `battery_case_${Date.now()}`;
+        result.battery_case_id = `battery_case_${Date.now()} `;
       }
 
       // Simulate API delay
@@ -1107,7 +1109,7 @@ export class JobCardsService {
               .eq('id', vehicleRecordId);
           } else {
             // Create a new vehicle record with unique registration number
-            const uniqueRegNo = ticket.vehicle_reg_no || `TRG-${params.ticketId.slice(-8)}-${Date.now().toString().slice(-4)}`;
+            const uniqueRegNo = ticket.vehicle_reg_no || `TRG - ${params.ticketId.slice(-8)} -${Date.now().toString().slice(-4)} `;
 
             const { data: newVehicleRecord, error: createVehicleError } = await supabase
               .from('vehicle_records')
@@ -1187,7 +1189,7 @@ export class JobCardsService {
         if (batteryRecords.length === 0) {
           // Create a basic battery record if none exists
           // Generate a unique serial number to avoid conflicts
-          const uniqueSerialNo = `TRG-BAT-${params.ticketId.slice(-8)}-${Date.now().toString().slice(-4)}`;
+          const uniqueSerialNo = `TRG - BAT - ${params.ticketId.slice(-8)} -${Date.now().toString().slice(-4)} `;
 
           const { data: newBatteryRecord, error: createBatteryError } = await supabase
             .from('battery_records')
@@ -1259,7 +1261,7 @@ export class JobCardsService {
         .update({
           status: 'triaged',
           triaged_at: new Date().toISOString(),
-          triage_notes: params.note || `Triaged to: ${params.routeTo}`,
+          triage_notes: params.note || `Triaged to: ${params.routeTo} `,
           updated_at: new Date().toISOString()
         })
         .eq('id', params.ticketId);
@@ -1325,7 +1327,7 @@ export class JobCardsService {
         .map(u => u.created_by)
         .filter(Boolean))];
 
-      let profiles = [];
+      let profiles: any[] = [];
       if (userIds.length > 0) {
         // 3. Get profiles for those users
         const { data: profilesData, error: profilesError } = await supabase
@@ -1368,7 +1370,7 @@ export class JobCardsService {
       await new Promise(resolve => setTimeout(resolve, 500));
 
       return {
-        id: `update_${Date.now()}`,
+        id: `update_${Date.now()} `,
         ticket_id: params.ticketId,
         status: params.status,
         update_text: params.updateText,
@@ -1435,7 +1437,7 @@ export class JobCardsService {
 
   async deleteStatusUpdate(updateId: string): Promise<boolean> {
     if (this.isMockMode()) {
-      console.log(`Mock: Deleting status update ${updateId}`);
+      console.log(`Mock: Deleting status update ${updateId} `);
       return true;
     }
 

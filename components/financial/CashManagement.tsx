@@ -686,7 +686,7 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
     sectionTitle: {
-        fontSize: Typography.fontSize.md,
+        fontSize: Typography.fontSize.base,
         fontFamily: Typography.fontFamily.bold,
         color: BrandColors.title,
         marginBottom: Spacing.sm,

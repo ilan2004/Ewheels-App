@@ -19,12 +19,12 @@ import {
 
 export class FinancialService {
   // Apply location scoping to queries based on user role
-  private applyScopeToQuery<T extends { eq: (col: string, val: any) => T }>(
+  private applyScopeToQuery(
     tableName: string,
-    query: T,
+    query: any,
     userRole: UserRole,
     activeLocationId?: string | null
-  ): T {
+  ): any {
     // Admins and front desk managers can see all locations
     if (canBypassLocationFilter(userRole)) {
       return query;
@@ -523,13 +523,13 @@ export class FinancialService {
       const [salesResult, expensesResult] = await Promise.all([
         salesQuery,
         expensesQuery
-      ]);
+      ]) as any[];
 
       if (salesResult.error) throw salesResult.error;
       if (expensesResult.error) throw expensesResult.error;
 
       const transactions: RecentTransaction[] = [
-        ...(salesResult.data || []).map(sale => ({
+        ...(salesResult.data || []).map((sale: any) => ({
           id: sale.id,
           type: 'sale' as const,
           description: sale.description,
@@ -538,7 +538,7 @@ export class FinancialService {
           category: sale.sale_type,
           status: sale.payment_status
         })),
-        ...(expensesResult.data || []).map(expense => ({
+        ...(expensesResult.data || []).map((expense: any) => ({
           id: expense.id,
           type: 'expense' as const,
           description: expense.description,

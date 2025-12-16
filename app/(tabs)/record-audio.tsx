@@ -1,34 +1,32 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BrandColors, Colors, Spacing, Typography } from '@/constants/design-system';
+import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/stores/authStore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  FlatList,
-  Platform,
-} from 'react-native';
-import {
-  useAudioRecorder,
-  useAudioRecorderState,
-  useAudioPlayer,
-  useAudioPlayerStatus,
   RecordingPresets,
   requestRecordingPermissionsAsync,
   setAudioModeAsync,
+  useAudioPlayer,
+  useAudioPlayerStatus,
+  useAudioRecorder,
+  useAudioRecorderState,
 } from 'expo-audio';
 import * as FileSystem from 'expo-file-system';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors, Typography, Spacing, BrandColors } from '@/constants/design-system';
-import { useAuthStore } from '@/stores/authStore';
-import { supabase } from '@/lib/supabase';
-
-const RECORDINGS_DIR = FileSystem.documentDirectory
-  ? FileSystem.documentDirectory + 'recordings'
-  : null;
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Alert,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
+const RECORDINGS_DIR = (FileSystem as any).documentDirectory
+  ? (FileSystem as any).documentDirectory + 'recordings'
+  : ((FileSystem as any).cacheDirectory || '') + 'recordings';
 const SUPABASE_BUCKET = 'recordings'; // make sure this bucket exists in Supabase
 const RECORDING_NAMES_KEY = 'recordingNames';
 
@@ -145,7 +143,7 @@ export default function RecordAudio() {
           localUri,
           durationSeconds: 0,
           createdAt:
-            info.modificationTime != null
+            info.exists && info.modificationTime != null
               ? new Date(info.modificationTime * 1000).toISOString()
               : new Date().toISOString(),
         });
@@ -174,7 +172,7 @@ export default function RecordAudio() {
       }
       durationInterval.current = setInterval(() => {
         // this just forces re-render via recorderState; actual duration comes from state
-      }, 1000);
+      }, 1000) as unknown as NodeJS.Timeout;
     } catch (error) {
       console.error('Failed to start recording:', error);
       Alert.alert('Error', 'Failed to start recording. Please try again.');

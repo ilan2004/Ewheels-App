@@ -130,9 +130,8 @@ export default function MediaHubScreen() {
               onPress={() => setActiveTab(tab.id)}
             >
               <IconSymbol
-                name={tab.icon}
-                size={20}
-                color={BrandColors.ink}
+                name={tab.icon as any}
+                size={20} color={BrandColors.ink}
               />
               <Text
                 style={[

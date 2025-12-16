@@ -375,7 +375,7 @@ export default function JobCardDetailScreen() {
   const now = new Date();
   const due = dueDate ? new Date(dueDate) : null;
 
-  let daysRemaining = null;
+  let daysRemaining: number | null = null;
   let isOverdue = false;
   let isDueToday = false;
   let isDueTomorrow = false;
@@ -457,7 +457,7 @@ export default function JobCardDetailScreen() {
                     styles.dueDateText,
                     isUrgent ? styles.dueDateTextUrgent : styles.dueDateTextNormal
                   ]}>
-                    {isOverdue ? `Overdue by ${Math.abs(daysRemaining || 0)} days` :
+                    {isOverdue ? `Overdue by ${Math.abs(daysRemaining ?? 0)} days` :
                       isDueToday ? 'Due Today' :
                         isDueTomorrow ? 'Due Tomorrow' :
                           `Due in ${daysRemaining} days (${new Date(dueDate).toLocaleDateString()})`}
@@ -485,9 +485,9 @@ export default function JobCardDetailScreen() {
                           {ticket.status.replace('_', ' ')}
                         </Text>
                       </View>
-                      <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(ticket.priority) }]}>
+                      <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(ticket.priority ?? 0) }]}>
                         <IconSymbol name="exclamationmark.circle.fill" size={14} color="#FFFFFF" />
-                        <Text style={styles.priorityText}>{getPriorityText(ticket.priority)}</Text>
+                        <Text style={styles.priorityText}>{getPriorityText(ticket.priority ?? 0)}</Text>
                       </View>
                     </View>
                   </View>
@@ -1027,7 +1027,7 @@ export default function JobCardDetailScreen() {
                       <Text style={styles.infoLabel}>Created At</Text>
                     </View>
                     <Text style={styles.infoValue}>
-                      {(ticket.created_at || ticket.createdAt) ? new Date(ticket.created_at || ticket.createdAt).toLocaleDateString('en-GB', {
+                      {(ticket.created_at || ticket.createdAt) ? new Date((ticket.created_at || ticket.createdAt)!).toLocaleDateString('en-GB', {
                         day: '2-digit',
                         month: '2-digit',
                         year: 'numeric',
@@ -1044,18 +1044,18 @@ export default function JobCardDetailScreen() {
                         <Text style={styles.infoLabel}>Assigned</Text>
                       </View>
                       <Text style={styles.infoValue}>
-                        {new Date(ticket.assigned_at || ticket.assignedAt).toLocaleDateString()}
+                        {new Date((ticket.assigned_at || ticket.assignedAt)!).toLocaleDateString()}
                       </Text>
                     </View>
                   )}
                   {(ticket.due_date || ticket.dueDate) && (
                     <View style={styles.infoRow}>
                       <View style={styles.infoLabelContainer}>
-                        <IconSymbol name="clock" size={16} color={new Date(ticket.due_date || ticket.dueDate) < new Date() ? "#EF4444" : "#6B7280"} />
+                        <IconSymbol name="clock" size={16} color={new Date((ticket.due_date || ticket.dueDate)!).getTime() < new Date().getTime() ? "#EF4444" : "#6B7280"} />
                         <Text style={styles.infoLabel}>Due Date</Text>
                       </View>
-                      <Text style={[styles.infoValue, { color: new Date(ticket.due_date || ticket.dueDate) < new Date() ? '#EF4444' : '#111827' }]}>
-                        {new Date(ticket.due_date || ticket.dueDate).toLocaleDateString()}
+                      <Text style={[styles.infoValue, { color: new Date((ticket.due_date || ticket.dueDate)!).getTime() < new Date().getTime() ? '#EF4444' : '#111827' }]}>
+                        {new Date((ticket.due_date || ticket.dueDate)!).toLocaleDateString()}
                       </Text>
                     </View>
                   )}

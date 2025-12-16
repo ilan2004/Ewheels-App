@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import StepIndicator from 'react-native-step-indicator';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { BrandColors, Typography, Spacing, StatusColors } from '@/constants/design-system';
+import { BrandColors, Spacing, StatusColors, Typography } from '@/constants/design-system';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import StepIndicator from 'react-native-step-indicator';
 
 interface HorizontalServiceProgressProps {
   currentStatus: string;
@@ -16,11 +16,11 @@ const statusSteps = [
   { key: 'completed', label: 'Completed', icon: 'checkmark.circle.fill' },
 ];
 
-export function HorizontalServiceProgress({ 
+export function HorizontalServiceProgress({
   currentStatus,
   completedSteps = []
 }: HorizontalServiceProgressProps) {
-  
+
   const getCurrentStepIndex = () => {
     return statusSteps.findIndex(step => step.key === currentStatus);
   };
@@ -64,9 +64,9 @@ export function HorizontalServiceProgress({
 
     return (
       <View style={styles.stepIconContainer}>
-        <IconSymbol 
-          name={step.icon} 
-          size={18} 
+        <IconSymbol
+          name={step.icon as any}
+          size={18}
           color={iconColor}
         />
       </View>
@@ -77,7 +77,7 @@ export function HorizontalServiceProgress({
     const step = statusSteps[position];
     if (!step) return null;
 
-    let labelStyle = styles.stepLabel;
+    let labelStyle: any = styles.stepLabel;
     if (stepStatus === 'finished') {
       labelStyle = [styles.stepLabel, styles.finishedStepLabel];
     } else if (stepStatus === 'current') {
@@ -97,7 +97,7 @@ export function HorizontalServiceProgress({
         <IconSymbol name="chart.line.uptrend.xyaxis" size={20} color={BrandColors.title} />
         <Text style={styles.title}>Service Progress</Text>
       </View>
-      
+
       <View style={styles.progressContainer}>
         <StepIndicator
           customStyles={getStepColors()}
@@ -109,14 +109,14 @@ export function HorizontalServiceProgress({
           renderLabel={renderLabel}
         />
       </View>
-      
+
       {/* Current Status Info */}
       <View style={styles.statusInfo}>
         <View style={[styles.statusBadge, { backgroundColor: StatusColors[currentStatus as keyof typeof StatusColors]?.background || BrandColors.primary + '20' }]}>
-          <IconSymbol 
-            name={statusSteps.find(s => s.key === currentStatus)?.icon || 'circle'} 
-            size={14} 
-            color={StatusColors[currentStatus as keyof typeof StatusColors]?.primary || BrandColors.ink} 
+          <IconSymbol
+            name={(statusSteps.find(s => s.key === currentStatus)?.icon || 'circle') as any}
+            size={14}
+            color={StatusColors[currentStatus as keyof typeof StatusColors]?.primary || BrandColors.ink}
           />
           <Text style={[styles.statusText, { color: StatusColors[currentStatus as keyof typeof StatusColors]?.primary || BrandColors.primary }]}>
             Current: {currentStatus.replace('_', ' ').toUpperCase()}

@@ -312,7 +312,7 @@ export default function TechnicianDetailsScreen() {
                                 <View style={[styles.priorityDot, { backgroundColor: getPriorityColor(ticket.priority) }]} />
                               )}
                               <TouchableOpacity
-                                onPress={() => handleReassignTicket(ticket.id, ticket.customer_complaint)}
+                                onPress={() => handleReassignTicket(ticket.id, Array.isArray(ticket.customer_complaint) ? ticket.customer_complaint[0] : ticket.customer_complaint)}
                                 style={styles.reassignButton}
                               >
                                 <IconSymbol name="arrow.triangle.2.circlepath" size={14} color={Colors.neutral[500]} />

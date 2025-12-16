@@ -170,14 +170,14 @@ export function hasPermission(userRole: UserRole, permission: Permission): boole
 /**
  * Check if a user role has any of the specified permissions
  */
-export function hasAnyPermission(userRole: UserRole, permissions: Permission[]): boolean {
+export function hasAnyPermission(userRole: UserRole, permissions: readonly Permission[]): boolean {
   return permissions.some(permission => hasPermission(userRole, permission));
 }
 
 /**
  * Check if a user role has all of the specified permissions
  */
-export function hasAllPermissions(userRole: UserRole, permissions: Permission[]): boolean {
+export function hasAllPermissions(userRole: UserRole, permissions: readonly Permission[]): boolean {
   return permissions.every(permission => hasPermission(userRole, permission));
 }
 
@@ -185,7 +185,7 @@ export function hasAllPermissions(userRole: UserRole, permissions: Permission[])
  * Check if user can access a specific navigation item
  */
 export function canAccessNavigation(
-  userRole: UserRole, 
+  userRole: UserRole,
   navigationKey: keyof typeof NAVIGATION_PERMISSIONS
 ): boolean {
   const requiredPermissions = NAVIGATION_PERMISSIONS[navigationKey];
@@ -248,7 +248,7 @@ export function getFeatureAccess(userRole: UserRole) {
     canUploadAttachments: hasPermission(userRole, Permission.UPLOAD_ATTACHMENTS),
     canDeleteAttachments: hasPermission(userRole, Permission.DELETE_ATTACHMENTS),
     // Floor Manager specific permissions
-    canAssignTechnicians: hasPermission(userRole, Permission.ASSIGN_TECHNICIANS),
+
     canReassignTickets: hasPermission(userRole, Permission.REASSIGN_TICKETS),
     canViewTechnicianWorkload: hasPermission(userRole, Permission.VIEW_TECHNICIAN_WORKLOAD),
     canManageAssignments: hasPermission(userRole, Permission.MANAGE_ASSIGNMENTS),
@@ -262,8 +262,8 @@ export function getFeatureAccess(userRole: UserRole) {
  */
 export function getAccessibleNavigation(userRole: UserRole) {
   const navigationItems = Object.keys(NAVIGATION_PERMISSIONS) as Array<keyof typeof NAVIGATION_PERMISSIONS>;
-  
-  return navigationItems.filter(navItem => 
+
+  return navigationItems.filter(navItem =>
     canAccessNavigation(userRole, navItem)
   );
 }

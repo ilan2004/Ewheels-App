@@ -1,9 +1,9 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Invoice, InvoiceStatus } from '@/types/invoice';
-import { BrandColors, Typography, Spacing, BorderRadius, Shadows } from '@/constants/design-system';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BorderRadius, BrandColors, Shadows, Spacing, Typography } from '@/constants/design-system';
 import { formatCurrency } from '@/lib/invoiceCalculations';
+import { Invoice, InvoiceStatus } from '@/types/invoice';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface InvoiceCardProps {
   invoice: Invoice;
@@ -68,7 +68,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, onPress }) => {
       onPress={onPress}
       disabled={!onPress}
     >
-      <IconSymbol name={config.icon} size={12} color={config.color} />
+      <IconSymbol name={config.icon as any} size={12} color={config.color} />
       <Text style={[styles.statusText, { color: config.color }]}>
         {config.label}
       </Text>
@@ -76,12 +76,12 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, onPress }) => {
   );
 };
 
-export const InvoiceCard: React.FC<InvoiceCardProps> = ({ 
-  invoice, 
-  onPress, 
-  onStatusPress 
+export const InvoiceCard: React.FC<InvoiceCardProps> = ({
+  invoice,
+  onPress,
+  onStatusPress
 }) => {
-  const isOverdue = invoice.status !== 'paid' && 
+  const isOverdue = invoice.status !== 'paid' &&
     new Date(invoice.due_date) < new Date();
 
   const formatDate = (dateString: string) => {
@@ -99,17 +99,16 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
           <Text style={styles.invoiceNumber}>{invoice.number}</Text>
           <Text style={styles.customerName}>{invoice.customer.name}</Text>
         </View>
-        <StatusBadge 
-          status={invoice.status} 
-          onPress={() => onStatusPress?.(invoice)} 
+        <StatusBadge
+          status={invoice.status}
+          onPress={() => onStatusPress?.(invoice)}
         />
       </View>
 
       <View style={styles.cardBody}>
         <View style={styles.amountSection}>
-          <Text style={styles.amountLabel}>Total Amount</Text>
           <Text style={styles.amount}>
-            {formatCurrency(invoice.totals.total, invoice.currency)}
+            {formatCurrency((invoice.totals as any).total || 0)}
           </Text>
         </View>
 
@@ -120,10 +119,10 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
             <Text style={styles.dateValue}>{formatDate(invoice.created_at)}</Text>
           </View>
           <View style={styles.dateItem}>
-            <IconSymbol 
-              name="clock" 
-              size={14} 
-              color={isOverdue ? '#EF4444' : BrandColors.ink + '60'} 
+            <IconSymbol
+              name="clock"
+              size={14}
+              color={isOverdue ? '#EF4444' : BrandColors.ink + '60'}
             />
             <Text style={[styles.dateLabel, isOverdue && styles.overdueText]}>
               Due
@@ -151,7 +150,7 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({
             <>
               <Text style={styles.metaSeparator}>•</Text>
               <Text style={styles.metaText}>
-                {formatCurrency(invoice.balance_due, invoice.currency)} due
+                {formatCurrency(invoice.balance_due)} due
               </Text>
             </>
           )}

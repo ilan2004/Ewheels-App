@@ -30,7 +30,7 @@ export default function JobCardSelector({ onClose, showUnassignOption }: JobCard
 
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredTickets = serviceTickets.filter(ticket => {
+  const filteredTickets = serviceTickets.filter((ticket: any) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (

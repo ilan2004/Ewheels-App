@@ -1,6 +1,6 @@
+import { Image } from 'expo-image';
 import React from 'react';
 import { ViewStyle } from 'react-native';
-import { Image } from 'expo-image';
 
 interface SplashLogoProps {
   width?: number;
@@ -17,7 +17,7 @@ export function SplashLogo({ width = 300, height = 125, style }: SplashLogoProps
           width,
           height,
         },
-        style,
+        style as any,
       ]}
       contentFit="contain"
       cachePolicy="memory-disk"

@@ -38,7 +38,7 @@ const ProfileItem: React.FC<ProfileItemProps> = ({
   >
     <View style={styles.profileItemLeft}>
       <View style={styles.profileItemIcon}>
-        <IconSymbol name={icon} size={24} color={destructive ? Colors.error[600] : Colors.neutral[900]} />
+        <IconSymbol name={icon as any} size={24} color={destructive ? Colors.error[600] : Colors.neutral[900]} />
       </View>
       <View style={styles.profileItemContent}>
         <Text style={[styles.profileItemTitle, destructive && styles.destructiveText]}>{title}</Text>

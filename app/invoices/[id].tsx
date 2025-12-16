@@ -1,30 +1,29 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
   ActivityIndicator,
+  Alert,
+  ScrollView,
   Share,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { router, useLocalSearchParams } from 'expo-router';
 
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { useAuthStore } from '@/stores/authStore';
-import { InvoiceService } from '@/services/invoiceService';
-import { 
-  InvoiceWithPayments, 
-  InvoiceStatus, 
-  InvoiceStatusColors,
-  PaymentMethodNames,
-  PaymentMethod 
-} from '@/types/invoice';
-import { BrandColors, Typography, Spacing, BorderRadius, Shadows } from '@/constants/design-system';
+import { BorderRadius, BrandColors, Shadows, Spacing, Typography } from '@/constants/design-system';
 import { formatCurrency } from '@/lib/invoiceCalculations';
+import { InvoiceService } from '@/services/invoiceService';
+import { useAuthStore } from '@/stores/authStore';
+import {
+  InvoiceStatus,
+  InvoiceStatusColors,
+  PaymentMethod,
+  PaymentMethodNames
+} from '@/types/invoice';
 
 interface StatusBadgeProps {
   status: InvoiceStatus;
@@ -59,7 +58,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
 
 interface SectionHeaderProps {
   title: string;
-  icon: string;
+  icon: any;
 }
 
 const SectionHeader: React.FC<SectionHeaderProps> = ({ title, icon }) => (
@@ -80,7 +79,7 @@ const InfoRow: React.FC<InfoRowProps> = ({ label, value, isMultiline = false, us
   <View style={[styles.infoRow, isMultiline && styles.multilineRow]}>
     <Text style={[styles.infoLabel, useGreenTheme && styles.greenThemeLabel]}>{label}</Text>
     <Text style={[
-      styles.infoValue, 
+      styles.infoValue,
       isMultiline && styles.multilineValue,
       useGreenTheme && styles.greenThemeValue
     ]}>
@@ -159,7 +158,7 @@ export default function InvoiceDetailScreen() {
 
   const handleMarkAsPaid = () => {
     if (!invoice) return;
-    
+
     Alert.alert(
       'Mark as Paid',
       'Are you sure you want to mark this invoice as paid?',
@@ -188,10 +187,10 @@ export default function InvoiceDetailScreen() {
 
   const handleShare = async () => {
     if (!invoice) return;
-    
+
     try {
       await Share.share({
-        message: `Invoice ${invoice.number}\nCustomer: ${invoice.customer.name}\nTotal: ${formatCurrency(invoice.totals.total, invoice.currency)}\nStatus: ${invoice.status}`,
+        message: `Invoice ${invoice.number}\nCustomer: ${invoice.customer.name}\nTotal: ${formatCurrency(invoice.totals.grand_total)}\nStatus: ${invoice.status}`,
         title: `Invoice ${invoice.number}`,
       });
     } catch (error) {
@@ -229,7 +228,7 @@ export default function InvoiceDetailScreen() {
 
   const handleDuplicate = () => {
     if (!invoice) return;
-    
+
     Alert.alert(
       'Duplicate Invoice',
       'This will create a new draft invoice with the same details.',
@@ -245,7 +244,7 @@ export default function InvoiceDetailScreen() {
 
   const handleDelete = () => {
     if (!invoice) return;
-    
+
     Alert.alert(
       'Delete Invoice',
       'This action cannot be undone. Are you sure you want to delete this invoice?',
@@ -317,7 +316,7 @@ export default function InvoiceDetailScreen() {
             </View>
             <View style={styles.headerActions}>
               <StatusBadge status={invoice.status} />
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.moreButton}
                 onPress={() => setIsActionsVisible(!isActionsVisible)}
               >
@@ -325,15 +324,15 @@ export default function InvoiceDetailScreen() {
               </TouchableOpacity>
             </View>
           </View>
-          
+
           {/* Amount highlight */}
           <View style={styles.amountSection}>
             <Text style={styles.amountLabel}>Invoice Total</Text>
             <Text style={styles.amount}>
-              {formatCurrency(invoice.totals.total, invoice.currency)}
+              {formatCurrency(invoice.totals.grand_total)}
             </Text>
           </View>
-          
+
           {/* Key dates */}
           <View style={styles.dateSection}>
             <View style={styles.dateItem}>
@@ -342,10 +341,10 @@ export default function InvoiceDetailScreen() {
               <Text style={styles.dateValue}>{formatDate(invoice.created_at)}</Text>
             </View>
             <View style={styles.dateItem}>
-              <IconSymbol 
-                name="clock" 
-                size={14} 
-                color={isOverdue() ? '#EF4444' : BrandColors.ink + '60'} 
+              <IconSymbol
+                name="clock"
+                size={14}
+                color={isOverdue() ? '#EF4444' : BrandColors.ink + '60'}
               />
               <Text style={[styles.dateLabel, isOverdue() && styles.overdueText]}>
                 Due
@@ -355,7 +354,7 @@ export default function InvoiceDetailScreen() {
               </Text>
             </View>
           </View>
-          
+
           {isOverdue() && (
             <View style={styles.overdueIndicator}>
               <IconSymbol name="exclamationmark.triangle.fill" size={12} color="#EF4444" />
@@ -371,22 +370,22 @@ export default function InvoiceDetailScreen() {
               <IconSymbol name="pencil" size={16} color={BrandColors.ink} />
               <Text style={styles.actionText}>Edit Invoice</Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity style={styles.actionItem} onPress={handleShare}>
               <IconSymbol name="square.and.arrow.up" size={16} color={BrandColors.ink} />
               <Text style={styles.actionText}>Share</Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity style={styles.actionItem} onPress={handleDuplicate}>
               <IconSymbol name="doc.on.doc" size={16} color={BrandColors.ink} />
               <Text style={styles.actionText}>Duplicate</Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity style={styles.actionItem} onPress={handleStatusChange}>
               <IconSymbol name="arrow.triangle.2.circlepath" size={16} color={BrandColors.ink} />
               <Text style={styles.actionText}>Change Status</Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity style={[styles.actionItem, styles.deleteAction]} onPress={handleDelete}>
               <IconSymbol name="trash" size={16} color="#EF4444" />
               <Text style={[styles.actionText, styles.deleteText]}>Delete</Text>
@@ -396,15 +395,15 @@ export default function InvoiceDetailScreen() {
         {/* Quick Actions */}
         {invoice.status !== 'paid' && (
           <View style={styles.quickActions}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.quickActionButton, styles.primaryAction]}
               onPress={handleMarkAsPaid}
             >
               <IconSymbol name="checkmark.circle" size={20} color={BrandColors.surface} />
               <Text style={styles.primaryActionText}>Mark as Paid</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.quickActionButton}
               onPress={handleAddPayment}
             >
@@ -444,11 +443,11 @@ export default function InvoiceDetailScreen() {
             {invoice.customer.phone && (
               <InfoRow label="Phone" value={invoice.customer.phone} useGreenTheme />
             )}
-            <InfoRow 
-              label="Address" 
-              value={formatAddress(invoice.customer.address)} 
+            <InfoRow
+              label="Address"
+              value={formatAddress(invoice.customer.address)}
               isMultiline
-              useGreenTheme 
+              useGreenTheme
             />
           </View>
         </View>
@@ -458,22 +457,22 @@ export default function InvoiceDetailScreen() {
           <SectionHeader title="Line Items" icon="list.bullet" />
           <View style={styles.card}>
             {invoice.items?.map((item, index) => (
-              <View key={item.line_id} style={styles.lineItem}>
+              <View key={item.id || index} style={styles.lineItem}>
                 <Text style={styles.itemDescription}>{item.description}</Text>
                 <View style={styles.itemDetails}>
                   <View style={styles.itemRow}>
                     <Text style={styles.itemLabel}>Qty: {item.quantity}</Text>
                     <Text style={styles.itemLabel}>
-                      Unit Price: {formatCurrency(item.unit_price, invoice.currency)}
+                      Unit Price: {formatCurrency(item.unit_price)}
                     </Text>
                   </View>
                   <View style={styles.itemRow}>
                     <Text style={styles.itemLabel}>Discount: {item.discount}%</Text>
-                    <Text style={styles.itemLabel}>Tax: {item.tax_rate}%</Text>
+                    <Text style={styles.itemLabel}>Tax: {item.sgst_rate + item.cgst_rate}%</Text>
                   </View>
                   <View style={styles.itemTotalRow}>
                     <Text style={styles.itemTotal}>
-                      Total: {formatCurrency(item.total, invoice.currency)}
+                      Total: {formatCurrency(item.total)}
                     </Text>
                   </View>
                 </View>
@@ -492,40 +491,40 @@ export default function InvoiceDetailScreen() {
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Subtotal</Text>
               <Text style={styles.totalValue}>
-                {formatCurrency(invoice.totals.subtotal, invoice.currency)}
+                {formatCurrency(invoice.totals.subtotal)}
               </Text>
             </View>
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Total Discount</Text>
               <Text style={styles.totalValue}>
-                -{formatCurrency(invoice.totals.total_discount, invoice.currency)}
+                -{formatCurrency(invoice.totals.discount_total)}
               </Text>
             </View>
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Total Tax</Text>
               <Text style={styles.totalValue}>
-                {formatCurrency(invoice.totals.total_tax, invoice.currency)}
+                {formatCurrency(invoice.totals.sgst_total + invoice.totals.cgst_total)}
               </Text>
             </View>
             <View style={[styles.totalRow, styles.grandTotalRow]}>
               <Text style={styles.grandTotalLabel}>Grand Total</Text>
               <Text style={styles.grandTotalValue}>
-                {formatCurrency(invoice.totals.total, invoice.currency)}
+                {formatCurrency(invoice.totals.grand_total)}
               </Text>
             </View>
-            
+
             {invoice.total_payments > 0 && (
               <>
                 <View style={styles.totalRow}>
                   <Text style={styles.totalLabel}>Total Payments</Text>
                   <Text style={styles.paidValue}>
-                    -{formatCurrency(invoice.total_payments, invoice.currency)}
+                    -{formatCurrency(invoice.total_payments)}
                   </Text>
                 </View>
                 <View style={[styles.totalRow, styles.balanceRow]}>
                   <Text style={styles.balanceLabel}>Balance Due</Text>
                   <Text style={styles.balanceValue}>
-                    {formatCurrency(invoice.balance_due, invoice.currency)}
+                    {formatCurrency(invoice.balance_due)}
                   </Text>
                 </View>
               </>
@@ -542,7 +541,7 @@ export default function InvoiceDetailScreen() {
                 <View key={payment.id} style={styles.paymentItem}>
                   <View style={styles.paymentHeader}>
                     <Text style={styles.paymentAmount}>
-                      {formatCurrency(payment.amount, invoice.currency)}
+                      {formatCurrency(payment.amount)}
                     </Text>
                     <Text style={styles.paymentDate}>
                       {formatDate(payment.received_at)}
@@ -892,141 +891,48 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
     paddingTop: Spacing.sm,
   },
-  scrollView: {
+
+  // Loading and Error States
+  loadingState: {
     flex: 1,
-  },
-  quickActions: {
-    flexDirection: 'row',
-    padding: Spacing.lg,
-    gap: Spacing.sm,
-  },
-  quickActionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    gap: Spacing.lg,
+  },
+  loadingText: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.medium,
+    color: BrandColors.ink + '80',
+  },
+  errorState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.lg,
+  },
+  errorTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#EF4444',
+  },
+  errorText: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '80',
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: BrandColors.primary,
+    paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
-    gap: Spacing.xs,
-    borderWidth: 1,
-    borderColor: BrandColors.primary,
+    ...Shadows.sm,
   },
-  primaryAction: {
-    backgroundColor: BrandColors.primary,
-  },
-  primaryActionText: {
+  retryButtonText: {
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.semibold,
     color: BrandColors.surface,
-  },
-  secondaryActionText: {
-    fontSize: Typography.fontSize.base,
-    fontFamily: Typography.fontFamily.semibold,
-    color: BrandColors.primary,
-  },
-  section: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.lg,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-    gap: Spacing.sm,
-  },
-  sectionTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontFamily: Typography.fontFamily.bold,
-    color: BrandColors.title,
-  },
-  card: {
-    backgroundColor: BrandColors.surface,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: BrandColors.ink + '10',
-    padding: Spacing.lg,
-    ...Shadows.sm,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: Spacing.sm,
-  },
-  multilineRow: {
-    alignItems: 'flex-start',
-  },
-  infoLabel: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.medium,
-    color: BrandColors.ink + '80',
-    minWidth: 100,
-    marginRight: Spacing.sm,
-  },
-  infoValue: {
-    fontSize: Typography.fontSize.base,
-    fontFamily: Typography.fontFamily.regular,
-    color: BrandColors.ink,
-    flex: 1,
-  },
-  multilineValue: {
-    lineHeight: 20,
-  },
-  lineItem: {
-    paddingVertical: Spacing.sm,
-  },
-  itemDescription: {
-    fontSize: Typography.fontSize.base,
-    fontFamily: Typography.fontFamily.semibold,
-    color: BrandColors.ink,
-    marginBottom: Spacing.xs,
-  },
-  itemDetails: {
-    gap: 4,
-  },
-  itemRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  itemLabel: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.regular,
-    color: BrandColors.ink + '80',
-  },
-  itemTotalRow: {
-    alignItems: 'flex-end',
-    marginTop: Spacing.xs,
-  },
-  itemTotal: {
-    fontSize: Typography.fontSize.base,
-    fontFamily: Typography.fontFamily.bold,
-    color: BrandColors.primary,
-  },
-  itemSeparator: {
-    height: 1,
-    backgroundColor: BrandColors.ink + '10',
-    marginTop: Spacing.sm,
-  },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 6,
-  },
-  totalLabel: {
-    fontSize: Typography.fontSize.base,
-    fontFamily: Typography.fontFamily.medium,
-    color: BrandColors.ink + '80',
-  },
-  totalValue: {
-    fontSize: Typography.fontSize.base,
-    fontFamily: Typography.fontFamily.semibold,
-    color: BrandColors.ink,
-  },
-  grandTotalRow: {
-    borderTopWidth: 2,
-    borderTopColor: BrandColors.primary,
-    paddingTop: Spacing.sm,
-    marginTop: Spacing.sm,
   },
   grandTotalLabel: {
     fontSize: Typography.fontSize.lg,
@@ -1106,47 +1012,5 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: Spacing.xl,
-  },
-  // Loading and Error States
-  loadingState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: Spacing.lg,
-  },
-  loadingText: {
-    fontSize: Typography.fontSize.base,
-    fontFamily: Typography.fontFamily.medium,
-    color: BrandColors.ink + '80',
-  },
-  errorState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.lg,
-  },
-  errorTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontFamily: Typography.fontFamily.bold,
-    color: '#EF4444',
-  },
-  errorText: {
-    fontSize: Typography.fontSize.base,
-    fontFamily: Typography.fontFamily.regular,
-    color: BrandColors.ink + '80',
-    textAlign: 'center',
-  },
-  retryButton: {
-    backgroundColor: BrandColors.primary,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.md,
-    ...Shadows.sm,
-  },
-  retryButtonText: {
-    fontSize: Typography.fontSize.base,
-    fontFamily: Typography.fontFamily.semibold,
-    color: BrandColors.surface,
   },
 });

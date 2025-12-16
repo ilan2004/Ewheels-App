@@ -1,6 +1,6 @@
-import { create } from 'zustand';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { create } from 'zustand';
 
 export interface Location {
   id: string;
@@ -16,20 +16,20 @@ export interface UserLocation {
 interface LocationStore {
   // Current active location
   activeLocation: Location | null;
-  
+
   // Available locations for the current user
   availableLocations: Location[];
-  
+
   // Loading states
   loading: boolean;
   initializing: boolean;
-  
+
   // Actions
   setActiveLocation: (location: Location | null) => void;
   setAvailableLocations: (locations: Location[]) => void;
   setLoading: (loading: boolean) => void;
   setInitializing: (initializing: boolean) => void;
-  
+
   // Async actions
   fetchUserLocations: (userId: string) => Promise<void>;
   switchLocation: (location: Location) => Promise<void>;
@@ -67,7 +67,7 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
         // If user_locations table doesn't exist or user has no locations assigned,
         // fetch all available locations (admin behavior)
         console.warn('User locations not found, fetching all locations:', userLocationError);
-        
+
         const { data: allLocations, error: allLocationError } = await supabase
           .from('locations')
           .select('id, name, code')
@@ -76,36 +76,41 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
         if (allLocationError) {
           // Fallback to default location if locations table doesn't exist
           console.warn('Locations table not found, using default location:', allLocationError);
-          set({ 
+          set({
             availableLocations: [{ id: 'default', name: 'Default Location', code: 'DEFAULT' }],
-            loading: false 
+            loading: false
           });
           return;
         }
 
-        set({ 
+        set({
           availableLocations: allLocations || [],
-          loading: false 
+          loading: false
         });
         return;
       }
 
       // Extract locations from user_locations join result
       const locations = userLocations
-        ?.map(ul => ul.locations)
+        ?.map(ul => {
+          if (Array.isArray(ul.locations)) {
+            return ul.locations[0];
+          }
+          return ul.locations;
+        })
         .filter(Boolean) as Location[] || [];
 
-      set({ 
+      set({
         availableLocations: locations,
-        loading: false 
+        loading: false
       });
 
     } catch (error) {
       console.warn('Error fetching user locations:', error);
       // Fallback to default location
-      set({ 
+      set({
         availableLocations: [{ id: 'default', name: 'Default Location', code: 'DEFAULT' }],
-        loading: false 
+        loading: false
       });
     }
   },
@@ -113,10 +118,10 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
   switchLocation: async (location: Location) => {
     try {
       set({ loading: true, activeLocation: location });
-      
+
       // Persist the active location
       await AsyncStorage.setItem(ACTIVE_LOCATION_STORAGE_KEY, JSON.stringify(location));
-      
+
       set({ loading: false });
     } catch (error) {
       console.warn('Error switching location:', error);
@@ -138,7 +143,7 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
       if (storedLocation) {
         try {
           const parsedLocation = JSON.parse(storedLocation) as Location;
-          
+
           // Check if stored location is still available to user
           const isLocationAvailable = get().availableLocations.some(
             loc => loc.id === parsedLocation.id
@@ -158,16 +163,16 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
         await AsyncStorage.setItem(ACTIVE_LOCATION_STORAGE_KEY, JSON.stringify(activeLocation));
       }
 
-      set({ 
+      set({
         activeLocation,
-        initializing: false 
+        initializing: false
       });
 
     } catch (error) {
       console.warn('Error initializing location:', error);
-      set({ 
+      set({
         activeLocation: null,
-        initializing: false 
+        initializing: false
       });
     }
   },
@@ -179,7 +184,7 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
       loading: false,
       initializing: true,
     });
-    
+
     // Clear stored location
     AsyncStorage.removeItem(ACTIVE_LOCATION_STORAGE_KEY).catch(console.warn);
   },

@@ -1,0 +1,235 @@
+app/(tabs)/camera.tsx(131,11): error TS2353: Object literal may only specify known properties, and 'quality' does not exist in type 'CameraRecordingOptions'.
+app/(tabs)/dashboard.tsx(57,21): error TS2322: Type 'string' is not assignable to type 'SFSymbols6_0'.
+app/(tabs)/dashboard.tsx(99,7): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: LinearGradientProps): LinearGradient', gave the following error.
+    Type 'string[]' is not assignable to type 'readonly [ColorValue, ColorValue, ...ColorValue[]]'.
+      Source provides no match for required element at position 0 in target.
+  Overload 2 of 2, '(props: LinearGradientProps, context: any): LinearGradient', gave the following error.
+    Type 'string[]' is not assignable to type 'readonly [ColorValue, ColorValue, ...ColorValue[]]'.
+      Source provides no match for required element at position 0 in target.
+app/(tabs)/dashboard.tsx(104,23): error TS2322: Type 'string' is not assignable to type 'SFSymbols6_0'.
+app/(tabs)/dashboard.tsx(162,30): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number | Date'.
+      Type 'undefined' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number'.
+      Type 'undefined' is not assignable to type 'string | number'.
+app/(tabs)/dashboard.tsx(308,17): error TS4104: The type 'readonly ["#ffffff", "#fbdfdc"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.
+app/(tabs)/dashboard.tsx(316,17): error TS4104: The type 'readonly ["#499588", "#387868"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.
+app/(tabs)/dashboard.tsx(324,17): error TS4104: The type 'readonly [string, "#eea8a0"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.
+app/(tabs)/dashboard.tsx(332,17): error TS4104: The type 'readonly ["#faf3e9", "#f9e9d2"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.
+app/(tabs)/dashboard.tsx(457,5): error TS2783: 'backgroundColor' is specified more than once, so this usage will be overwritten.
+app/(tabs)/floor-manager-dashboard.tsx(43,21): error TS2322: Type 'string' is not assignable to type 'SFSymbols6_0'.
+app/(tabs)/floor-manager-dashboard.tsx(57,11): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: LinearGradientProps): LinearGradient', gave the following error.
+    Type 'string[]' is not assignable to type 'readonly [ColorValue, ColorValue, ...ColorValue[]]'.
+      Source provides no match for required element at position 0 in target.
+  Overload 2 of 2, '(props: LinearGradientProps, context: any): LinearGradient', gave the following error.
+    Type 'string[]' is not assignable to type 'readonly [ColorValue, ColorValue, ...ColorValue[]]'.
+      Source provides no match for required element at position 0 in target.
+app/(tabs)/floor-manager-dashboard.tsx(249,15): error TS4104: The type 'readonly ["#ffffff", "#fbdfdc"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.
+app/(tabs)/floor-manager-dashboard.tsx(257,15): error TS4104: The type 'readonly ["#499588", "#387868"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.
+app/(tabs)/floor-manager-dashboard.tsx(265,15): error TS4104: The type 'readonly [string, "#eea8a0"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.
+app/(tabs)/floor-manager-dashboard.tsx(273,15): error TS4104: The type 'readonly ["#faf3e9", "#f9e9d2"]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.
+app/(tabs)/media-hub.tsx(133,17): error TS2322: Type 'string' is not assignable to type 'SFSymbols6_0'.
+app/(tabs)/media-library.tsx(135,44): error TS2339: Property 'documentDirectory' does not exist on type 'typeof import("E:/All Softwares/EvWheelsApp/node_modules/expo-file-system/build/index")'.
+app/(tabs)/profile.tsx(41,21): error TS2322: Type 'string' is not assignable to type 'SFSymbols6_0'.
+app/(tabs)/record-audio.tsx(29,35): error TS2339: Property 'documentDirectory' does not exist on type 'typeof import("E:/All Softwares/EvWheelsApp/node_modules/expo-file-system/build/index")'.
+app/(tabs)/record-audio.tsx(30,16): error TS2339: Property 'documentDirectory' does not exist on type 'typeof import("E:/All Softwares/EvWheelsApp/node_modules/expo-file-system/build/index")'.
+app/(tabs)/record-audio.tsx(148,18): error TS2339: Property 'modificationTime' does not exist on type 'FileInfo'.
+  Property 'modificationTime' does not exist on type '{ exists: false; uri: string; isDirectory: false; }'.
+app/(tabs)/record-audio.tsx(149,31): error TS2339: Property 'modificationTime' does not exist on type 'FileInfo'.
+  Property 'modificationTime' does not exist on type '{ exists: false; uri: string; isDirectory: false; }'.
+app/(tabs)/record-audio.tsx(175,7): error TS2322: Type 'number' is not assignable to type 'Timeout'.
+app/(tabs)/technician-profile.tsx(45,21): error TS2322: Type 'string' is not assignable to type 'SFSymbols6_0'.
+app/(tabs)/technician-profile.tsx(149,5): error TS2783: 'backgroundColor' is specified more than once, so this usage will be overwritten.
+app/invoices/[id].tsx(66,17): error TS2322: Type 'string' is not assignable to type 'SFSymbols6_0'.
+app/jobcards/[ticketId].tsx(488,95): error TS2345: Argument of type 'number | null | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+app/jobcards/[ticketId].tsx(490,76): error TS2345: Argument of type 'number | null | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+app/technician-details/[technicianId].tsx(315,80): error TS2345: Argument of type 'string[]' is not assignable to parameter of type 'string'.
+components/customers/CustomerInputField.tsx(48,17): error TS18047: 'linkedCustomer' is possibly 'null'.
+components/customers/CustomerPickerModal.tsx(121,43): error TS2345: Argument of type 'CustomerSearchItem' is not assignable to parameter of type 'Customer'.
+  Type 'CustomerSearchItem' is missing the following properties from type 'Customer': created_at, updated_at
+components/financial/CashManagement.tsx(689,39): error TS2339: Property 'md' does not exist on type '{ xs: number; sm: number; base: number; lg: number; xl: number; xl2: number; '2xl': number; '3xl': number; '4xl': number; '5xl': number; }'.
+components/invoices/InvoiceCard.tsx(71,19): error TS2322: Type 'string' is not assignable to type 'SFSymbols6_0'.
+components/invoices/InvoiceCard.tsx(112,44): error TS2339: Property 'total' does not exist on type 'InvoiceTotals'.
+components/invoices/InvoiceCard.tsx(112,51): error TS2554: Expected 1 arguments, but got 2.
+components/invoices/InvoiceCard.tsx(154,54): error TS2554: Expected 1 arguments, but got 2.
+components/JobCard.tsx(131,46): error TS2339: Property 'trim' does not exist on type 'never'.
+components/JobCard.tsx(131,85): error TS2339: Property 'trim' does not exist on type 'never'.
+components/JobCard.tsx(133,64): error TS2339: Property 'replace' does not exist on type 'never'.
+components/media-hub/JobCardSelector.tsx(39,15): error TS2339: Property 'customer' does not exist on type 'ServiceTicket'.
+components/media-hub/LibrarySection.tsx(471,71): error TS2339: Property 'toLowerCase' does not exist on type 'string[]'.
+components/media-hub/MediaItem.tsx(285,39): error TS2339: Property 'mono' does not exist on type '{ regular: string; medium: string; semibold: string; bold: string; }'.
+components/media-hub/MediaItem.tsx(349,39): error TS2339: Property 'mono' does not exist on type '{ regular: string; medium: string; semibold: string; bold: string; }'.
+components/media-hub/TicketAssignmentDialog.tsx(69,18): error TS2345: Argument of type 'ServiceTicket[]' is not assignable to parameter of type 'SetStateAction<ServiceTicket[]>'.
+  Type 'import("E:/All Softwares/EvWheelsApp/types/index").ServiceTicket[]' is not assignable to type 'import("E:/All Softwares/EvWheelsApp/stores/mediaHubStore").ServiceTicket[]'.
+    Type 'import("E:/All Softwares/EvWheelsApp/types/index").ServiceTicket' is not assignable to type 'import("E:/All Softwares/EvWheelsApp/stores/mediaHubStore").ServiceTicket'.
+      Types of property 'customer_complaint' are incompatible.
+        Type 'string[]' is not assignable to type 'string'.
+components/NavbarLogo.tsx(20,9): error TS2322: Type 'ViewStyle | undefined' is not assignable to type 'Falsy | ImageStyle | RegisteredStyle<ImageStyle> | RecursiveArray<Falsy | ImageStyle | RegisteredStyle<ImageStyle>> | readonly (Falsy | ... 1 more ... | RegisteredStyle<...>)[]'.
+  Type 'ViewStyle' is not assignable to type 'Falsy | ImageStyle | RegisteredStyle<ImageStyle> | RecursiveArray<Falsy | ImageStyle | RegisteredStyle<ImageStyle>> | readonly (Falsy | ... 1 more ... | RegisteredStyle<...>)[]'.
+    Type 'ViewStyle' is not assignable to type 'ImageStyle'.
+      Types of property 'overflow' are incompatible.
+        Type '"visible" | "hidden" | "scroll" | undefined' is not assignable to type '"visible" | "hidden" | undefined'.
+          Type '"scroll"' is not assignable to type '"visible" | "hidden" | undefined'.
+components/progress/HorizontalServiceProgress.tsx(68,11): error TS2322: Type 'string' is not assignable to type 'SFSymbols6_0'.
+components/progress/HorizontalServiceProgress.tsx(82,7): error TS2740: Type '{ color: string; fontFamily: string; }[]' is missing the following properties from type '{ fontSize: number; fontFamily: string; color: string; textAlign: "center"; marginTop: number; textTransform: "capitalize"; }': fontSize, fontFamily, color, textAlign, and 2 more.
+components/progress/HorizontalServiceProgress.tsx(84,7): error TS2740: Type '{ color: string; fontFamily: string; }[]' is missing the following properties from type '{ fontSize: number; fontFamily: string; color: string; textAlign: "center"; marginTop: number; textTransform: "capitalize"; }': fontSize, fontFamily, color, textAlign, and 2 more.
+components/progress/HorizontalServiceProgress.tsx(117,13): error TS2322: Type 'string' is not assignable to type 'SFSymbols6_0'.
+components/SplashLogo.tsx(20,9): error TS2322: Type 'ViewStyle | undefined' is not assignable to type 'Falsy | ImageStyle | RegisteredStyle<ImageStyle> | RecursiveArray<Falsy | ImageStyle | RegisteredStyle<ImageStyle>> | readonly (Falsy | ... 1 more ... | RegisteredStyle<...>)[]'.
+  Type 'ViewStyle' is not assignable to type 'Falsy | ImageStyle | RegisteredStyle<ImageStyle> | RecursiveArray<Falsy | ImageStyle | RegisteredStyle<ImageStyle>> | readonly (Falsy | ... 1 more ... | RegisteredStyle<...>)[]'.
+    Type 'ViewStyle' is not assignable to type 'ImageStyle'.
+      Types of property 'overflow' are incompatible.
+        Type '"visible" | "hidden" | "scroll" | undefined' is not assignable to type '"visible" | "hidden" | undefined'.
+          Type '"scroll"' is not assignable to type '"visible" | "hidden" | undefined'.
+components/status/StatusUpdateNotification.tsx(68,9): error TS2322: Type 'TextStyle | ViewStyle | ImageStyle' is not assignable to type 'false | "" | RegisteredStyle<ViewStyle> | Value | AnimatedInterpolation<string | number> | WithAnimatedObject<ViewStyle> | WithAnimatedArray<...> | readonly (false | ... 6 more ... | undefined)[] | null | undefined'.
+  Type 'TextStyle' is not assignable to type 'false | "" | RegisteredStyle<ViewStyle> | Value | AnimatedInterpolation<string | number> | WithAnimatedObject<ViewStyle> | WithAnimatedArray<...> | readonly (false | ... 6 more ... | undefined)[] | null | undefined'.
+    Type 'TextStyle' is not assignable to type 'WithAnimatedObject<ViewStyle>'.
+      Types of property 'cursor' are incompatible.
+        Type 'string | undefined' is not assignable to type '"auto" | "pointer" | Value | AnimatedInterpolation<string | number> | undefined'.
+          Type 'string' is not assignable to type '"auto" | "pointer" | Value | AnimatedInterpolation<string | number> | undefined'.
+components/status/StatusUpdateNotification.tsx(76,9): error TS2322: Type 'TextStyle | ViewStyle | ImageStyle' is not assignable to type 'StyleProp<ViewStyle>'.
+  Type 'TextStyle' is not assignable to type 'StyleProp<ViewStyle>'.
+    Type 'TextStyle' is not assignable to type 'ViewStyle'.
+      Types of property 'cursor' are incompatible.
+        Type 'string | undefined' is not assignable to type 'CursorValue | undefined'.
+          Type 'string' is not assignable to type 'CursorValue | undefined'.
+components/status/StatusUpdateNotification.tsx(80,15): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: ViewProps): View', gave the following error.
+    Type 'TextStyle | ViewStyle | ImageStyle' is not assignable to type 'StyleProp<ViewStyle>'.
+      Type 'TextStyle' is not assignable to type 'StyleProp<ViewStyle>'.
+        Type 'TextStyle' is not assignable to type 'ViewStyle'.
+          Types of property 'cursor' are incompatible.
+            Type 'string | undefined' is not assignable to type 'CursorValue | undefined'.
+              Type 'string' is not assignable to type 'CursorValue | undefined'.
+  Overload 2 of 2, '(props: ViewProps, context: any): View', gave the following error.
+    Type 'TextStyle | ViewStyle | ImageStyle' is not assignable to type 'StyleProp<ViewStyle>'.
+      Type 'TextStyle' is not assignable to type 'StyleProp<ViewStyle>'.
+        Type 'TextStyle' is not assignable to type 'ViewStyle'.
+          Types of property 'cursor' are incompatible.
+            Type 'string | undefined' is not assignable to type 'CursorValue | undefined'.
+              Type 'string' is not assignable to type 'CursorValue | undefined'.
+components/status/StatusUpdateNotification.tsx(83,19): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: ViewProps): View', gave the following error.
+    Type 'TextStyle | ViewStyle | ImageStyle' is not assignable to type 'StyleProp<ViewStyle>'.
+      Type 'TextStyle' is not assignable to type 'StyleProp<ViewStyle>'.
+        Type 'TextStyle' is not assignable to type 'ViewStyle'.
+          Types of property 'cursor' are incompatible.
+            Type 'string | undefined' is not assignable to type 'CursorValue | undefined'.
+              Type 'string' is not assignable to type 'CursorValue | undefined'.
+  Overload 2 of 2, '(props: ViewProps, context: any): View', gave the following error.
+    Type 'TextStyle | ViewStyle | ImageStyle' is not assignable to type 'StyleProp<ViewStyle>'.
+      Type 'TextStyle' is not assignable to type 'StyleProp<ViewStyle>'.
+        Type 'TextStyle' is not assignable to type 'ViewStyle'.
+          Types of property 'cursor' are incompatible.
+            Type 'string | undefined' is not assignable to type 'CursorValue | undefined'.
+              Type 'string' is not assignable to type 'CursorValue | undefined'.
+components/status/StatusUpdateNotification.tsx(84,21): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: TextProps): Text', gave the following error.
+    Type 'TextStyle | ViewStyle | ImageStyle' is not assignable to type 'StyleProp<TextStyle>'.
+      Type 'ViewStyle' is not assignable to type 'StyleProp<TextStyle>'.
+        Type 'ViewStyle' is not assignable to type 'TextStyle'.
+          Types of property 'userSelect' are incompatible.
+            Type 'string | undefined' is not assignable to type '"text" | "auto" | "none" | "contain" | "all" | undefined'.
+              Type 'string' is not assignable to type '"text" | "auto" | "none" | "contain" | "all" | undefined'.
+  Overload 2 of 2, '(props: TextProps, context: any): Text', gave the following error.
+    Type 'TextStyle | ViewStyle | ImageStyle' is not assignable to type 'StyleProp<TextStyle>'.
+      Type 'ViewStyle' is not assignable to type 'StyleProp<TextStyle>'.
+        Type 'ViewStyle' is not assignable to type 'TextStyle'.
+          Types of property 'userSelect' are incompatible.
+            Type 'string | undefined' is not assignable to type '"text" | "auto" | "none" | "contain" | "all" | undefined'.
+              Type 'string' is not assignable to type '"text" | "auto" | "none" | "contain" | "all" | undefined'.
+components/status/StatusUpdateNotification.tsx(91,15): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: ViewProps): View', gave the following error.
+    Type 'TextStyle | ViewStyle | ImageStyle' is not assignable to type 'StyleProp<ViewStyle>'.
+      Type 'TextStyle' is not assignable to type 'StyleProp<ViewStyle>'.
+        Type 'TextStyle' is not assignable to type 'ViewStyle'.
+          Types of property 'cursor' are incompatible.
+            Type 'string | undefined' is not assignable to type 'CursorValue | undefined'.
+              Type 'string' is not assignable to type 'CursorValue | undefined'.
+  Overload 2 of 2, '(props: ViewProps, context: any): View', gave the following error.
+    Type 'TextStyle | ViewStyle | ImageStyle' is not assignable to type 'StyleProp<ViewStyle>'.
+      Type 'TextStyle' is not assignable to type 'StyleProp<ViewStyle>'.
+        Type 'TextStyle' is not assignable to type 'ViewStyle'.
+          Types of property 'cursor' are incompatible.
+            Type 'string | undefined' is not assignable to type 'CursorValue | undefined'.
+              Type 'string' is not assignable to type 'CursorValue | undefined'.
+components/status/StatusUpdateNotification.tsx(92,17): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: TextProps): Text', gave the following error.
+    Type 'TextStyle | ViewStyle | ImageStyle' is not assignable to type 'StyleProp<TextStyle>'.
+      Type 'ViewStyle' is not assignable to type 'StyleProp<TextStyle>'.
+        Type 'ViewStyle' is not assignable to type 'TextStyle'.
+          Types of property 'userSelect' are incompatible.
+            Type 'string | undefined' is not assignable to type '"text" | "auto" | "none" | "contain" | "all" | undefined'.
+              Type 'string' is not assignable to type '"text" | "auto" | "none" | "contain" | "all" | undefined'.
+  Overload 2 of 2, '(props: TextProps, context: any): Text', gave the following error.
+    Type 'TextStyle | ViewStyle | ImageStyle' is not assignable to type 'StyleProp<TextStyle>'.
+      Type 'ViewStyle' is not assignable to type 'StyleProp<TextStyle>'.
+        Type 'ViewStyle' is not assignable to type 'TextStyle'.
+          Types of property 'userSelect' are incompatible.
+            Type 'string | undefined' is not assignable to type '"text" | "auto" | "none" | "contain" | "all" | undefined'.
+              Type 'string' is not assignable to type '"text" | "auto" | "none" | "contain" | "all" | undefined'.
+components/status/StatusUpdateNotification.tsx(93,17): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: TextProps): Text', gave the following error.
+    Type 'TextStyle | ViewStyle | ImageStyle' is not assignable to type 'StyleProp<TextStyle>'.
+      Type 'ViewStyle' is not assignable to type 'StyleProp<TextStyle>'.
+        Type 'ViewStyle' is not assignable to type 'TextStyle'.
+          Types of property 'userSelect' are incompatible.
+            Type 'string | undefined' is not assignable to type '"text" | "auto" | "none" | "contain" | "all" | undefined'.
+              Type 'string' is not assignable to type '"text" | "auto" | "none" | "contain" | "all" | undefined'.
+  Overload 2 of 2, '(props: TextProps, context: any): Text', gave the following error.
+    Type 'TextStyle | ViewStyle | ImageStyle' is not assignable to type 'StyleProp<TextStyle>'.
+      Type 'ViewStyle' is not assignable to type 'StyleProp<TextStyle>'.
+        Type 'ViewStyle' is not assignable to type 'TextStyle'.
+          Types of property 'userSelect' are incompatible.
+            Type 'string | undefined' is not assignable to type '"text" | "auto" | "none" | "contain" | "all" | undefined'.
+              Type 'string' is not assignable to type '"text" | "auto" | "none" | "contain" | "all" | undefined'.
+components/status/StatusUpdateNotification.tsx(101,11): error TS2322: Type 'TextStyle | ViewStyle | ImageStyle' is not assignable to type 'StyleProp<ViewStyle>'.
+  Type 'TextStyle' is not assignable to type 'StyleProp<ViewStyle>'.
+    Type 'TextStyle' is not assignable to type 'ViewStyle'.
+      Types of property 'cursor' are incompatible.
+        Type 'string | undefined' is not assignable to type 'CursorValue | undefined'.
+          Type 'string' is not assignable to type 'CursorValue | undefined'.
+components/status/StatusUpdateNotification.tsx(152,5): error TS2322: Type 'string' is not assignable to type '"400" | "500" | "600" | "700" | 600 | 100 | 500 | 200 | 700 | "normal" | "light" | "bold" | "100" | "200" | "300" | "800" | "900" | 300 | 400 | 800 | 900 | "ultralight" | "thin" | "medium" | ... 6 more ... | undefined'.
+components/status/StatusUpdateNotification.tsx(160,5): error TS2322: Type 'string' is not assignable to type '"400" | "500" | "600" | "700" | 600 | 100 | 500 | 200 | 700 | "normal" | "light" | "bold" | "100" | "200" | "300" | "800" | "900" | 300 | 400 | 800 | 900 | "ultralight" | "thin" | "medium" | ... 6 more ... | undefined'.
+components/status/StatusUpdateNotification.tsx(187,11): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: ViewProps): View', gave the following error.
+    Type 'TextStyle | ViewStyle | ImageStyle' is not assignable to type 'StyleProp<ViewStyle>'.
+      Type 'TextStyle' is not assignable to type 'StyleProp<ViewStyle>'.
+        Type 'TextStyle' is not assignable to type 'ViewStyle'.
+          Types of property 'cursor' are incompatible.
+            Type 'string | undefined' is not assignable to type 'CursorValue | undefined'.
+              Type 'string' is not assignable to type 'CursorValue | undefined'.
+  Overload 2 of 2, '(props: ViewProps, context: any): View', gave the following error.
+    Type 'TextStyle | ViewStyle | ImageStyle' is not assignable to type 'StyleProp<ViewStyle>'.
+      Type 'TextStyle' is not assignable to type 'StyleProp<ViewStyle>'.
+        Type 'TextStyle' is not assignable to type 'ViewStyle'.
+          Types of property 'cursor' are incompatible.
+            Type 'string | undefined' is not assignable to type 'CursorValue | undefined'.
+              Type 'string' is not assignable to type 'CursorValue | undefined'.
+components/status/StatusUpdateNotification.tsx(188,13): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: TextProps): Text', gave the following error.
+    Type 'TextStyle | ViewStyle | ImageStyle' is not assignable to type 'StyleProp<TextStyle>'.
+      Type 'ViewStyle' is not assignable to type 'StyleProp<TextStyle>'.
+        Type 'ViewStyle' is not assignable to type 'TextStyle'.
+          Types of property 'userSelect' are incompatible.
+            Type 'string | undefined' is not assignable to type '"text" | "auto" | "none" | "contain" | "all" | undefined'.
+              Type 'string' is not assignable to type '"text" | "auto" | "none" | "contain" | "all" | undefined'.
+  Overload 2 of 2, '(props: TextProps, context: any): Text', gave the following error.
+    Type 'TextStyle | ViewStyle | ImageStyle' is not assignable to type 'StyleProp<TextStyle>'.
+      Type 'ViewStyle' is not assignable to type 'StyleProp<TextStyle>'.
+        Type 'ViewStyle' is not assignable to type 'TextStyle'.
+          Types of property 'userSelect' are incompatible.
+            Type 'string | undefined' is not assignable to type '"text" | "auto" | "none" | "contain" | "all" | undefined'.
+              Type 'string' is not assignable to type '"text" | "auto" | "none" | "contain" | "all" | undefined'.
+components/status/StatusUpdateNotification.tsx(211,5): error TS2322: Type 'string' is not assignable to type '"400" | "500" | "600" | "700" | 600 | 100 | 500 | 200 | 700 | "normal" | "light" | "bold" | "100" | "200" | "300" | "800" | "900" | 300 | 400 | 800 | 900 | "ultralight" | "thin" | "medium" | ... 6 more ... | undefined'.
+components/status/StatusUpdatesTimeline.tsx(273,32): error TS2339: Property 'xs' does not exist on type '{ none: number; sm: number; base: number; md: number; lg: number; xl: number; '2xl': number; full: number; }'.
+components/triage/TriageManagement.tsx(136,21): error TS2322: Type 'string' is not assignable to type 'SFSymbols6_0'.
+lib/permissions.ts(251,5): error TS1117: An object literal cannot have multiple properties with the same name.
+services/dataService.ts(208,9): error TS2322: Type 'string' is not assignable to type 'string[]'.
+services/dataService.ts(235,9): error TS2322: Type 'string' is not assignable to type 'string[]'.
+services/financialService.ts(92,9): error TS2589: Type instantiation is excessively deep and possibly infinite.

@@ -8,7 +8,7 @@ export class BatteriesService {
   }
 
   // Generate mock battery records
-  private generateMockBatteries(limit: number = 10): BatteryRecord[] {
+  private generateMockBatteries(limit: number = 10): any[] {
     const batteryMakes = ['Ola', 'Ather', 'TVS', 'Bajaj', 'Hero Electric'];
     const batteryModels = ['Li-3024', '450X-BAT', 'iQ-2836', 'CT-3648', 'HE-4872'];
     const batteryTypes: Array<'li-ion' | 'lfp' | 'nmc' | 'other'> = ['li-ion', 'lfp', 'nmc', 'other'];
@@ -80,9 +80,9 @@ export class BatteriesService {
     });
   }
 
-  private mockBatteries: BatteryRecord[] | null = null;
+  private mockBatteries: any[] | null = null;
 
-  private getMockBatteries(limit: number = 10): BatteryRecord[] {
+  private getMockBatteries(limit: number = 10): any[] {
     if (!this.mockBatteries) {
       this.mockBatteries = this.generateMockBatteries(50);
     }

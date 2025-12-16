@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
   timelineDot: {
     width: 8,
     height: 8,
-    borderRadius: BorderRadius.xs,
+    borderRadius: 4,
     marginTop: Spacing.xs,
   },
   timelineLine: {

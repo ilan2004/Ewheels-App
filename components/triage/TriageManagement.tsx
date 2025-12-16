@@ -133,7 +133,7 @@ export const TriageManagement: React.FC<TriageManagementProps> = ({
   const getOptionIcon = (option: TriageOption) => {
     return (
       <View style={[styles.optionIcon, { backgroundColor: option.color + '20' }]}>
-        <IconSymbol name={option.icon} size={24} color={option.color} />
+        <IconSymbol name={option.icon as any} size={24} color={option.color} />
       </View>
     );
   };

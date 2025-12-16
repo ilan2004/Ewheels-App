@@ -139,7 +139,7 @@ export class FloorManagerService {
         ticketNumber: `EV-${new Date().getFullYear()}-${String(Date.now() + index).slice(-6)}`,
         ticket_number: `EV-${new Date().getFullYear()}-${String(Date.now() + index).slice(-6)}`,
         symptom: template.symptom,
-        customer_complaint: template.symptom,
+        customer_complaint: [template.symptom],
         description: `Customer complaint: ${template.symptom}. Assigned for inspection and repair.`,
         priority: template.priority,
         status: 'in_progress' as const,

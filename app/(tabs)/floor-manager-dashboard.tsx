@@ -23,8 +23,8 @@ interface QuickStatProps {
   value: number | string;
   color: string;
   backgroundColor?: string;
-  gradientColors?: string[];
-  icon: string;
+  gradientColors?: string[] | readonly string[];
+  icon: any;
   onPress?: () => void;
 }
 
@@ -54,7 +54,7 @@ const QuickStat: React.FC<QuickStatProps> = ({
         disabled={!onPress}
       >
         <LinearGradient
-          colors={gradientColors}
+          colors={gradientColors as any}
           style={styles.statCard}
         >
           {cardContent}

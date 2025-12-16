@@ -1,13 +1,13 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { BrandColors } from '@/constants/design-system';
 import { CustomerInputFieldProps } from '@/types/customer';
+import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 export const CustomerInputField: React.FC<CustomerInputFieldProps> = ({
   value,
@@ -40,16 +40,16 @@ export const CustomerInputField: React.FC<CustomerInputFieldProps> = ({
       >
         <View style={styles.inputContent}>
           <Text style={[
-            styles.inputText, 
+            styles.inputText,
             hasLinkedCustomer && styles.inputLinked,
             (!hasLinkedCustomer && !value) && styles.placeholderText
           ]}>
-            {hasLinkedCustomer 
-              ? linkedCustomer.name 
+            {hasLinkedCustomer
+              ? linkedCustomer?.name
               : value || placeholder
             }
           </Text>
-          
+
           <Ionicons
             name="search"
             size={20}
@@ -78,7 +78,7 @@ export const CustomerInputField: React.FC<CustomerInputFieldProps> = ({
               </Text>
             )}
           </View>
-          
+
           <TouchableOpacity
             style={styles.clearLinkButton}
             onPress={onClearLink}

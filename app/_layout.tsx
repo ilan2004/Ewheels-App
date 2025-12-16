@@ -58,12 +58,17 @@ export default function RootLayout() {
     'Inter-Bold': Inter_700Bold,
   });
 
+  console.log('[RootLayout] Rendering. State:', { initialized, fontsLoaded, showSplash, splashAnimationFinished });
+
   useEffect(() => {
+    console.log('[RootLayout] checkAuthState effect triggered');
     checkAuthState();
   }, [checkAuthState]);
 
   useEffect(() => {
+    console.log('[RootLayout] Splash logic effect. State:', { initialized, fontsLoaded, splashAnimationFinished });
     if (initialized && fontsLoaded && splashAnimationFinished) {
+      console.log('[RootLayout] Hiding splash screen');
       setShowSplash(false);
     }
   }, [initialized, fontsLoaded, splashAnimationFinished]);

@@ -42,7 +42,7 @@ const ProfileItem: React.FC<ProfileItemProps> = ({
   >
     <View style={styles.profileItemLeft}>
       <View style={styles.profileItemIcon}>
-        <IconSymbol name={icon} size={24} color={destructive ? Colors.error[600] : BrandColors.ink} />
+        <IconSymbol name={icon as any} size={24} color={destructive ? Colors.error[600] : Colors.neutral[900]} />
       </View>
       <View style={styles.profileItemContent}>
         <Text style={[styles.profileItemTitle, destructive && styles.destructiveText]}>{title}</Text>
@@ -146,7 +146,6 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   header: {
-    backgroundColor: BrandColors.surface,
     ...ComponentStyles.header,
     paddingBottom: Spacing.lg,
     borderBottomWidth: 0,
@@ -166,7 +165,6 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: BrandColors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     ...Shadows.md,
@@ -255,7 +253,7 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: Colors.neutral[100],
-    backgroundColor: Colors.white,
+    backgroundColor: BrandColors.surface,
   },
   profileItemLeft: {
     flexDirection: 'row',

@@ -30,7 +30,7 @@ interface KPICardProps {
   value: number;
   color: string;
   backgroundColor: string;
-  icon: string;
+  icon: any;
   onPress?: () => void;
   trend?: {
     value: string;
@@ -76,8 +76,8 @@ interface AdminOverviewCardProps {
   title: string;
   value: number | string;
   color: string;
-  gradientColors: string[];
-  icon: string;
+  gradientColors: string[] | readonly string[];
+  icon: any;
   onPress?: () => void;
   subtitle?: string;
 }
@@ -96,7 +96,7 @@ const AdminOverviewCard: React.FC<AdminOverviewCardProps> = ({
     disabled={!onPress}
   >
     <LinearGradient
-      colors={gradientColors}
+      colors={gradientColors as any}
       style={styles.adminOverviewCard}
     >
       <View style={styles.adminCardContent}>
@@ -159,7 +159,7 @@ const RecentTicketItem: React.FC<RecentTicketItemProps> = ({ ticket, onPress }) 
           </Text>
         )}
         <Text style={styles.ticketMetaText}>
-          Created: {new Date(ticket.createdAt).toLocaleDateString()}
+          Created: {new Date(ticket.createdAt || Date.now()).toLocaleDateString()}
         </Text>
       </View>
     </TouchableOpacity>
@@ -454,7 +454,6 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   header: {
-    backgroundColor: BrandColors.surface, // #f4f3ef
     ...ComponentStyles.header,
     paddingBottom: Spacing.lg,
   },
@@ -640,7 +639,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
   },
   overdueBadge: {
-    backgroundColor: Colors.error[100],
+    paddingBottom: 20,
   },
   dueTodayBadge: {
     backgroundColor: Colors.warning[100],
@@ -712,12 +711,11 @@ const styles = StyleSheet.create({
     right: Spacing.lg,
     bottom: Spacing.lg,
     width: 56,
-    height: 56,
+    paddingVertical: 4,
     borderRadius: BorderRadius.full,
-    backgroundColor: Colors.primary[600],
-    justifyContent: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
-    ...Shadows.lg,
+    gap: 4,
   },
   errorContainer: {
     flex: 1,

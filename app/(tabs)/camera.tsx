@@ -1,16 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Colors, Spacing, Typography } from '@/constants/design-system';
+import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
+import * as MediaLibrary from 'expo-media-library';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
   Alert,
   Dimensions,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
-import * as MediaLibrary from 'expo-media-library';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors, Typography, Spacing } from '@/constants/design-system';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -45,18 +45,18 @@ export default function CameraScreen() {
     // Camera permissions are not granted yet
     return (
       <View style={styles.permissionContainer}>
-        <IconSymbol 
-          name="camera.fill" 
-          size={64} 
-          color={Colors.neutral[400]} 
+        <IconSymbol
+          name="camera.fill"
+          size={64}
+          color={Colors.neutral[400]}
           style={styles.permissionIcon}
         />
         <Text style={styles.permissionTitle}>Camera Access Required</Text>
         <Text style={styles.permissionMessage}>
           We need access to your camera to take photos for tickets and documentation.
         </Text>
-        <TouchableOpacity 
-          style={styles.permissionButton} 
+        <TouchableOpacity
+          style={styles.permissionButton}
           onPress={requestPermission}
         >
           <Text style={styles.permissionButtonText}>Grant Camera Access</Text>
@@ -81,7 +81,7 @@ export default function CameraScreen() {
           base64: false,
           exif: false,
         });
-        
+
         if (photo) {
           // Save to media library if permission is granted
           if (mediaLibraryPermission?.granted) {
@@ -113,7 +113,7 @@ export default function CameraScreen() {
               ]
             );
           }
-          
+
           console.log('Photo URI:', photo.uri);
         }
       } catch (error) {
@@ -128,13 +128,11 @@ export default function CameraScreen() {
       try {
         setIsRecording(true);
         const video = await cameraRef.current.recordAsync({
-          quality: '720p',
           maxDuration: 60, // 60 seconds max
-          mute: false,
         });
-        
+
         setIsRecording(false);
-        
+
         if (video) {
           // Save to media library if permission is granted
           if (mediaLibraryPermission?.granted) {
@@ -166,7 +164,7 @@ export default function CameraScreen() {
               ]
             );
           }
-          
+
           console.log('Video URI:', video.uri);
         }
       } catch (error) {
@@ -203,7 +201,7 @@ export default function CameraScreen() {
               color={flashMode === 'on' ? Colors.warning[500] : Colors.white}
             />
           </TouchableOpacity>
-          
+
           <View style={styles.recordingIndicator}>
             {isRecording && (
               <View style={styles.recordingDot}>
@@ -211,7 +209,7 @@ export default function CameraScreen() {
               </View>
             )}
           </View>
-          
+
           <TouchableOpacity
             style={styles.controlButton}
             onPress={toggleCameraFacing}

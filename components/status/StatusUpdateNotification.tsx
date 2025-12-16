@@ -70,27 +70,27 @@ export function StatusUpdateNotification({
           opacity: fadeAnim,
           transform: [{ scale: scaleAnim }],
         },
-      ]}
+      ] as any}
     >
       <TouchableOpacity
-        style={styles.notificationContent}
+        style={styles.notificationContent as any}
         onPress={onPress}
         activeOpacity={0.8}
       >
         <View style={styles.notificationIcon}>
           <IconSymbol name="bell.fill" size={16} color={DesignColors.primary[600]} />
           {updateCount > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>
+            <View style={styles.badge as any}>
+              <Text style={styles.badgeText as any}>
                 {updateCount > 9 ? '9+' : updateCount}
               </Text>
             </View>
           )}
         </View>
 
-        <View style={styles.notificationText}>
-          <Text style={styles.notificationTitle}>New Progress Updates</Text>
-          <Text style={styles.notificationSubtitle}>
+        <View style={styles.notificationText as any}>
+          <Text style={styles.notificationTitle as any}>New Progress Updates</Text>
+          <Text style={styles.notificationSubtitle as any}>
             {updateCount === 1
               ? '1 new update available'
               : `${updateCount} new updates available`}
@@ -98,7 +98,7 @@ export function StatusUpdateNotification({
         </View>
 
         <TouchableOpacity
-          style={styles.dismissButton}
+          style={styles.dismissButton as any}
           onPress={(e) => {
             e.stopPropagation();
             onDismiss?.();
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: Typography.fontSize.xs - 2,
-    fontWeight: Typography.fontWeight.bold,
+    fontWeight: Typography.fontWeight.bold as any,
     color: DesignColors.white,
   },
   notificationText: {
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   },
   notificationTitle: {
     fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.semibold,
+    fontWeight: Typography.fontWeight.semibold as any,
     color: DesignColors.neutral[900],
     marginBottom: 2,
   },
@@ -184,8 +184,8 @@ export function StatusUpdateBadge({
   }
 
   return (
-    <View style={badgeStyles.badge}>
-      <Text style={badgeStyles.badgeText}>
+    <View style={badgeStyles.badge as any}>
+      <Text style={badgeStyles.badgeText as any}>
         {count > 99 ? '99+' : count}
       </Text>
     </View>
@@ -208,7 +208,7 @@ const badgeStyles = StyleSheet.create({
   },
   badgeText: {
     fontSize: Typography.fontSize.xs - 2,
-    fontWeight: Typography.fontWeight.bold,
+    fontWeight: Typography.fontWeight.bold as any,
     color: DesignColors.white,
     lineHeight: 12,
   },

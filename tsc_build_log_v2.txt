@@ -1,0 +1,22 @@
+app/(tabs)/dashboard.tsx(457,5): error TS2783: 'backgroundColor' is specified more than once, so this usage will be overwritten.
+app/(tabs)/technician-profile.tsx(149,5): error TS2783: 'backgroundColor' is specified more than once, so this usage will be overwritten.
+components/media-hub/MediaItem.tsx(285,39): error TS2339: Property 'mono' does not exist on type '{ regular: string; medium: string; semibold: string; bold: string; }'.
+components/media-hub/MediaItem.tsx(349,39): error TS2339: Property 'mono' does not exist on type '{ regular: string; medium: string; semibold: string; bold: string; }'.
+components/media-hub/TicketAssignmentDialog.tsx(68,18): error TS2345: Argument of type 'ServiceTicket[]' is not assignable to parameter of type 'SetStateAction<ServiceTicket[]>'.
+  Type 'import("E:/All Softwares/EvWheelsApp/types/index").ServiceTicket[]' is not assignable to type 'import("E:/All Softwares/EvWheelsApp/stores/mediaHubStore").ServiceTicket[]'.
+    Type 'import("E:/All Softwares/EvWheelsApp/types/index").ServiceTicket' is not assignable to type 'import("E:/All Softwares/EvWheelsApp/stores/mediaHubStore").ServiceTicket'.
+      Types of property 'customer_complaint' are incompatible.
+        Type 'string[]' is not assignable to type 'string'.
+components/NavbarLogo.tsx(20,9): error TS2322: Type 'ViewStyle | undefined' is not assignable to type 'Falsy | ImageStyle | RegisteredStyle<ImageStyle> | RecursiveArray<Falsy | ImageStyle | RegisteredStyle<ImageStyle>> | readonly (Falsy | ... 1 more ... | RegisteredStyle<...>)[]'.
+  Type 'ViewStyle' is not assignable to type 'Falsy | ImageStyle | RegisteredStyle<ImageStyle> | RecursiveArray<Falsy | ImageStyle | RegisteredStyle<ImageStyle>> | readonly (Falsy | ... 1 more ... | RegisteredStyle<...>)[]'.
+    Type 'ViewStyle' is not assignable to type 'ImageStyle'.
+      Types of property 'overflow' are incompatible.
+        Type '"visible" | "hidden" | "scroll" | undefined' is not assignable to type '"visible" | "hidden" | undefined'.
+          Type '"scroll"' is not assignable to type '"visible" | "hidden" | undefined'.
+components/SplashLogo.tsx(20,9): error TS2322: Type 'ViewStyle | undefined' is not assignable to type 'Falsy | ImageStyle | RegisteredStyle<ImageStyle> | RecursiveArray<Falsy | ImageStyle | RegisteredStyle<ImageStyle>> | readonly (Falsy | ... 1 more ... | RegisteredStyle<...>)[]'.
+  Type 'ViewStyle' is not assignable to type 'Falsy | ImageStyle | RegisteredStyle<ImageStyle> | RecursiveArray<Falsy | ImageStyle | RegisteredStyle<ImageStyle>> | readonly (Falsy | ... 1 more ... | RegisteredStyle<...>)[]'.
+    Type 'ViewStyle' is not assignable to type 'ImageStyle'.
+      Types of property 'overflow' are incompatible.
+        Type '"visible" | "hidden" | "scroll" | undefined' is not assignable to type '"visible" | "hidden" | undefined'.
+          Type '"scroll"' is not assignable to type '"visible" | "hidden" | undefined'.
+components/triage/TriageManagement.tsx(136,21): error TS2322: Type 'string' is not assignable to type 'SFSymbols6_0'.

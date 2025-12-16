@@ -1,23 +1,22 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
+  ActivityIndicator,
+  FlatList,
+  Keyboard,
   Modal,
+  RefreshControl,
+  SafeAreaView,
+  StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
-  Alert,
-  SafeAreaView,
-  FlatList,
-  ActivityIndicator,
-  RefreshControl,
-  Keyboard,
+  View
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 
-import { CustomerPickerModalProps, Customer, CustomerSearchItem } from '@/types/customer';
+import { BrandColors } from '@/constants/design-system';
 import { CustomerService } from '@/services/customerService';
-import { BrandColors, Typography, Spacing, BorderRadius, Shadows } from '@/constants/design-system';
+import { Customer, CustomerPickerModalProps, CustomerSearchItem } from '@/types/customer';
 
 // Helper function to create customer search items
 const createCustomerSearchItem = (customer: Customer): CustomerSearchItem => {
@@ -61,13 +60,13 @@ export const CustomerPickerModal: React.FC<CustomerPickerModalProps> = ({
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await CustomerService.searchCustomers({
         query: query.trim(),
         location_id: locationId,
         limit: 50,
       });
-      
+
       setCustomers(response.customers);
     } catch (err) {
       setError('Failed to search customers');
@@ -118,18 +117,18 @@ export const CustomerPickerModal: React.FC<CustomerPickerModalProps> = ({
   const renderCustomerItem = useCallback(({ item }: { item: CustomerSearchItem }) => (
     <TouchableOpacity
       style={styles.customerItem}
-      onPress={() => handleCustomerSelect(item)}
+      onPress={() => handleCustomerSelect(item as any)}
       activeOpacity={0.7}
     >
       <View style={styles.customerIcon}>
         <Ionicons name="person" size={20} color={BrandColors.primary} />
       </View>
-      
+
       <View style={styles.customerInfo}>
         <Text style={styles.customerName}>{item.name}</Text>
         <Text style={styles.customerSubtitle}>{item.subtitle}</Text>
       </View>
-      
+
       <Ionicons
         name="chevron-forward"
         size={16}
@@ -168,7 +167,7 @@ export const CustomerPickerModal: React.FC<CustomerPickerModalProps> = ({
           {searchQuery.trim() ? 'No customers found' : 'Start typing to search customers'}
         </Text>
         <Text style={styles.emptyStateSubtext}>
-          {searchQuery.trim() 
+          {searchQuery.trim()
             ? 'Try a different search term or add a new customer'
             : 'Search by name, phone, or email'
           }

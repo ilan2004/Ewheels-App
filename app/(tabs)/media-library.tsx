@@ -1,24 +1,24 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  FlatList,
-  Modal,
-  Dimensions,
-  Alert,
-} from 'react-native';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Colors, Spacing, Typography } from '@/constants/design-system';
+import { jobCardsService } from '@/services/jobCardsService';
+import { useMediaHubStore } from '@/stores/mediaHubStore';
+import { useMediaStore } from '@/stores/mediaStore';
+import { ServiceTicket } from '@/types';
+import * as FileSystem from 'expo-file-system';
 import { Image } from 'expo-image';
 import * as ExpoMediaLibrary from 'expo-media-library';
-import * as FileSystem from 'expo-file-system';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors, Typography, Spacing } from '@/constants/design-system';
-import { useMediaStore } from '@/stores/mediaStore';
-import { useMediaHubStore } from '@/stores/mediaHubStore';
-import { jobCardsService } from '@/services/jobCardsService';
-import { ServiceTicket } from '@/types';
+import React, { useCallback, useState } from 'react';
+import {
+  Alert,
+  Dimensions,
+  FlatList,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
 const itemWidth = (screenWidth - (Spacing.lg * 2) - (Spacing.base * 2)) / 3;
@@ -27,7 +27,7 @@ export default function MediaLibrary() {
   const { getAllMedia, refreshRecordings } = useMediaStore();
   const { assignToTicket } = useMediaHubStore();
   const allMedia = getAllMedia();
-  
+
   const [selectedMedia, setSelectedMedia] = useState<typeof allMedia[0] | null>(null);
   const [viewType, setViewType] = useState<'grid' | 'list'>('grid');
   const [filterType, setFilterType] = useState<'all' | 'images' | 'videos' | 'audio'>('all');
@@ -116,9 +116,9 @@ export default function MediaLibrary() {
         'Media library access is needed to download images.',
         [
           { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Grant Permission', 
-            onPress: requestMediaLibraryPermissions 
+          {
+            text: 'Grant Permission',
+            onPress: requestMediaLibraryPermissions
           }
         ]
       );
@@ -132,22 +132,22 @@ export default function MediaLibrary() {
         Alert.alert('Success', 'Image saved to Photos');
       } else {
         // For other media types, copy to Downloads folder
-        const downloadPath = `${FileSystem.documentDirectory}Downloads/`;
-        
+        const downloadPath = `${(FileSystem as any).documentDirectory || ''}Downloads/`;
+
         // Ensure Downloads directory exists
         const dirInfo = await FileSystem.getInfoAsync(downloadPath);
         if (!dirInfo.exists) {
           await FileSystem.makeDirectoryAsync(downloadPath, { intermediates: true });
         }
-        
+
         const fileName = item.name || `media_${Date.now()}.${item.type === 'video' ? 'mp4' : 'm4a'}`;
         const filePath = downloadPath + fileName;
-        
+
         await FileSystem.copyAsync({
           from: item.uri,
           to: filePath
         });
-        
+
         Alert.alert('Success', `File saved to Downloads folder as ${fileName}`);
       }
     } catch (error) {
@@ -163,18 +163,18 @@ export default function MediaLibrary() {
 
   const assignMediaToJobCard = useCallback(async (jobCard: ServiceTicket) => {
     if (!selectedMedia) return;
-    
+
     try {
       // Convert selectedMedia to MediaItem format for the store
       const mediaItemId = selectedMedia.id;
-      
+
       await assignToTicket([mediaItemId], jobCard.id);
-      
+
       Alert.alert(
-        'Success', 
+        'Success',
         `Media assigned to job card ${jobCard.ticket_number || jobCard.ticketNumber}`
       );
-      
+
       setJobCardModalVisible(false);
       closeModal();
     } catch (error) {
@@ -200,20 +200,20 @@ export default function MediaLibrary() {
         style={styles.gridImage}
         contentFit="cover"
       />
-      
+
       {/* Media Type Indicator */}
       <View style={styles.typeIndicator}>
         <IconSymbol
           name={
             item.type === 'video' ? 'play.circle.fill' :
-            item.type === 'audio' ? 'mic.fill' :
-            'photo.fill'
+              item.type === 'audio' ? 'mic.fill' :
+                'photo.fill'
           }
           size={16}
           color={Colors.white}
         />
       </View>
-      
+
       {/* File Info */}
       <View style={styles.gridInfo}>
         <Text style={styles.gridFileName} numberOfLines={1}>
@@ -235,19 +235,19 @@ export default function MediaLibrary() {
         style={styles.listImage}
         contentFit="cover"
       />
-      
+
       <View style={styles.listInfo}>
         <Text style={styles.listFileName}>{item.name}</Text>
         <Text style={styles.listFileDate}>{new Date(item.createdAt).toLocaleString()}</Text>
         <Text style={styles.listFileTicket}>Ticket: {item.ticketId}</Text>
       </View>
-      
+
       <View style={styles.listMeta}>
         <IconSymbol
           name={
             item.type === 'video' ? 'video.fill' :
-            item.type === 'audio' ? 'waveform' :
-            'photo.fill'
+              item.type === 'audio' ? 'waveform' :
+                'photo.fill'
           }
           size={20}
           color={Colors.neutral[500]}
@@ -262,7 +262,7 @@ export default function MediaLibrary() {
       {/* Header Controls */}
       <View style={styles.header}>
         <Text style={styles.title}>Media Library</Text>
-        
+
         {/* Filter and View Controls */}
         <View style={styles.controls}>
           {/* Filter Buttons */}
@@ -285,7 +285,7 @@ export default function MediaLibrary() {
               </TouchableOpacity>
             ))}
           </View>
-          
+
           {/* View Toggle */}
           <View style={styles.viewToggle}>
             <TouchableOpacity
@@ -298,7 +298,7 @@ export default function MediaLibrary() {
                 color={viewType === 'grid' ? Colors.primary[600] : Colors.neutral[500]}
               />
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={[styles.viewButton, viewType === 'list' && styles.viewButtonActive]}
               onPress={() => setViewType('list')}
@@ -341,7 +341,7 @@ export default function MediaLibrary() {
                   style={styles.modalImage}
                   contentFit="contain"
                 />
-                
+
                 {/* Media Info */}
                 <View style={styles.modalInfo}>
                   <Text style={styles.modalFileName}>{selectedMedia.name}</Text>
@@ -349,7 +349,7 @@ export default function MediaLibrary() {
                   <Text style={styles.modalFileTicket}>Ticket: {selectedMedia.ticketId}</Text>
                   <Text style={styles.modalFileSize}>Size: {formatFileSize(selectedMedia.size)}</Text>
                 </View>
-                
+
                 {/* Action Buttons */}
                 <View style={styles.modalActions}>
                   <TouchableOpacity
@@ -359,7 +359,7 @@ export default function MediaLibrary() {
                     <IconSymbol name="folder.badge.plus" size={20} color={Colors.white} />
                     <Text style={styles.modalButtonText}>Assign to Job Card</Text>
                   </TouchableOpacity>
-                  
+
                   <TouchableOpacity
                     style={[styles.modalButton, styles.downloadButton]}
                     onPress={() => downloadMedia(selectedMedia)}
@@ -368,7 +368,7 @@ export default function MediaLibrary() {
                     <Text style={styles.modalButtonText}>Download</Text>
                   </TouchableOpacity>
                 </View>
-                
+
                 {/* Secondary Action Buttons */}
                 <View style={styles.modalSecondaryActions}>
                   <TouchableOpacity
@@ -378,7 +378,7 @@ export default function MediaLibrary() {
                     <IconSymbol name="square.and.arrow.up.fill" size={20} color={Colors.white} />
                     <Text style={styles.modalButtonText}>Share</Text>
                   </TouchableOpacity>
-                  
+
                   <TouchableOpacity
                     style={[styles.modalButton, styles.deleteButton]}
                     onPress={() => deleteMedia(selectedMedia.id)}
@@ -386,7 +386,7 @@ export default function MediaLibrary() {
                     <IconSymbol name="trash.fill" size={20} color={Colors.white} />
                     <Text style={styles.modalButtonText}>Delete</Text>
                   </TouchableOpacity>
-                  
+
                   <TouchableOpacity
                     style={[styles.modalButton, styles.closeButton]}
                     onPress={closeModal}
@@ -419,7 +419,7 @@ export default function MediaLibrary() {
                 <IconSymbol name="xmark" size={24} color={Colors.neutral[400]} />
               </TouchableOpacity>
             </View>
-            
+
             {loadingJobCards ? (
               <View style={styles.loadingContainer}>
                 <Text style={styles.loadingText}>Loading job cards...</Text>
@@ -450,7 +450,7 @@ export default function MediaLibrary() {
                     </View>
                   </TouchableOpacity>
                 ))}
-                
+
                 {availableJobCards.length === 0 && (
                   <View style={styles.emptyJobCards}>
                     <Text style={styles.emptyJobCardsText}>No job cards available</Text>
