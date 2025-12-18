@@ -96,14 +96,14 @@ export default function SalesManagement() {
   const loadSales = () => {
     const startDate = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0];
     const endDate = new Date(selectedYear, selectedMonth + 1, 0).toISOString().split('T')[0];
-    fetchSales({ ...filters, search: searchQuery, startDate, endDate });
+    fetchSales({ ...filters, search: searchQuery, startDate, endDate }, 1, 1000);
   };
 
   const handleSearch = () => {
     setFilters(prev => ({ ...prev, search: searchQuery }));
     const startDate = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0];
     const endDate = new Date(selectedYear, selectedMonth + 1, 0).toISOString().split('T')[0];
-    fetchSales({ ...filters, search: searchQuery, startDate, endDate });
+    fetchSales({ ...filters, search: searchQuery, startDate, endDate }, 1, 1000);
   };
 
   const handleExport = async () => {

@@ -44,7 +44,7 @@ const getMonthName = (monthIndex: number) => {
 
 // --- Component ---
 
-export default function ReportsScreen() {
+export default function ReportsScreen({ onNavigateToTab }: { onNavigateToTab?: (tab: 'sales' | 'expenses') => void }) {
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [loading, setLoading] = useState(false);
@@ -264,23 +264,29 @@ export default function ReportsScreen() {
                     {/* Summary Cards */}
                     {/* Summary Cards */}
                     <View style={styles.summaryGrid}>
-                        <View style={[styles.summaryCard, { borderLeftColor: FinancialColors.income.primary }]}>
+                        <TouchableOpacity
+                            style={[styles.summaryCard, { borderLeftColor: FinancialColors.income.primary }]}
+                            onPress={() => onNavigateToTab?.('sales')}
+                        >
                             <View style={styles.summaryHeader}>
                                 <IconSymbol name="arrow.down.circle.fill" size={24} color={FinancialColors.income.primary} />
                                 <Text style={styles.cardLabel}>Total Sales</Text>
                             </View>
                             <Text style={[styles.cardValue, { color: FinancialColors.income.text }]}>{formatMoney(reportData.totalSales)}</Text>
                             <Text style={styles.cardSubValue}>{reportData.salesCount} transactions</Text>
-                        </View>
+                        </TouchableOpacity>
 
-                        <View style={[styles.summaryCard, { borderLeftColor: FinancialColors.expense.primary }]}>
+                        <TouchableOpacity
+                            style={[styles.summaryCard, { borderLeftColor: FinancialColors.expense.primary }]}
+                            onPress={() => onNavigateToTab?.('expenses')}
+                        >
                             <View style={styles.summaryHeader}>
                                 <IconSymbol name="arrow.up.circle.fill" size={24} color={FinancialColors.expense.primary} />
                                 <Text style={styles.cardLabel}>Total Expenses</Text>
                             </View>
                             <Text style={[styles.cardValue, { color: FinancialColors.expense.text }]}>{formatMoney(reportData.totalExpenses)}</Text>
                             <Text style={styles.cardSubValue}>{reportData.expensesCount} transactions</Text>
-                        </View>
+                        </TouchableOpacity>
 
                         <View style={[styles.summaryCard, { borderLeftColor: reportData.netProfit >= 0 ? FinancialColors.income.primary : FinancialColors.expense.primary }]}>
                             <View style={styles.summaryHeader}>

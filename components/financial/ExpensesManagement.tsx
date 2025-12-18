@@ -97,14 +97,14 @@ export default function ExpensesManagement() {
   const loadExpenses = () => {
     const startDate = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0];
     const endDate = new Date(selectedYear, selectedMonth + 1, 0).toISOString().split('T')[0];
-    fetchExpenses({ ...filters, search: searchQuery, startDate, endDate });
+    fetchExpenses({ ...filters, search: searchQuery, startDate, endDate }, 1, 1000);
   };
 
   const handleSearch = () => {
     setFilters(prev => ({ ...prev, search: searchQuery }));
     const startDate = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0];
     const endDate = new Date(selectedYear, selectedMonth + 1, 0).toISOString().split('T')[0];
-    fetchExpenses({ ...filters, search: searchQuery, startDate, endDate });
+    fetchExpenses({ ...filters, search: searchQuery, startDate, endDate }, 1, 1000);
   };
 
   const handleExport = async () => {

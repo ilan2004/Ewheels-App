@@ -104,7 +104,12 @@ export default function FinancialTab() {
       case 'expenses':
         return <ExpensesManagement />;
       case 'reports':
-        return <ReportsScreen />;
+        return <ReportsScreen onNavigateToTab={(tab) => {
+          const index = tabs.findIndex(t => t.id === tab);
+          if (index !== -1) {
+            handleTabPress(tab, index);
+          }
+        }} />;
       case 'cash':
         return <CashManagement />;
       default:
