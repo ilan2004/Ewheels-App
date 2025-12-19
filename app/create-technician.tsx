@@ -2,7 +2,6 @@ import { router, Stack } from 'expo-router';
 import React from 'react';
 
 import { CreateTechnicianForm } from '@/components/floor-manager/create-technician-form';
-import { BrandColors } from '@/constants/design-system';
 
 export default function CreateTechnicianScreen() {
   const handleSuccess = () => {
@@ -19,17 +18,8 @@ export default function CreateTechnicianScreen() {
     <>
       <Stack.Screen
         options={{
-          title: 'Create Technician',
-          headerStyle: {
-            backgroundColor: BrandColors.surface,
-          },
-          headerTintColor: BrandColors.primary,
-          headerTitleStyle: {
-            fontWeight: '600',
-            color: BrandColors.ink,
-          },
-          headerShadowVisible: false,
-          presentation: 'modal',
+          headerShown: false,
+          presentation: 'card',
         }}
       />
       <CreateTechnicianForm onSuccess={handleSuccess} onCancel={handleCancel} />

@@ -15,79 +15,29 @@ import {
   PaymentStatus,
   PaymentStatusLabels,
   Sale,
-  SaleForm,
-  SalesFilters,
   SaleType,
-  SaleTypeLabels
+  SaleTypeLabels,
+  SalesFilters
 } from '@/types/financial.types';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
   FlatList,
-  Modal,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 
 export default function SalesManagement() {
-  const { sales, loading, error, pagination, fetchSales, createSale, updateSale, deleteSale } = useSales();
+  const { sales, loading, error, pagination, fetchSales } = useSales();
 
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<SalesFilters>({});
-  const [showFilters, setShowFilters] = useState(false);
-
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-
-  const getMonthName = (monthIndex: number) => {
-    const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-    return months[monthIndex];
-  };
-
-  const changeMonth = (increment: number) => {
-    let newMonth = selectedMonth + increment;
-    let newYear = selectedYear;
-
-    if (newMonth > 11) {
-      newMonth = 0;
-      newYear += 1;
-    } else if (newMonth < 0) {
-      newMonth = 11;
-      newYear -= 1;
-    }
-
-    setSelectedMonth(newMonth);
-    setSelectedYear(newYear);
-  };
-
-  // Form state
-  const [formData, setFormData] = useState<SaleForm>({
-    invoice_id: '',
-    customer_id: '',
-    customer_name: '',
-    sale_number: '',
-    sale_date: new Date().toISOString().split('T')[0],
-    sale_type: 'service',
-    subtotal: 0,
-    tax_amount: 0,
-    discount_amount: 0,
-    total_amount: 0,
-    payment_method: 'cash',
-    payment_status: 'pending',
-    paid_amount: 0,
-    description: '',
-    notes: '',
-  });
 
   useEffect(() => {
     loadSales();
@@ -142,113 +92,35 @@ export default function SalesManagement() {
     }
   };
 
-  const handleAddSale = () => {
-    setEditingSale(null);
-    setFormData({
-      invoice_id: `INV-${Date.now()}`,
-      customer_id: '',
-      customer_name: '',
-      sale_number: `SALE-${Date.now()}`,
-      sale_date: new Date().toISOString().split('T')[0],
-      sale_type: 'service',
-      subtotal: 0,
-      tax_amount: 0,
-      discount_amount: 0,
-      total_amount: 0,
-      payment_method: 'cash',
-      payment_status: 'pending',
-      paid_amount: 0,
-      description: '',
-      notes: '',
-    });
-    setShowAddModal(true);
+
+
+  const getMonthName = (monthIndex: number) => {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[monthIndex];
   };
 
-  const handleEditSale = (sale: Sale) => {
-    setEditingSale(sale);
-    setFormData({
-      invoice_id: sale.invoice_id,
-      service_ticket_id: sale.service_ticket_id,
-      customer_id: sale.customer_id,
-      customer_name: sale.customer_name || '',
-      sale_number: sale.sale_number,
-      sale_date: sale.sale_date,
-      sale_type: sale.sale_type as SaleType,
-      subtotal: sale.subtotal,
-      tax_amount: sale.tax_amount,
-      discount_amount: sale.discount_amount,
-      total_amount: sale.total_amount,
-      payment_method: sale.payment_method,
-      payment_status: sale.payment_status as PaymentStatus,
-      paid_amount: sale.paid_amount,
-      description: sale.description,
-      notes: sale.notes || '',
-    });
-    setShowAddModal(true);
-  };
+  const changeMonth = (increment: number) => {
+    let newMonth = selectedMonth + increment;
+    let newYear = selectedYear;
 
-  const calculateTotal = () => {
-    const total = formData.subtotal + formData.tax_amount - formData.discount_amount;
-    setFormData(prev => ({ ...prev, total_amount: Math.max(0, total) }));
-  };
-
-  useEffect(() => {
-    calculateTotal();
-  }, [formData.subtotal, formData.tax_amount, formData.discount_amount]);
-
-  const handleSaveSale = async () => {
-    if (!formData.customer_name || !formData.description || formData.total_amount <= 0) {
-      Alert.alert('Error', 'Please fill in all required fields and ensure total amount is greater than 0');
-      return;
+    if (newMonth > 11) {
+      newMonth = 0;
+      newYear += 1;
+    } else if (newMonth < 0) {
+      newMonth = 11;
+      newYear -= 1;
     }
 
-    try {
-      if (editingSale) {
-        const result = await updateSale(editingSale.id, formData);
-        if (result.success) {
-          Alert.alert('Success', 'Sale updated successfully');
-          setShowAddModal(false);
-          loadSales();
-        } else {
-          Alert.alert('Error', result.error || 'Failed to update sale');
-        }
-      } else {
-        const result = await createSale(formData);
-        if (result.success) {
-          Alert.alert('Success', 'Sale created successfully');
-          setShowAddModal(false);
-          loadSales();
-        } else {
-          Alert.alert('Error', result.error || 'Failed to create sale');
-        }
-      }
-    } catch (err) {
-      Alert.alert('Error', 'An unexpected error occurred');
-    }
+    setSelectedMonth(newMonth);
+    setSelectedYear(newYear);
   };
 
-  const handleDeleteSale = (sale: Sale) => {
-    Alert.alert(
-      'Delete Sale',
-      `Are you sure you want to delete sale ${sale.sale_number}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            const result = await deleteSale(sale.id);
-            if (result.success) {
-              Alert.alert('Success', 'Sale deleted successfully');
-              loadSales();
-            } else {
-              Alert.alert('Error', result.error || 'Failed to delete sale');
-            }
-          }
-        }
-      ]
-    );
-  };
+
+
+
 
   const renderSaleItem = ({ item }: { item: Sale }) => {
     const statusColor = getStatusColor(item.payment_status);
@@ -301,19 +173,9 @@ export default function SalesManagement() {
           </View>
 
           <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={styles.editButton}
-              onPress={() => handleEditSale(item)}
-            >
-              <IconSymbol size={16} name="pencil" color={BrandColors.primary} />
-            </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => handleDeleteSale(item)}
-            >
-              <IconSymbol size={16} name="trash" color={Colors.error[500]} />
-            </TouchableOpacity>
+
+
           </View>
         </View>
       </View>
@@ -344,9 +206,6 @@ export default function SalesManagement() {
             <TouchableOpacity style={styles.exportButton} onPress={handleExport}>
               <IconSymbol name="square.and.arrow.up" size={18} color={BrandColors.primary} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.addButton} onPress={handleAddSale}>
-              <IconSymbol size={20} name="plus" color={Colors.white} />
-            </TouchableOpacity>
           </View>
         </View>
 
@@ -376,164 +235,11 @@ export default function SalesManagement() {
           <View style={styles.emptyState}>
             <IconSymbol size={48} name="doc.text" color={Colors.neutral[400]} />
             <Text style={styles.emptyStateText}>No sales found</Text>
-            <TouchableOpacity style={styles.emptyStateButton} onPress={handleAddSale}>
-              <Text style={styles.emptyStateButtonText}>Add First Sale</Text>
-            </TouchableOpacity>
           </View>
         }
       />
 
-      {/* Add/Edit Sale Modal */}
-      <Modal visible={showAddModal} animationType="slide" presentationStyle="pageSheet">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setShowAddModal(false)}>
-              <Text style={styles.cancelButton}>Cancel</Text>
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>
-              {editingSale ? 'Edit Sale' : 'Add New Sale'}
-            </Text>
-            <TouchableOpacity onPress={handleSaveSale}>
-              <Text style={styles.saveButton}>Save</Text>
-            </TouchableOpacity>
-          </View>
 
-          <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
-            {/* Customer Information */}
-            <View style={styles.formSection}>
-              <Text style={styles.sectionTitle}>Customer Information</Text>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Customer Name *</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={formData.customer_name}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, customer_name: text }))}
-                  placeholder="Enter customer name"
-                />
-              </View>
-            </View>
-
-            {/* Sale Details */}
-            <View style={styles.formSection}>
-              <Text style={styles.sectionTitle}>Sale Details</Text>
-
-              <View style={styles.inputRow}>
-                <View style={[styles.inputGroup, { flex: 1, marginRight: Spacing.sm }]}>
-                  <Text style={styles.inputLabel}>Sale Number</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={formData.sale_number}
-                    onChangeText={(text) => setFormData(prev => ({ ...prev, sale_number: text }))}
-                    placeholder="SALE-001"
-                  />
-                </View>
-
-                <View style={[styles.inputGroup, { flex: 1, marginLeft: Spacing.sm }]}>
-                  <Text style={styles.inputLabel}>Date</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={formData.sale_date}
-                    onChangeText={(text) => setFormData(prev => ({ ...prev, sale_date: text }))}
-                    placeholder="YYYY-MM-DD"
-                  />
-                </View>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Description *</Text>
-                <TextInput
-                  style={[styles.textInput, styles.textArea]}
-                  value={formData.description}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
-                  placeholder="Describe the sale..."
-                  multiline
-                  numberOfLines={3}
-                />
-              </View>
-            </View>
-
-            {/* Financial Details */}
-            <View style={styles.formSection}>
-              <Text style={styles.sectionTitle}>Financial Details</Text>
-
-              <View style={styles.inputRow}>
-                <View style={[styles.inputGroup, { flex: 1, marginRight: Spacing.sm }]}>
-                  <Text style={styles.inputLabel}>Subtotal</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={formData.subtotal.toString()}
-                    onChangeText={(text) => setFormData(prev => ({ ...prev, subtotal: parseFloat(text) || 0 }))}
-                    keyboardType="numeric"
-                    placeholder="0"
-                  />
-                </View>
-
-                <View style={[styles.inputGroup, { flex: 1, marginLeft: Spacing.sm }]}>
-                  <Text style={styles.inputLabel}>Tax Amount</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={formData.tax_amount.toString()}
-                    onChangeText={(text) => setFormData(prev => ({ ...prev, tax_amount: parseFloat(text) || 0 }))}
-                    keyboardType="numeric"
-                    placeholder="0"
-                  />
-                </View>
-              </View>
-
-              <View style={styles.inputRow}>
-                <View style={[styles.inputGroup, { flex: 1, marginRight: Spacing.sm }]}>
-                  <Text style={styles.inputLabel}>Discount</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={formData.discount_amount.toString()}
-                    onChangeText={(text) => setFormData(prev => ({ ...prev, discount_amount: parseFloat(text) || 0 }))}
-                    keyboardType="numeric"
-                    placeholder="0"
-                  />
-                </View>
-
-                <View style={[styles.inputGroup, { flex: 1, marginLeft: Spacing.sm }]}>
-                  <Text style={styles.inputLabel}>Total Amount</Text>
-                  <TextInput
-                    style={[styles.textInput, styles.totalInput]}
-                    value={formatCurrency(formData.total_amount)}
-                    editable={false}
-                  />
-                </View>
-              </View>
-            </View>
-
-            {/* Payment Information */}
-            <View style={styles.formSection}>
-              <Text style={styles.sectionTitle}>Payment Information</Text>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Paid Amount</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={formData.paid_amount.toString()}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, paid_amount: parseFloat(text) || 0 }))}
-                  keyboardType="numeric"
-                  placeholder="0"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Notes</Text>
-                <TextInput
-                  style={[styles.textInput, styles.textArea]}
-                  value={formData.notes}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, notes: text }))}
-                  placeholder="Additional notes..."
-                  multiline
-                  numberOfLines={3}
-                />
-              </View>
-            </View>
-          </ScrollView>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -595,16 +301,18 @@ const styles = StyleSheet.create({
     borderColor: Colors.neutral[200],
   },
   searchContainer: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.neutral[50],
+    borderRadius: BorderRadius.full,
     paddingHorizontal: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.neutral[200],
+    marginTop: Spacing.xs,
   },
   searchInput: {
     flex: 1,
-    paddingVertical: Spacing.md,
+    paddingVertical: 12,
     paddingLeft: Spacing.sm,
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.medium,
@@ -612,7 +320,10 @@ const styles = StyleSheet.create({
   },
   addButton: {
     backgroundColor: BrandColors.primary,
-    padding: Spacing.md,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
     borderRadius: BorderRadius.lg,
     ...Shadows.sm,
   },

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Modal,
   Platform,
@@ -241,13 +241,51 @@ export default function JobCardsScreen() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['job-cards', filters, searchQuery, page, params.filter],
+    queryKey: ['job-cards', JSON.stringify(filters), searchQuery, page, bulkMode],
     queryFn: () => {
       const queryFilters = { ...filters, search: searchQuery };
-      return jobCardsService.getTickets(queryFilters, page, 20);
+      // User requested to show all tickets, so we increase the limit significantly
+      return jobCardsService.getTickets(queryFilters, page, 1000);
     },
     refetchInterval: 30000,
   });
+
+  const sortedTickets = useMemo(() => {
+    if (!ticketsData?.data) return [];
+
+    return [...ticketsData.data].sort((a, b) => {
+      const now = new Date().getTime();
+      const aDue = a.due_date ? new Date(a.due_date).getTime() : Infinity;
+      const bDue = b.due_date ? new Date(b.due_date).getTime() : Infinity;
+
+      const completedStatuses = ['completed', 'closed', 'delivered', 'cancelled'];
+      const aIsCompleted = completedStatuses.includes(a.status || '');
+      const bIsCompleted = completedStatuses.includes(b.status || '');
+
+      // 1. Active tickets come first, Completed tickets go to bottom
+      if (!aIsCompleted && bIsCompleted) return -1;
+      if (aIsCompleted && !bIsCompleted) return 1;
+
+      // 2. Among Active tickets, Overdue items come first
+      if (!aIsCompleted && !bIsCompleted) {
+        const aIsOverdue = aDue < now;
+        const bIsOverdue = bDue < now;
+
+        if (aIsOverdue && !bIsOverdue) return -1;
+        if (!aIsOverdue && bIsOverdue) return 1;
+
+        // If both overdue, sort by most overdue first (asc due date)
+        if (aIsOverdue && bIsOverdue) {
+          return aDue - bDue;
+        }
+      }
+
+      // 3. Default sort by creation date desc (newest first)
+      const aCreated = new Date(a.created_at || 0).getTime();
+      const bCreated = new Date(b.created_at || 0).getTime();
+      return bCreated - aCreated;
+    });
+  }, [ticketsData?.data]);
 
   const handleRefresh = () => {
     refetch();
@@ -386,10 +424,12 @@ export default function JobCardsScreen() {
           </View>
         ) : (
           <View style={styles.jobCardsList}>
-            {ticketsData?.data.map((ticket) => (
+            {sortedTickets.map((ticket) => (
               <JobCard
                 key={ticket.id}
                 ticket={ticket}
+                imagePath={ticket.ticket_attachments?.find(a => a.attachment_type === 'photo')?.storage_path}
+                imageSource={ticket.ticket_attachments?.find(a => a.attachment_type === 'photo')?.source}
                 onPress={() => handleJobCardPress(ticket.id)}
                 showSelection={bulkMode}
                 isSelected={selectedTickets.includes(ticket.id)}
@@ -412,7 +452,7 @@ export default function JobCardsScreen() {
                 ) : undefined}
               />
             ))}
-            {!isLoading && ticketsData?.data.length === 0 && (
+            {!isLoading && sortedTickets.length === 0 && (
               <View style={styles.emptyContainer}>
                 <EmptySearchResults />
               </View>

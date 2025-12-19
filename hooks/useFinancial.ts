@@ -543,6 +543,8 @@ export const useCashManagement = () => {
     dailyCashRecords,
     cashSales,
     cashExpenses,
+    allDailySales,
+    allDailyExpenses,
     drawings,
 
     investments,

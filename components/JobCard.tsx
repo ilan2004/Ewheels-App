@@ -1,8 +1,12 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { BorderRadius, BrandColors, Colors, Shadows, Spacing, Typography } from '@/constants/design-system';
+import { jobCardsService } from '@/services/jobCardsService';
+import { useMediaHubStore } from '@/stores/mediaHubStore';
 import { ServiceTicket } from '@/types';
-import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface JobCardProps {
     ticket: ServiceTicket;
@@ -13,6 +17,10 @@ interface JobCardProps {
     onSelect?: () => void;
     technicianName?: string;
     showTechnician?: boolean;
+    variant?: 'default' | 'overdue';
+    imageUrl?: string;
+    imagePath?: string;
+    imageSource?: string;
 }
 
 export const JobCard: React.FC<JobCardProps> = ({
@@ -24,7 +32,40 @@ export const JobCard: React.FC<JobCardProps> = ({
     onSelect,
     technicianName,
     showTechnician = false,
+    variant = 'default',
+    imageUrl,
+    imagePath,
+    imageSource,
 }) => {
+    const router = useRouter();
+    const { setActiveTab, setTicketFilter } = useMediaHubStore();
+    const [resolvedImageUrl, setResolvedImageUrl] = useState<string | null>(imageUrl || null);
+
+    useEffect(() => {
+        if (imageUrl) {
+            setResolvedImageUrl(imageUrl);
+        } else if (imagePath) {
+            // Fetch signed URL if we have a path but no direct URL
+            let isMounted = true;
+            const fetchUrl = async () => {
+                try {
+                    // Always use 'photo' or 'audio' type to determine bucket (media-photos/media-audio)
+                    // ignoring source because media_hub items are copied to the same buckets.
+                    const url = await jobCardsService.getAttachmentSignedUrl(imagePath, 'photo');
+                    if (isMounted && url) {
+                        setResolvedImageUrl(url);
+                    }
+                } catch (error) {
+                    console.error('Failed to load job card image:', error);
+                }
+            };
+            fetchUrl();
+            return () => { isMounted = false; };
+        } else {
+            setResolvedImageUrl(null);
+        }
+    }, [imageUrl, imagePath]);
+
     const dueDate = ticket.due_date || ticket.dueDate;
     const now = new Date();
     const due = dueDate ? new Date(dueDate) : null;
@@ -66,7 +107,11 @@ export const JobCard: React.FC<JobCardProps> = ({
 
     return (
         <TouchableOpacity
-            style={[styles.container, isSelected && styles.selectedContainer]}
+            style={[
+                styles.container,
+                isSelected && styles.selectedContainer,
+                variant === 'overdue' && styles.overdueContainer
+            ]}
             onPress={() => {
                 if (showSelection && onSelect) {
                     onSelect();
@@ -91,6 +136,29 @@ export const JobCard: React.FC<JobCardProps> = ({
                 </View>
 
                 <View style={styles.badges}>
+                    {/* New Badge (Last 5 Days) */}
+                    {(() => {
+                        const createdDate = new Date(ticket.created_at || Date.now());
+                        const today = new Date();
+                        const diffTime = Math.abs(today.getTime() - createdDate.getTime());
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                        if (diffDays <= 6) { // 5 days + today
+                            return (
+                                <LinearGradient
+                                    colors={['#34D399', '#059669']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={[styles.badge, styles.newBadge]}
+                                >
+                                    <IconSymbol name="sparkles" size={12} color={Colors.white} />
+                                    <Text style={[styles.badgeText, styles.newBadgeText]}>NEW</Text>
+                                </LinearGradient>
+                            );
+                        }
+                        return null;
+                    })()}
+
                     {/* Due Date Badge */}
                     {dueDate && (
                         <View style={[
@@ -119,79 +187,113 @@ export const JobCard: React.FC<JobCardProps> = ({
                 </View>
             </View>
 
-            <Text style={styles.symptom} numberOfLines={2}>
-                {(() => {
-                    const rawComplaint = ticket.customer_complaint || ticket.symptom;
-                    if (Array.isArray(rawComplaint)) return rawComplaint.join(', ');
-                    if (typeof rawComplaint === 'string') {
-                        try {
-                            const parsed = JSON.parse(rawComplaint);
-                            if (Array.isArray(parsed)) return parsed.join(', ');
-                        } catch (e) {
-                            if ((rawComplaint as string).trim().startsWith('[') && (rawComplaint as string).trim().endsWith(']')) {
+            <View style={styles.contentRow}>
+                <View style={styles.leftContent}>
+                    <Text style={styles.symptom} numberOfLines={2}>
+                        {(() => {
+                            const rawComplaint = ticket.customer_complaint || ticket.symptom;
+                            if (Array.isArray(rawComplaint)) return rawComplaint.join(', ');
+                            if (typeof rawComplaint === 'string') {
                                 try {
-                                    const fixed = (rawComplaint as string).replace(/'/g, '"');
-                                    const parsed = JSON.parse(fixed);
+                                    const parsed = JSON.parse(rawComplaint);
                                     if (Array.isArray(parsed)) return parsed.join(', ');
-                                } catch (e2) { }
+                                } catch (e) {
+                                    if ((rawComplaint as string).trim().startsWith('[') && (rawComplaint as string).trim().endsWith(']')) {
+                                        try {
+                                            const fixed = (rawComplaint as string).replace(/'/g, '"');
+                                            const parsed = JSON.parse(fixed);
+                                            if (Array.isArray(parsed)) return parsed.join(', ');
+                                        } catch (e2) { }
+                                    }
+                                }
+                                return rawComplaint;
                             }
-                        }
-                        return rawComplaint;
-                    }
-                    return '';
-                })()}
-            </Text>
-
-            <View style={styles.meta}>
-                {/* Customer - Enhanced visibility */}
-                <View style={styles.infoRow}>
-                    <View style={styles.customerInfo}>
-                        <Text style={styles.customerLabel}>Customer</Text>
-                        <Text style={styles.customerName}>
-                            {ticket.customer?.name || 'Unknown Customer'}
-                        </Text>
-                    </View>
-                </View>
-
-                {/* Vehicle Info - Highlighted */}
-                {(ticket.vehicle_reg_no || ticket.vehicleRegNo) && (
-                    <View style={styles.infoRow}>
-                        <View style={styles.vehicleInfo}>
-                            <Text style={styles.vehicleLabel}>Vehicle</Text>
-                            <Text style={styles.vehicleValue}>
-                                {ticket.vehicle_reg_no || ticket.vehicleRegNo}
-                            </Text>
-                        </View>
-                    </View>
-                )}
-
-                {/* Technician Info - Highlighted */}
-                {showTechnician && technicianName && (
-                    <View style={styles.infoRow}>
-                        <View style={styles.technicianInfo}>
-                            <Text style={styles.technicianLabel}>Technician</Text>
-                            <Text style={styles.technicianValue}>
-                                {technicianName}
-                            </Text>
-                        </View>
-                    </View>
-                )}
-            </View>
-
-            <View style={styles.footer}>
-                <View style={styles.footerLeft}>
-                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(ticket.status) + '20' }]}>
-                        <Text style={[styles.statusBadgeText, { color: getStatusColor(ticket.status) }]}>
-                            {(ticket.status || 'Unknown').replace('_', ' ')}
-                        </Text>
-                    </View>
-                    <Text style={styles.dateText}>
-                        {new Date(ticket.created_at || Date.now()).toLocaleDateString()}
+                            return '';
+                        })()}
                     </Text>
+
+                    <View style={styles.meta}>
+                        {/* Customer - Enhanced visibility */}
+                        <View style={styles.infoRow}>
+                            <View style={styles.customerInfo}>
+                                <Text style={styles.customerLabel}>Customer</Text>
+                                <Text style={styles.customerName}>
+                                    {ticket.customer?.name || 'Unknown Customer'}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Vehicle Info - Highlighted */}
+                        {(ticket.vehicle_reg_no || ticket.vehicleRegNo) && (
+                            <View style={styles.infoRow}>
+                                <View style={styles.vehicleInfo}>
+                                    <Text style={styles.vehicleLabel}>Vehicle</Text>
+                                    <Text style={styles.vehicleValue}>
+                                        {ticket.vehicle_reg_no || ticket.vehicleRegNo}
+                                    </Text>
+                                </View>
+                            </View>
+                        )}
+
+                        {/* Technician Info - Highlighted */}
+                        {showTechnician && technicianName && (
+                            <View style={styles.infoRow}>
+                                <View style={styles.technicianInfo}>
+                                    <Text style={styles.technicianLabel}>Technician</Text>
+                                    <Text style={styles.technicianValue}>
+                                        {technicianName}
+                                    </Text>
+                                </View>
+                            </View>
+                        )}
+                    </View>
+
+                    <View style={styles.footer}>
+                        <View style={styles.footerLeft}>
+                            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(ticket.status) + '20' }]}>
+                                <Text style={[styles.statusBadgeText, { color: getStatusColor(ticket.status) }]}>
+                                    {(ticket.status || 'Unknown').replace('_', ' ')}
+                                </Text>
+                            </View>
+                            <Text style={styles.dateText}>
+                                {new Date(ticket.created_at || Date.now()).toLocaleDateString()}
+                            </Text>
+                        </View>
+                    </View>
                 </View>
 
-                {actionButton}
+                {/* Show image or Take Photo button */}
+                <View style={styles.rightContent}>
+                    {resolvedImageUrl ? (
+                        <Image
+                            source={{ uri: resolvedImageUrl }}
+                            style={styles.cardImage}
+                            resizeMode="cover"
+                        />
+                    ) : (
+                        <TouchableOpacity
+                            style={styles.takePhotoButton}
+                            onPress={(e) => {
+                                e.stopPropagation();
+                                setTicketFilter(ticket.id); // Pre-select this job card
+                                setActiveTab('capture');
+                                router.push('/(tabs)/media-hub');
+                            }}
+                            activeOpacity={0.7}
+                        >
+                            <IconSymbol name="camera.fill" size={24} color={BrandColors.primary} />
+                            <Text style={styles.takePhotoText}>Take Photo</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
             </View>
+
+            {actionButton && (
+                <View style={styles.actionButtonContainer}>
+                    {actionButton}
+                </View>
+            )}
+
         </TouchableOpacity>
     );
 };
@@ -208,6 +310,16 @@ const styles = StyleSheet.create({
         borderColor: BrandColors.primary,
         borderWidth: 1,
         backgroundColor: BrandColors.primary + '05',
+    },
+    overdueContainer: {
+        borderColor: Colors.error[500],
+        borderWidth: 1,
+        backgroundColor: Colors.error[50],
+        shadowColor: Colors.error[500],
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
     },
     header: {
         flexDirection: 'row',
@@ -253,6 +365,30 @@ const styles = StyleSheet.create({
     badgeText: {
         fontSize: 10,
         fontWeight: Typography.fontWeight.semibold as any,
+    },
+    newBadge: {
+        paddingHorizontal: 12,
+        paddingVertical: 5,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        borderRadius: 12,
+        // Shadow for "glow" effect
+        shadowColor: '#10B981',
+        shadowOffset: {
+            width: 0,
+            height: 4,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 4.65,
+        elevation: 8,
+    },
+    newBadgeText: {
+        color: Colors.white,
+        fontSize: 11,
+        fontWeight: '800', // Extra bold
+        letterSpacing: 1, // Premium letter spacing
+        textTransform: 'uppercase',
     },
     priorityDot: {
         width: 8,
@@ -366,5 +502,46 @@ const styles = StyleSheet.create({
     },
     selectionCheckbox: {
         marginRight: Spacing.xs,
+    },
+    // Layout Styles
+    contentRow: {
+        flexDirection: 'row',
+        gap: Spacing.sm,
+    },
+    leftContent: {
+        flex: 1,
+    },
+    rightContent: {
+        width: 80,
+        justifyContent: 'center',
+    },
+    cardImage: {
+        width: '100%',
+        height: 80,
+        borderRadius: BorderRadius.md,
+        backgroundColor: Colors.neutral[100],
+    },
+    takePhotoButton: {
+        width: '100%',
+        height: 80,
+        borderRadius: BorderRadius.md,
+        backgroundColor: BrandColors.primary + '10',
+        borderWidth: 1.5,
+        borderColor: BrandColors.primary,
+        borderStyle: 'dashed',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 4,
+    },
+    takePhotoText: {
+        fontSize: 10,
+        fontWeight: Typography.fontWeight.semibold as any,
+        color: BrandColors.primary,
+        textAlign: 'center',
+    },
+    actionButtonContainer: {
+        marginTop: Spacing.xs,
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
     },
 });

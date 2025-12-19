@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import {
@@ -278,20 +277,30 @@ export const CreateTechnicianForm: React.FC<CreateTechnicianFormProps> = ({
   return (
     <ThemedView style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Enhanced Header */}
-        <View style={[styles.header, { paddingTop: insets.top + Spacing.lg }]}>
-          <View style={styles.headerIcon}>
-            <IconSymbol name="person.badge.plus" size={28} color={BrandColors.primary} />
-          </View>
-          <ThemedText type="title" style={styles.title}>
-            Create New Technician
-          </ThemedText>
-          <ThemedText style={styles.subtitle}>
-            Add a new team member to your branch
-          </ThemedText>
+        {/* Custom Header with Back Button */}
+        <View style={[styles.customHeader, { paddingTop: insets.top + Spacing.md }]}>
+          <TouchableOpacity onPress={onCancel} style={styles.backButton}>
+            <IconSymbol name="chevron.left" size={24} color={BrandColors.primary} />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.content}>
+          {/* Branch Assignment at Top */}
+          <View style={[styles.actionCard, styles.primaryActionCard]}>
+            <View style={[styles.iconContainer, styles.primaryIconContainer]}>
+              <IconSymbol name="mappin" size={28} color={BrandColors.primary} />
+            </View>
+            <Text style={styles.actionTitle}>Branch Assignment</Text>
+            <Text style={styles.actionSubtitle}>
+              Technician will be assigned to:
+            </Text>
+            <View style={styles.branchNameTag}>
+              <Text style={styles.branchNameText}>
+                {activeLocation?.name || 'Current Branch'}
+              </Text>
+            </View>
+          </View>
+
           {/* Form Card */}
           <View style={styles.formCard}>
             <View style={styles.formSection}>
@@ -397,22 +406,6 @@ export const CreateTechnicianForm: React.FC<CreateTechnicianFormProps> = ({
               </View>
             </View>
           </View>
-
-          {/* Branch Assignment Info Card - Quick Action Style */}
-          <View style={[styles.actionCard, styles.primaryActionCard]}>
-            <View style={[styles.iconContainer, styles.primaryIconContainer]}>
-              <IconSymbol name="mappin" size={28} color={BrandColors.primary} />
-            </View>
-            <Text style={styles.actionTitle}>Branch Assignment</Text>
-            <Text style={styles.actionSubtitle}>
-              Technician will be assigned to:
-            </Text>
-            <View style={styles.branchNameTag}>
-              <Text style={styles.branchNameText}>
-                {activeLocation?.name || 'Current Branch'}
-              </Text>
-            </View>
-          </View>
         </View>
 
         <View style={styles.actions}>
@@ -460,62 +453,44 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  header: {
+  customHeader: {
     backgroundColor: BrandColors.surface,
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing['2xl'],
-    paddingBottom: Spacing.xl,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.neutral[200],
-    ...Shadows.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.sm,
   },
-  headerIcon: {
-    alignSelf: 'center',
-    marginBottom: Spacing.md,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: BrandColors.primary + '10',
-    alignItems: 'center',
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.white,
     justifyContent: 'center',
-  },
-  title: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: Typography.fontWeight.bold as any,
-    color: BrandColors.ink,
-    textAlign: 'center',
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.neutral[500],
-    marginTop: Spacing.sm,
-    textAlign: 'center',
-    lineHeight: 24,
+    alignItems: 'center',
+    ...Shadows.sm,
   },
   content: {
     flex: 1,
-    paddingTop: Spacing.xl,
+    paddingTop: Spacing.sm,
   },
   formCard: {
     backgroundColor: Colors.white,
     marginHorizontal: Spacing.lg,
+    marginTop: Spacing.lg,
     borderRadius: BorderRadius.lg,
-    padding: Spacing.xl,
+    padding: Spacing.lg,
     ...Shadows.md,
   },
   formSection: {
-    marginBottom: Spacing.lg,
+    marginBottom: 0,
   },
   sectionTitle: {
     fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.semibold as any,
+    fontWeight: Typography.fontWeight.bold as any,
     color: BrandColors.ink,
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
     letterSpacing: -0.3,
   },
   fieldContainer: {
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   label: {
     fontSize: Typography.fontSize.sm,
@@ -565,7 +540,8 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.xl,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xl,
     gap: Spacing.md,
   },
   button: {
@@ -573,10 +549,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing.md,
+    paddingVertical: 14,
     paddingHorizontal: Spacing.lg,
     borderRadius: BorderRadius.md,
-    gap: Spacing.sm,
+    gap: 6,
     ...Shadows.sm,
   },
   cancelButton: {
@@ -611,10 +587,11 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: BrandColors.ink + '10',
-    padding: Spacing.lg,
+    padding: Spacing.md,
     alignItems: 'center',
     marginHorizontal: Spacing.lg,
-    marginTop: Spacing.lg,
+    marginTop: 0,
+    marginBottom: Spacing.sm,
     ...Shadows.sm,
   },
   primaryActionCard: {
@@ -622,28 +599,28 @@ const styles = StyleSheet.create({
     backgroundColor: BrandColors.surface,
   },
   iconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.xs,
   },
   primaryIconContainer: {
     backgroundColor: BrandColors.primary + '10',
   },
   actionTitle: {
     fontSize: Typography.fontSize.base,
-    fontFamily: Typography.fontFamily.semibold,
+    fontFamily: Typography.fontFamily.bold,
     color: BrandColors.ink,
-    marginTop: Spacing.sm,
+    marginTop: Spacing.xs,
     textAlign: 'center',
   },
   actionSubtitle: {
     fontSize: Typography.fontSize.xs,
     fontFamily: Typography.fontFamily.regular,
-    color: BrandColors.ink + '80',
-    marginTop: 2,
+    color: Colors.neutral[500],
+    marginTop: 4,
     textAlign: 'center',
   },
   branchNameTag: {

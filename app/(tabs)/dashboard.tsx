@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 
 import { StatusIcon } from '@/components/empty-states';
+import { JobCard } from '@/components/JobCard';
 import { LocationSelector } from '@/components/location-selector';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -198,12 +199,37 @@ export default function DashboardScreen() {
     refreshKPIs: refreshFinancialKpis,
   } = useFinancialKPIs();
 
+  // Fetch new job cards (last 6 days) for Admin
+  const {
+    data: newJobCards,
+    isLoading: newJobCardsLoading,
+    refetch: refetchNewJobCards,
+  } = useQuery({
+    queryKey: ['admin-new-job-cards', user?.role, activeLocation?.id],
+    queryFn: () => dataService.getNewJobCards(user!.role, activeLocation?.id),
+    enabled: !!user && user.role === 'admin',
+    refetchInterval: 30000,
+  });
+
+  const {
+    data: overdueJobCards,
+    isLoading: overdueJobCardsLoading,
+    refetch: refetchOverdueJobCards,
+  } = useQuery({
+    queryKey: ['overdue-job-cards', user?.role, activeLocation?.id],
+    queryFn: () => dataService.getOverdueJobCards(user?.role as any, activeLocation?.id),
+    enabled: !!user && user.role === 'admin',
+    refetchInterval: 30000,
+  });
+
   const refreshing = kpisLoading || financialLoading;
 
   const handleRefresh = async () => {
     await Promise.all([
       refetchKpis(),
       refreshFinancialKpis(),
+      refetchNewJobCards(),
+      refetchOverdueJobCards(),
     ]);
   };
 
@@ -376,22 +402,73 @@ export default function DashboardScreen() {
 
         )}
 
+        {/* Overdue Job Cards (Priority) - Admin Only */}
+        {user?.role === 'admin' && overdueJobCards && overdueJobCards.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <ThemedText type="subtitle" style={[styles.sectionTitle, { color: '#EF4444' }]}>
+                Overdue Job Cards
+              </ThemedText>
+              <TouchableOpacity onPress={() => router.push('/jobcards?filter=overdue')}>
+                <Text style={[styles.viewAllText, { color: '#EF4444' }]}>View All</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.ticketsList}>
+              {overdueJobCards.map((ticket) => (
+                <JobCard
+                  key={ticket.id}
+                  ticket={ticket}
+                  imagePath={ticket.ticket_attachments?.find(a => a.attachment_type === 'photo')?.storage_path}
+                  imageSource={ticket.ticket_attachments?.find(a => a.attachment_type === 'photo')?.source}
+                  onPress={() => router.push(`/jobcards/${ticket.id}`)}
+                  variant="overdue"
+                />
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* New Job Cards (Last 6 Days) - Admin Only */}
+        {user?.role === 'admin' && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <ThemedText type="subtitle" style={styles.sectionTitle}>
+                New Job Cards
+              </ThemedText>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/jobcards')}>
+                <Text style={styles.viewAllText}>View All</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.ticketsList}>
+              {newJobCards?.map((ticket) => (
+                <JobCard
+                  key={ticket.id}
+                  ticket={ticket}
+                  imagePath={ticket.ticket_attachments?.find(a => a.attachment_type === 'photo')?.storage_path}
+                  imageSource={ticket.ticket_attachments?.find(a => a.attachment_type === 'photo')?.source}
+                  onPress={() => router.push(`/jobcards/${ticket.id}`)}
+                />
+              ))}
+              {!newJobCardsLoading && !newJobCards?.length && (
+                <View style={styles.emptyStateContainer}>
+                  <ThemedText style={{ textAlign: 'center', opacity: 0.6 }}>
+                    No recent job cards found
+                  </ThemedText>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+
         {/* Quick Actions */}
         <View style={styles.section}>
           <ThemedText type="subtitle" style={styles.sectionTitle}>
             Quick Actions
           </ThemedText>
           <View style={styles.actionsGrid}>
-            <TouchableOpacity
-              style={[styles.actionCard, styles.primaryActionCard]}
-              onPress={() => router.push('/jobcards/new')}
-            >
-              <View style={[styles.iconContainer, styles.primaryIconContainer]}>
-                <IconSymbol name="plus" size={28} color={BrandColors.primary} />
-              </View>
-              <Text style={styles.actionTitle}>Create Job Card</Text>
-              <Text style={styles.actionSubtitle}>New service ticket</Text>
-            </TouchableOpacity>
+
 
             <TouchableOpacity
               style={[styles.actionCard, styles.blueActionCard]}

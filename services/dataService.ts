@@ -298,7 +298,8 @@ export class DataService {
         .select(`
           *,
           customer:customers(*),
-          location:locations(id, name, code)
+          location:locations(id, name, code),
+          ticket_attachments(storage_path, attachment_type, source)
         `, { count: 'exact' });
 
       // Apply location scoping
@@ -408,7 +409,8 @@ export class DataService {
         .select(`
           *,
           customer:customers(*),
-          location:locations(id, name, code)
+          location:locations(id, name, code),
+          ticket_attachments(storage_path, attachment_type, source)
         `);
 
       // Apply location scoping
@@ -637,6 +639,105 @@ export class DataService {
       throw error;
     }
   }
-}
 
+  // Get new job cards (created in the last 6 days) for Admin
+  async getNewJobCards(
+    userRole: UserRole,
+    activeLocationId?: string | null
+  ): Promise<ServiceTicket[]> {
+    if (this.isMockMode()) {
+      const tickets = this.getMockTickets(10);
+      return tickets.map(t => ({
+        ...t,
+        created_at: new Date(Date.now() - Math.floor(Math.random() * 5) * 24 * 60 * 60 * 1000).toISOString(),
+      }));
+    }
+
+    try {
+      const today = new Date();
+      // Go back 5 days
+      const startDate = new Date(today);
+      startDate.setDate(today.getDate() - 5);
+      startDate.setHours(0, 0, 0, 0);
+
+      let query = supabase
+        .from('service_tickets')
+        .select(`
+          *,
+          customer:customers(*),
+          location:locations(id, name, code),
+          ticket_attachments(storage_path, attachment_type, source)
+        `)
+        .gte('created_at', startDate.toISOString())
+        .order('created_at', { ascending: false });
+
+      // Apply scope
+      query = this.applyScopeToQuery('service_tickets', query, userRole, activeLocationId);
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error fetching new job cards:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching new job cards:', error);
+      return [];
+    }
+  }
+
+  // Get overdue job cards for Admin
+  async getOverdueJobCards(
+    userRole: UserRole,
+    activeLocationId?: string | null
+  ): Promise<ServiceTicket[]> {
+    if (this.isMockMode()) {
+      // Return mock overdue tickets
+      const tickets = this.getMockTickets(3);
+      return tickets.map(t => ({
+        ...t,
+        status: 'assigned',
+        dueDate: new Date(Date.now() - Math.floor(Math.random() * 5 + 1) * 24 * 60 * 60 * 1000).toISOString(),
+        due_date: new Date(Date.now() - Math.floor(Math.random() * 5 + 1) * 24 * 60 * 60 * 1000).toISOString(),
+      }));
+    }
+
+    try {
+      const today = new Date();
+      // Include tickets due up to 5 days from now
+      const fiveDaysFromNow = new Date(today);
+      fiveDaysFromNow.setDate(today.getDate() + 5);
+      fiveDaysFromNow.setHours(23, 59, 59, 999);
+
+      let query = supabase
+        .from('service_tickets')
+        .select(`
+          *,
+          customer:customers(*),
+          ticket_attachments(storage_path, attachment_type, source)
+        `)
+        .lt('due_date', fiveDaysFromNow.toISOString())
+        .not('status', 'in', '(completed,delivered,closed,cancelled)')
+        .order('due_date', { ascending: true }) // Oldest overdue first
+        .limit(10); // Limit to top 10 overdue
+
+      // Apply location filtering for non-admins if implemented or generalized
+      // For now, assuming Admin sees all or scoped by activeLocationId if provided
+      if (activeLocationId) {
+        query = query.eq('location_id', activeLocationId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching overdue job cards:', error);
+      return [];
+    }
+  }
+}
 export const dataService = new DataService();

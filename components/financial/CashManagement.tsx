@@ -12,16 +12,16 @@ import { useCashManagement } from '@/hooks/useFinancial';
 import { DailyCash } from '@/types/financial.types';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    Modal,
     RefreshControl,
     ScrollView,
     StyleSheet,
     Text,
-    TextInput,
     TouchableOpacity,
     View
 } from 'react-native';
+import DailyHistoryModal from './DailyHistoryModal';
+import PaymentMethodHistoryModal from './PaymentMethodHistoryModal';
+import TransactionList from './TransactionList';
 
 export default function CashManagement() {
     const {
@@ -37,22 +37,27 @@ export default function CashManagement() {
     } = useCashManagement();
 
     const [activeTab, setActiveTab] = useState<'overview' | 'drawings' | 'timeline'>('overview');
-    const [showEditModal, setShowEditModal] = useState(false);
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
     const [selectedDailyCash, setSelectedDailyCash] = useState<DailyCash | null>(null);
-    const [editFormData, setEditFormData] = useState({
-        opening_cash: '0',
-        closing_cash: '0',
-        notes: ''
-    });
 
     // Date Filtering State
     const [startDate, setStartDate] = useState(() => {
         const d = new Date();
-        d.setDate(d.getDate() - 30);
+        d.setDate(1);
         return d;
     });
     const [endDate, setEndDate] = useState(new Date());
+
     const [showDateModal, setShowDateModal] = useState(false);
+
+    // Payment Method History State
+    const [showMethodHistory, setShowMethodHistory] = useState(false);
+    const [selectedMethod, setSelectedMethod] = useState<'cash' | 'hdfc' | 'indian_bank'>('cash');
+
+    const handleMethodPress = (method: 'cash' | 'hdfc' | 'indian_bank') => {
+        setSelectedMethod(method);
+        setShowMethodHistory(true);
+    };
 
     useEffect(() => {
         const startStr = startDate.toISOString().split('T')[0];
@@ -87,122 +92,11 @@ export default function CashManagement() {
 
     const currentTotalBalance = currentCashBalance + currentHdfcBalance + currentIndianBankBalance;
 
-    const handleStartToday = async () => {
-        const todayStr = new Date().toISOString().split('T')[0];
 
-        // Check if record already exists
-        const exists = dailyCashRecords.some(r => r.date === todayStr);
-        if (exists) {
-            Alert.alert('Info', 'Daily cash record for today already exists.');
-            return;
-        }
 
-        // Find yesterday's record (or the most recent one before today)
-        // dailyCashRecords is sorted by date descending, so the first one that isn't today (if any)
-        // But since we checked exists, and if we are sorted, the first one should be the most recent previous.
-        // Wait, dailyCashRecords depends on the date filter. We might need to fetch specifically.
-        // For safety, let's assume the user has the list loaded or we fetch specifically.
-        // Better: Fetch the most recent record from API to be sure.
-        // For now, let's use the list if available, or default to 0.
-
-        // Actually, let's look at the sorted list.
-        const previousRecord = dailyCashRecords.find(r => r.date < todayStr);
-
-        const openingCash = previousRecord ? previousRecord.closing_cash : 0;
-        const openingHdfc = previousRecord ? previousRecord.hdfc_balance : 0; // Assuming closing balance of prev day
-        const openingIndian = previousRecord ? previousRecord.indian_bank_balance : 0;
-
-        const result = await createDailyCash({
-            date: todayStr,
-            opening_cash: openingCash,
-            closing_cash: 0,
-            hdfc_balance: openingHdfc,
-            indian_bank_balance: openingIndian,
-            cash_balance: openingCash // Initial balance is opening
-        });
-
-        if (result.success) {
-            Alert.alert('Success', 'Started today\'s cash record');
-            const startStr = startDate.toISOString().split('T')[0];
-            const endStr = endDate.toISOString().split('T')[0];
-            fetchDailyRecords(startStr, endStr);
-            // Also refresh current view data
-            fetchData(todayStr);
-        } else {
-            Alert.alert('Error', result.error || 'Failed to start today');
-        }
-    };
-
-    const handleCloseToday = async () => {
-        const todayStr = new Date().toISOString().split('T')[0];
-
-        // We need the record for today to update it
-        // We can find it in dailyCashRecords or fetch it.
-        // Let's try to find it in the loaded records first.
-        let todayRecord = dailyCashRecords.find(r => r.date === todayStr);
-
-        if (!todayRecord) {
-            Alert.alert('Error', 'No record found for today. Please "Start Today" first.');
-            return;
-        }
-
-        // Calculate closing balances
-        // We use the real-time calculated balances
-        if (!realTimeBalances) {
-            Alert.alert('Error', 'Could not calculate real-time balances.');
-            return;
-        }
-
-        const result = await updateDailyCash(todayStr, {
-            closing_cash: realTimeBalances.cash_balance,
-            // We might want to update bank balances too if they changed during the day?
-            // The requirement says "make sure evening closing cash is running balance".
-            // It doesn't explicitly say to update bank balances, but it implies closing the day.
-            // Usually closing cash is the main thing to verify.
-            // I will update closing_cash.
-        });
-
-        if (result.success) {
-            Alert.alert('Success', 'Closed today\'s cash record');
-            const startStr = startDate.toISOString().split('T')[0];
-            const endStr = endDate.toISOString().split('T')[0];
-            fetchDailyRecords(startStr, endStr);
-        } else {
-            Alert.alert('Error', result.error || 'Failed to close today');
-        }
-    };
-
-    const handleEditPress = (record: DailyCash) => {
+    const handleRecordPress = (record: DailyCash) => {
         setSelectedDailyCash(record);
-        setEditFormData({
-            opening_cash: record.opening_cash.toString(),
-            closing_cash: record.closing_cash.toString(),
-            notes: record.notes || ''
-        });
-        setShowEditModal(true);
-    };
-
-    const handleSaveDailyCash = async () => {
-        if (!selectedDailyCash) return;
-
-        const opening = parseFloat(editFormData.opening_cash) || 0;
-        const closing = parseFloat(editFormData.closing_cash) || 0;
-
-        const result = await updateDailyCash(selectedDailyCash.date, {
-            opening_cash: opening,
-            closing_cash: closing,
-            notes: editFormData.notes
-        });
-
-        if (result.success) {
-            Alert.alert('Success', 'Daily cash updated successfully');
-            setShowEditModal(false);
-            const startStr = startDate.toISOString().split('T')[0];
-            const endStr = endDate.toISOString().split('T')[0];
-            fetchDailyRecords(startStr, endStr);
-        } else {
-            Alert.alert('Error', result.error || 'Failed to update daily cash');
-        }
+        setShowHistoryModal(true);
     };
 
     const handleDateApply = (start: Date, end: Date) => {
@@ -236,7 +130,10 @@ export default function CashManagement() {
                     </View>
                     <Text style={[styles.summaryValue, { color: '#6B21A8' }]}>{formatCurrency(currentTotalBalance)}</Text>
                 </View>
-                <View style={[styles.summaryCard, { backgroundColor: '#E0F2FE' }]}>
+                <TouchableOpacity
+                    style={[styles.summaryCard, { backgroundColor: '#E0F2FE' }]}
+                    onPress={() => handleMethodPress('hdfc')}
+                >
                     <View style={styles.cardHeader}>
                         <View style={[styles.iconContainer, { backgroundColor: '#BAE6FD' }]}>
                             <IconSymbol name="building.columns.fill" size={20} color="#0369A1" />
@@ -244,8 +141,11 @@ export default function CashManagement() {
                         <Text style={[styles.summaryLabel, { color: '#0369A1' }]}>HDFC Bank</Text>
                     </View>
                     <Text style={[styles.summaryValue, { color: '#0369A1' }]}>{formatCurrency(currentHdfcBalance)}</Text>
-                </View>
-                <View style={[styles.summaryCard, { backgroundColor: '#FFEDD5' }]}>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.summaryCard, { backgroundColor: '#FFEDD5' }]}
+                    onPress={() => handleMethodPress('indian_bank')}
+                >
                     <View style={styles.cardHeader}>
                         <View style={[styles.iconContainer, { backgroundColor: '#FED7AA' }]}>
                             <IconSymbol name="building.columns.fill" size={20} color="#C2410C" />
@@ -253,8 +153,11 @@ export default function CashManagement() {
                         <Text style={[styles.summaryLabel, { color: '#C2410C' }]}>Indian Bank</Text>
                     </View>
                     <Text style={[styles.summaryValue, { color: '#C2410C' }]}>{formatCurrency(currentIndianBankBalance)}</Text>
-                </View>
-                <View style={[styles.summaryCard, { backgroundColor: '#DCFCE7' }]}>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.summaryCard, { backgroundColor: '#DCFCE7' }]}
+                    onPress={() => handleMethodPress('cash')}
+                >
                     <View style={styles.cardHeader}>
                         <View style={[styles.iconContainer, { backgroundColor: '#BBF7D0' }]}>
                             <IconSymbol name="banknote.fill" size={20} color="#15803D" />
@@ -262,7 +165,7 @@ export default function CashManagement() {
                         <Text style={[styles.summaryLabel, { color: '#15803D' }]}>Cash Balance</Text>
                     </View>
                     <Text style={[styles.summaryValue, { color: '#15803D' }]}>{formatCurrency(currentCashBalance)}</Text>
-                </View>
+                </TouchableOpacity>
             </View>
 
             {/* Daily Records List (Card Style) */}
@@ -275,7 +178,7 @@ export default function CashManagement() {
                 </View>
             ) : (
                 dailyCashRecords.map((record) => (
-                    <TouchableOpacity key={record.id} style={styles.recordCard} onPress={() => handleEditPress(record)}>
+                    <TouchableOpacity key={record.id} style={styles.recordCard} onPress={() => handleRecordPress(record)}>
                         <View style={styles.recordHeader}>
                             <View style={styles.dateContainer}>
                                 <IconSymbol name="calendar" size={16} color={Colors.neutral[500]} style={{ marginRight: 6 }} />
@@ -357,63 +260,10 @@ export default function CashManagement() {
     );
 
     const renderTimelineTab = () => (
-        <View>
-            <View style={styles.tableHeader}>
-                <Text style={[styles.columnHeader, { width: 60 }]}>Time</Text>
-                <Text style={[styles.columnHeader, { flex: 1 }]}>Description</Text>
-                <Text style={[styles.columnHeader, { width: 70 }]}>Type</Text>
-                <Text style={[styles.columnHeader, { width: 80, textAlign: 'right' }]}>Amount</Text>
-                <Text style={[styles.columnHeader, { width: 80, textAlign: 'right' }]}>Balance</Text>
-            </View>
-
-            {timeline.length === 0 ? (
-                <Text style={styles.emptyText}>No transactions found for this date.</Text>
-            ) : (
-                timeline.map((item) => {
-                    const isPositive = item.type === 'sale' || item.type === 'investment' || (item.type === 'drawing' && item.drawing_type === 'deposit');
-                    const balance = item.method === 'cash' ? item.running_balance?.cash
-                        : item.method === 'indian_bank' ? item.running_balance?.indian_bank
-                            : item.running_balance?.hdfc;
-
-                    return (
-                        <View key={item.id} style={styles.tableRow}>
-                            <Text style={[styles.cellText, { width: 60 }]}>
-                                {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </Text>
-                            <View style={{ flex: 1 }}>
-                                <Text style={styles.cellText} numberOfLines={1}>{item.description}</Text>
-                                <Text style={[styles.cellText, { fontSize: 10, color: Colors.neutral[500] }]}>
-                                    {item.method === 'hdfc' || item.method === 'hdfc_bank' ? 'HDFC'
-                                        : item.method === 'indian_bank' ? 'Indian Bank'
-                                            : 'Cash'}
-                                </Text>
-                            </View>
-                            <View style={[styles.badgeContainer, {
-                                backgroundColor: item.type === 'sale' ? '#DCFCE7'
-                                    : item.type === 'expense' ? '#FEE2E2'
-                                        : item.type === 'investment' ? '#DBEAFE'
-                                            : '#F3E8FF'
-                            }]}>
-                                <Text style={[styles.badgeText, {
-                                    color: item.type === 'sale' ? '#15803D'
-                                        : item.type === 'expense' ? '#B91C1C'
-                                            : item.type === 'investment' ? '#1D4ED8'
-                                                : '#7E22CE'
-                                }]}>
-                                    {item.type === 'drawing' ? (item.drawing_type === 'deposit' ? 'Dep' : 'W/D') : item.type.charAt(0).toUpperCase() + item.type.slice(1)}
-                                </Text>
-                            </View>
-                            <Text style={[styles.cellText, { width: 80, textAlign: 'right', color: isPositive ? Colors.success[600] : Colors.error[600] }]}>
-                                {isPositive ? '+' : '-'}{formatCurrency(item.amount)}
-                            </Text>
-                            <Text style={[styles.cellText, { width: 80, textAlign: 'right', fontWeight: 'bold' }]}>
-                                {formatCurrency(balance || 0)}
-                            </Text>
-                        </View>
-                    );
-                })
-            )}
-        </View>
+        <TransactionList
+            transactions={timeline}
+            emptyMessage="No transactions found for this date."
+        />
     );
 
     return (
@@ -423,13 +273,24 @@ export default function CashManagement() {
                 <View style={styles.tabs}>
                     <TouchableOpacity
                         style={[styles.tab, activeTab === 'overview' && styles.activeTab]}
-                        onPress={() => setActiveTab('overview')}
+                        onPress={() => {
+                            setActiveTab('overview');
+                            const d = new Date();
+                            d.setDate(1);
+                            setStartDate(d);
+                            setEndDate(new Date());
+                        }}
                     >
                         <Text style={[styles.tabText, activeTab === 'overview' && styles.activeTabText]}>Overview</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.tab, activeTab === 'timeline' && styles.activeTab]}
-                        onPress={() => setActiveTab('timeline')}
+                        onPress={() => {
+                            setActiveTab('timeline');
+                            const today = new Date();
+                            setStartDate(today);
+                            setEndDate(today);
+                        }}
                     >
                         <Text style={[styles.tabText, activeTab === 'timeline' && styles.activeTabText]}>Timeline</Text>
                     </TouchableOpacity>
@@ -487,24 +348,7 @@ export default function CashManagement() {
                 mode={activeTab === 'timeline' ? 'single' : 'range'}
             />
 
-            {/* Daily Actions */}
-            <View style={styles.actionContainer}>
-                <TouchableOpacity
-                    style={[styles.actionButton, { backgroundColor: Colors.success[50], borderColor: Colors.success[200] }]}
-                    onPress={handleStartToday}
-                >
-                    <IconSymbol name="play.fill" size={16} color={Colors.success[700]} style={{ marginRight: 6 }} />
-                    <Text style={[styles.actionButtonText, { color: Colors.success[700] }]}>Start Today</Text>
-                </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={[styles.actionButton, { backgroundColor: Colors.error[50], borderColor: Colors.error[200] }]}
-                    onPress={handleCloseToday}
-                >
-                    <IconSymbol name="stop.fill" size={16} color={Colors.error[700]} style={{ marginRight: 6 }} />
-                    <Text style={[styles.actionButtonText, { color: Colors.error[700] }]}>Close Today</Text>
-                </TouchableOpacity>
-            </View>
 
             <ScrollView
                 contentContainerStyle={styles.scrollContent}
@@ -523,50 +367,21 @@ export default function CashManagement() {
                 {activeTab === 'overview' ? renderOverviewTab() : activeTab === 'timeline' ? renderTimelineTab() : renderDrawingsTab()}
             </ScrollView>
 
-            {/* Edit Modal */}
-            <Modal visible={showEditModal} animationType="slide" presentationStyle="pageSheet">
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalHeader}>
-                        <TouchableOpacity onPress={() => setShowEditModal(false)}>
-                            <Text style={styles.cancelButton}>Cancel</Text>
-                        </TouchableOpacity>
-                        <Text style={styles.modalTitle}>Edit Daily Cash</Text>
-                        <TouchableOpacity onPress={handleSaveDailyCash}>
-                            <Text style={styles.saveButton}>Save</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <View style={styles.modalContent}>
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Opening Cash</Text>
-                            <TextInput
-                                style={styles.textInput}
-                                value={editFormData.opening_cash}
-                                onChangeText={(text) => setEditFormData(prev => ({ ...prev, opening_cash: text }))}
-                                keyboardType="numeric"
-                            />
-                        </View>
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Closing Cash</Text>
-                            <TextInput
-                                style={styles.textInput}
-                                value={editFormData.closing_cash}
-                                onChangeText={(text) => setEditFormData(prev => ({ ...prev, closing_cash: text }))}
-                                keyboardType="numeric"
-                            />
-                        </View>
-                        <View style={styles.inputGroup}>
-                            <Text style={styles.inputLabel}>Notes</Text>
-                            <TextInput
-                                style={[styles.textInput, styles.textArea]}
-                                value={editFormData.notes}
-                                onChangeText={(text) => setEditFormData(prev => ({ ...prev, notes: text }))}
-                                multiline
-                                numberOfLines={3}
-                            />
-                        </View>
-                    </View>
-                </View>
-            </Modal>
+            {/* Daily History Modal */}
+            <DailyHistoryModal
+                visible={showHistoryModal}
+                onClose={() => setShowHistoryModal(false)}
+                date={selectedDailyCash?.date || ''}
+            />
+
+            {/* Payment Method History Modal */}
+            <PaymentMethodHistoryModal
+                visible={showMethodHistory}
+                onClose={() => setShowMethodHistory(false)}
+                method={selectedMethod}
+                startDate={startDate}
+                endDate={endDate}
+            />
         </View>
     );
 }

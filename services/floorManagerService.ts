@@ -583,6 +583,93 @@ export class FloorManagerService {
       return null;
     }
   }
+
+  // Get new job cards (created in the last 6 days: today + 5 days prior)
+  async getNewJobCards(locationId?: string | null): Promise<ServiceTicket[]> {
+    if (this.isMockMode()) {
+      return this.getMockTicketsForTechnician('tech_001', 5).map(t => ({
+        ...t,
+        createdAt: new Date(Date.now() - Math.floor(Math.random() * 5) * 24 * 60 * 60 * 1000).toISOString(),
+        created_at: new Date(Date.now() - Math.floor(Math.random() * 5) * 24 * 60 * 60 * 1000).toISOString(),
+      }));
+    }
+
+    try {
+      const today = new Date();
+      // Go back 5 days
+      const startDate = new Date(today);
+      startDate.setDate(today.getDate() - 5);
+      startDate.setHours(0, 0, 0, 0);
+
+      let query = supabase
+        .from('service_tickets')
+        .select(`
+          *,
+          customer:customers(*),
+          ticket_attachments(storage_path, attachment_type, source)
+        `)
+        .gte('created_at', startDate.toISOString())
+        .order('created_at', { ascending: false });
+
+      if (locationId) {
+        query = query.eq('location_id', locationId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching new job cards:', error);
+      return [];
+    }
+  }
+
+  // Get overdue job cards
+  async getOverdueJobCards(locationId?: string | null): Promise<ServiceTicket[]> {
+    if (this.isMockMode()) {
+      return this.getMockTicketsForTechnician('tech_001', 3).map(t => ({
+        ...t,
+        status: 'assigned', // Ensure active status
+        dueDate: new Date(Date.now() - Math.floor(Math.random() * 5 + 1) * 24 * 60 * 60 * 1000).toISOString(),
+        due_date: new Date(Date.now() - Math.floor(Math.random() * 5 + 1) * 24 * 60 * 60 * 1000).toISOString(),
+      }));
+    }
+
+    try {
+      const today = new Date();
+      // Include tickets due up to 5 days from now
+      const fiveDaysFromNow = new Date(today);
+      fiveDaysFromNow.setDate(today.getDate() + 5);
+      fiveDaysFromNow.setHours(23, 59, 59, 999);
+
+      let query = supabase
+        .from('service_tickets')
+        .select(`
+          *,
+          customer:customers(*),
+          ticket_attachments(storage_path, attachment_type, source)
+        `)
+        .lt('due_date', fiveDaysFromNow.toISOString())
+        .not('status', 'in', '(completed,delivered,closed,cancelled)')
+        .order('due_date', { ascending: true }) // Oldest overdue first
+        .limit(10); // Limit to top 10
+
+      if (locationId) {
+        query = query.eq('location_id', locationId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching overdue job cards:', error);
+      return [];
+    }
+  }
 }
 
 export const floorManagerService = new FloorManagerService();

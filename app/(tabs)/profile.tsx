@@ -3,6 +3,7 @@ import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { BorderRadius, BrandColors, Colors, Shadows, Spacing, Typography } from '@/constants/design-system';
 import { useAuthStore } from '@/stores/authStore';
+import { router } from 'expo-router';
 import React from 'react';
 import {
   Alert,
@@ -97,6 +98,21 @@ export default function ProfileScreen() {
           </ThemedText>
           <Text style={styles.userRole}>{roleDisplayName}</Text>
         </View>
+
+        {/* User Management - Only for admins and front desk managers */}
+        {(user?.role === 'admin' || user?.role === 'front_desk_manager') && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>User Management</Text>
+            <View style={styles.listContainer}>
+              <ProfileItem
+                icon="person.badge.plus"
+                title="Create User"
+                subtitle="Add new users and assign roles"
+                onPress={() => router.push('/create-user')}
+              />
+            </View>
+          </View>
+        )}
 
         {/* Sign Out */}
         <View style={styles.section}>

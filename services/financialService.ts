@@ -14,7 +14,8 @@ import {
   RecentTransaction,
   Sale,
   SaleForm,
-  SalesFilters
+  SalesFilters,
+  TransactionItem
 } from '@/types/financial.types';
 
 export class FinancialService {
@@ -1065,6 +1066,150 @@ export class FinancialService {
         }
       ]
     };
+  }
+
+
+  async getTransactionsByMethod(
+    startDate: string,
+    endDate: string,
+    method: 'cash' | 'hdfc' | 'indian_bank',
+    userRole: UserRole,
+    activeLocationId?: string | null
+  ): Promise<FinancialApiResponse<TransactionItem[]>> {
+    try {
+      // 1. Fetch all data for the date range (we filter in memory to handle complex mappings like UPI->HDFC)
+      // Optimisation: We could push filters to DB, but payment_method mapping for HDFC (UPI, Card, Etc) is complex.
+      // For HDFC: payment_method in ('upi', 'card', 'hdfc', 'hdfc_bank')
+      // For Indian Bank: payment_method = 'indian_bank'
+      // For Cash: payment_method = 'cash'
+
+      const [salesRes, expensesRes, drawingsRes, investmentsRes] = await Promise.all([
+        this.getSalesSumRecords(startDate, endDate, userRole, activeLocationId),
+        this.getExpensesSumRecords(startDate, endDate, userRole, activeLocationId),
+        this.getDrawings(startDate, endDate, userRole, activeLocationId),
+        this.getInvestments(startDate, endDate, userRole, activeLocationId)
+      ]);
+
+      const transactions: TransactionItem[] = [];
+
+      // Helper to check if method matches
+      const isMethodMatch = (recordMethod: string | undefined | null) => {
+        if (!recordMethod) return false;
+        const m = recordMethod.toLowerCase();
+        if (method === 'cash') return m === 'cash';
+        if (method === 'indian_bank') return m === 'indian_bank';
+        if (method === 'hdfc') return ['hdfc', 'hdfc_bank', 'upi', 'card'].includes(m);
+        return false;
+      };
+
+      // Process Sales
+      if (salesRes.data) {
+        salesRes.data.forEach(sale => {
+          if (isMethodMatch(sale.payment_method)) {
+            transactions.push({
+              id: sale.id,
+              date: sale.sale_date,
+              type: 'sale',
+              description: sale.description || `Sale #${sale.sale_number}`,
+              amount: sale.total_amount,
+              method: method, // Normalized
+              original_method: sale.payment_method
+            } as any);
+          }
+        });
+      }
+
+      // Process Expenses
+      if (expensesRes.data) {
+        expensesRes.data.forEach(expense => {
+          if (isMethodMatch(expense.payment_method)) {
+            transactions.push({
+              id: expense.id,
+              date: expense.expense_date,
+              type: 'expense',
+              description: expense.description || expense.category,
+              amount: expense.total_amount || expense.amount,
+              method: method,
+              original_method: expense.payment_method
+            } as any);
+          }
+        });
+      }
+
+      // Process Drawings
+      if (drawingsRes.data) {
+        drawingsRes.data.forEach(drawing => {
+          if (isMethodMatch(drawing.source)) {
+            transactions.push({
+              id: drawing.id,
+              date: drawing.created_at,
+              type: 'drawing',
+              description: `${drawing.type} - ${drawing.partner_name}`,
+              amount: drawing.amount,
+              method: method,
+              drawing_type: drawing.type
+            } as any);
+          }
+        });
+      }
+
+      // Process Investments
+      if (investmentsRes.data) {
+        investmentsRes.data.forEach(inv => {
+          if (isMethodMatch(inv.target_account)) {
+            transactions.push({
+              id: inv.id,
+              date: inv.date,
+              type: 'investment',
+              description: inv.description || 'Investment',
+              amount: inv.amount,
+              method: method
+            } as any);
+          }
+        });
+      }
+
+      // Sort by Date DESC
+      transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+      return { success: true, data: transactions };
+
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch transactions'
+      };
+    }
+  }
+
+  // Helper to fetch full records for sum/analysis (reusing logic but needing full fields)
+  private async getSalesSumRecords(startDate: string, endDate: string, userRole: UserRole, activeLocationId?: string | null) {
+    let query = supabase
+      .from('sales')
+      .select('*')
+      .gte('sale_date', startDate)
+      .lte('sale_date', endDate)
+      .eq('payment_status', 'paid');
+
+    if (userRole && activeLocationId) {
+      query = this.applyScopeToQuery('sales', query, userRole, activeLocationId);
+    }
+    const { data, error } = await query;
+    return { data, error };
+  }
+
+  private async getExpensesSumRecords(startDate: string, endDate: string, userRole: UserRole, activeLocationId?: string | null) {
+    let query = supabase
+      .from('expenses')
+      .select('*')
+      .gte('expense_date', startDate)
+      .lte('expense_date', endDate);
+
+    if (userRole && activeLocationId) {
+      query = this.applyScopeToQuery('expenses', query, userRole, activeLocationId);
+    }
+    const { data, error } = await query;
+    return { data, error };
   }
 }
 

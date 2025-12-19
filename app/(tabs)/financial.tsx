@@ -39,9 +39,9 @@ const tabs: Array<{
   icon: any;
 }> = [
     {
-      id: 'reports',
-      title: 'Reports',
-      icon: 'doc.text.fill',
+      id: 'cash',
+      title: 'Cash',
+      icon: 'banknote.fill',
     },
     {
       id: 'sales',
@@ -54,14 +54,14 @@ const tabs: Array<{
       icon: 'arrow.down.circle.fill',
     },
     {
-      id: 'cash',
-      title: 'Cash',
-      icon: 'banknote.fill',
+      id: 'reports',
+      title: 'Reports',
+      icon: 'doc.text.fill',
     }
   ];
 
 export default function FinancialTab() {
-  const [activeTab, setActiveTab] = useState<TabType>('reports');
+  const [activeTab, setActiveTab] = useState<TabType>('cash');
   const { refreshAll } = useFinancialData();
 
   // Animation values

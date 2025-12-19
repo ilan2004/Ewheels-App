@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 
+import { JobCard } from '@/components/JobCard';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { AssignmentOverviewColors, BorderRadius, BrandColors, Shadows, Spacing, Typography } from '@/constants/design-system';
@@ -160,13 +161,43 @@ export default function FloorManagerDashboard() {
     refetchInterval: 30000,
   });
 
-  const refreshing = statsLoading || techniciansLoading;
+  // Fetch overdue job cards
+  const {
+    data: overdueJobCards,
+    isLoading: overdueJobCardsLoading,
+    refetch: refetchOverdueJobCards,
+  } = useQuery({
+    queryKey: ['overdue-job-cards', activeLocation?.id],
+    queryFn: () => floorManagerService.getOverdueJobCards(activeLocation?.id),
+    enabled: !!user,
+    refetchInterval: 30000,
+  });
+
+  // Fetch new job cards
+  const {
+    data: newJobCards,
+    isLoading: newJobCardsLoading,
+    refetch: refetchNewJobCards,
+  } = useQuery({
+    queryKey: ['new-job-cards', activeLocation?.id],
+    queryFn: () => floorManagerService.getNewJobCards(activeLocation?.id),
+    enabled: !!user,
+    refetchInterval: 30000,
+  });
+
+  const refreshing = statsLoading || techniciansLoading || newJobCardsLoading || overdueJobCardsLoading;
 
   const handleRefresh = async () => {
     await Promise.all([
       refetchStats(),
       refetchTechnicians(),
+      refetchNewJobCards(),
+      refetchOverdueJobCards(),
     ]);
+  };
+
+  const handleTicketPress = (ticketId: string) => {
+    router.push(`/jobcards/${ticketId}`);
   };
 
   const handleTechnicianPress = (technicianId: string) => {
@@ -277,33 +308,69 @@ export default function FloorManagerDashboard() {
           </View>
         </View>
 
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            Quick Actions
-          </Text>
-          <View style={styles.actionsGrid}>
-            <TouchableOpacity
-              style={[styles.actionCard, styles.primaryActionCard]}
-              onPress={() => router.push('/jobcards')}
-            >
-              <View style={[styles.iconContainer, styles.primaryIconContainer]}>
-                <IconSymbol name="doc.text.magnifyingglass" size={28} color={BrandColors.primary} />
-              </View>
-              <Text style={styles.actionTitle}>View Job Cards</Text>
-              <Text style={styles.actionSubtitle}>Assign & manage tickets</Text>
-            </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.actionCard, styles.greenActionCard]}
-              onPress={() => router.push('/create-technician')}
-            >
-              <View style={[styles.iconContainer, styles.greenIconContainer]}>
-                <IconSymbol name="person.badge.plus" size={28} color={BrandColors.title} />
-              </View>
-              <Text style={styles.actionTitle}>Add Technician</Text>
-              <Text style={styles.actionSubtitle}>Create new team member</Text>
+
+
+
+        {/* Overdue Job Cards (Priority) */}
+        {overdueJobCards && overdueJobCards.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: '#EF4444' }]}>
+                Overdue Job Cards
+              </Text>
+              <TouchableOpacity onPress={() => router.push('/jobcards?filter=overdue')}>
+                <Text style={[styles.viewAllText, { color: '#EF4444' }]}>View All</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.ticketsContainer}>
+              {overdueJobCards.map((ticket) => (
+                <JobCard
+                  key={ticket.id}
+                  ticket={ticket}
+                  onPress={() => handleTicketPress(ticket.id)}
+                  imagePath={ticket.ticket_attachments?.find(a => a.attachment_type === 'photo')?.storage_path}
+                  imageSource={ticket.ticket_attachments?.find(a => a.attachment_type === 'photo')?.source}
+                  showTechnician={!!(ticket.assigned_to || ticket.assignedTo)}
+                  technicianName={technicians?.find(t => t.id === (ticket.assigned_to || ticket.assignedTo))?.name}
+                  variant="overdue"
+                />
+              ))}
+            </View>
+          </View>
+        )}
+
+
+        {/* New Job Cards (Last 6 Days) */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>
+              New Job Cards
+            </Text>
+            <TouchableOpacity onPress={() => router.push('/jobcards')}>
+              <Text style={styles.viewAllText}>View All</Text>
             </TouchableOpacity>
+          </View>
+
+          <View style={styles.ticketsContainer}>
+            {newJobCards?.map((ticket) => (
+              <JobCard
+                key={ticket.id}
+                ticket={ticket}
+                onPress={() => handleTicketPress(ticket.id)}
+                imagePath={ticket.ticket_attachments?.find(a => a.attachment_type === 'photo')?.storage_path}
+                imageSource={ticket.ticket_attachments?.find(a => a.attachment_type === 'photo')?.source}
+                showTechnician={!!(ticket.assigned_to || ticket.assignedTo)}
+                technicianName={technicians?.find(t => t.id === (ticket.assigned_to || ticket.assignedTo))?.name}
+              />
+            ))}
+
+            {!newJobCardsLoading && !newJobCards?.length && (
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyText}>No recent job cards found</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -334,8 +401,38 @@ export default function FloorManagerDashboard() {
             )}
           </View>
         </View>
-      </ScrollView>
-    </ThemedView>
+
+        {/* Quick Actions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            Quick Actions
+          </Text>
+          <View style={styles.actionsGrid}>
+            <TouchableOpacity
+              style={[styles.actionCard, styles.primaryActionCard]}
+              onPress={() => router.push('/jobcards')}
+            >
+              <View style={[styles.iconContainer, styles.primaryIconContainer]}>
+                <IconSymbol name="doc.text.magnifyingglass" size={28} color={BrandColors.primary} />
+              </View>
+              <Text style={styles.actionTitle}>View Job Cards</Text>
+              <Text style={styles.actionSubtitle}>Assign & manage tickets</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionCard, styles.greenActionCard]}
+              onPress={() => router.push('/create-technician')}
+            >
+              <View style={[styles.iconContainer, styles.greenIconContainer]}>
+                <IconSymbol name="person.badge.plus" size={28} color={BrandColors.title} />
+              </View>
+              <Text style={styles.actionTitle}>Add Technician</Text>
+              <Text style={styles.actionSubtitle}>Create new team member</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView >
+    </ThemedView >
   );
 }
 
@@ -616,5 +713,69 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.semibold,
     color: BrandColors.surface,
+  },
+  ticketsContainer: {
+    gap: Spacing.md,
+  },
+  ticketCard: {
+    backgroundColor: BrandColors.surface,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: BrandColors.ink + '10',
+    padding: Spacing.base,
+    ...Shadows.sm,
+  },
+  ticketHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  ticketTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  ticketNumber: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.ink,
+  },
+  ticketBadges: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    alignItems: 'center',
+  },
+  badge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.md,
+  },
+  overdueBadge: {
+    backgroundColor: '#FEE2E2',
+  },
+  dueTodayBadge: {
+    backgroundColor: '#FEF3C7',
+  },
+  badgeText: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.medium,
+    color: BrandColors.ink,
+    textTransform: 'capitalize',
+  },
+  ticketSymptom: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink,
+    marginBottom: Spacing.sm,
+    lineHeight: Typography.lineHeight.sm,
+  },
+  ticketMeta: {
+    gap: Spacing.xs,
+  },
+  ticketMetaText: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.regular,
+    color: BrandColors.ink + '80',
   },
 });

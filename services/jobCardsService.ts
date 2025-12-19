@@ -263,7 +263,8 @@ export class JobCardsService {
         .from('service_tickets')
         .select(`
   *,
-  customer: customers(*)
+  customer: customers(*),
+  ticket_attachments(storage_path, attachment_type, source)
     `)
         .order('created_at', { ascending: false })
         .limit(limit);
@@ -330,7 +331,8 @@ export class JobCardsService {
         .from('service_tickets')
         .select(`
     *,
-    customer: customers(*)
+    customer: customers(*),
+    ticket_attachments(storage_path, attachment_type, source)
         `, { count: 'exact' });
 
       // Apply filters
@@ -750,7 +752,8 @@ export class JobCardsService {
         .from('service_tickets')
         .select(`
   *,
-  customer: customers(*)
+  customer: customers(*),
+  ticket_attachments(storage_path, attachment_type)
         `)
         .eq('assigned_to', technicianId)
         .in('status', ['assigned', 'in_progress'])
@@ -978,7 +981,7 @@ export class JobCardsService {
   }
 
   // Get signed URL for attachment (especially images)
-  async getAttachmentSignedUrl(storagePath: string, attachmentType: string): Promise<string | null> {
+  async getAttachmentSignedUrl(storagePath: string, attachmentType: string, source: string = 'internal'): Promise<string | null> {
     if (this.isMockMode()) {
       // Return a placeholder image for mock mode
       return 'https://via.placeholder.com/300x200/3B82F6/FFFFFF?text=Sample+Image';
@@ -986,6 +989,7 @@ export class JobCardsService {
 
     try {
       // Determine the storage bucket based on attachment type
+      // Note: Even media_hub items are copied to media-photos/media-audio upon assignment
       let bucket = 'ticket-attachments';
       if (attachmentType === 'photo') {
         bucket = 'media-photos';

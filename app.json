@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "EvWheelsApp",
+    "name": "Ewheels App",
     "slug": "EvWheelsApp",
+    "description": "Professional EV service and repair management system for technicians, front desk staff, and managers. Streamline job cards, battery management, customer records, and financial tracking.",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/ewheels-logo app.png",
@@ -10,8 +11,11 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "This app needs access to your microphone to record voice memos for tickets and documentation."
-      }
+        "NSMicrophoneUsageDescription": "This app needs access to your microphone to record voice memos for tickets and documentation.",
+        "NSCameraUsageDescription": "This app needs access to your camera to capture photos for job documentation and service records.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to attach images to service tickets and reports."
+      },
+      "bundleIdentifier": "com.ilan20.EvWheelsApp"
     },
     "android": {
       "adaptiveIcon": {
@@ -25,9 +29,14 @@
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
-        "android.permission.INTERNET"
+        "android.permission.INTERNET",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.REQUEST_INSTALL_PACKAGES"
       ],
-      "package": "com.ilan20.EvWheelsApp"
+      "package": "com.ilan20.EvWheelsApp",
+      "versionCode": 1
     },
     "web": {
       "output": "static",

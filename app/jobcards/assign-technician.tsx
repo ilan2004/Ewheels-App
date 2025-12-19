@@ -1,21 +1,22 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { router, useLocalSearchParams } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Platform,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import DateFilterModal from '@/components/ui/DateFilterModal';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BorderRadius, BrandColors, Colors, Shadows, Spacing, Typography } from '@/constants/design-system';
 import { jobCardsService } from '@/services/jobCardsService';
 
 interface Technician {
@@ -41,10 +42,11 @@ const TechnicianCard: React.FC<TechnicianCardProps> = ({
 }) => {
   const displayName = technician.name || `${technician.first_name} ${technician.last_name}`.trim();
   const workloadPercentage = Math.min((workload / 8) * 100, 100);
+
   const getWorkloadColor = () => {
-    if (workloadPercentage < 60) return '#10B981'; // green
-    if (workloadPercentage < 80) return '#F59E0B'; // orange
-    return '#EF4444'; // red
+    if (workloadPercentage < 60) return Colors.success[500];
+    if (workloadPercentage < 80) return Colors.warning[500];
+    return Colors.error[500];
   };
 
   return (
@@ -54,6 +56,7 @@ const TechnicianCard: React.FC<TechnicianCardProps> = ({
         isSelected && styles.technicianCardSelected,
       ]}
       onPress={() => onSelect(technician)}
+      activeOpacity={0.7}
     >
       <View style={styles.technicianHeader}>
         <View style={styles.technicianInfo}>
@@ -94,7 +97,7 @@ const TechnicianCard: React.FC<TechnicianCardProps> = ({
 
       {isSelected && (
         <View style={styles.selectedIndicator}>
-          <IconSymbol name="checkmark.circle.fill" size={20} color="#10B981" />
+          <IconSymbol name="checkmark.circle.fill" size={24} color={BrandColors.primary} />
         </View>
       )}
     </TouchableOpacity>
@@ -190,15 +193,6 @@ export default function AssignTechnicianScreen() {
     });
   };
 
-  const handleDateChange = (event: any, selectedDate?: Date) => {
-    if (Platform.OS === 'android') {
-      setShowDatePicker(false);
-    }
-    if (selectedDate) {
-      setDueDate(selectedDate);
-    }
-  };
-
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
@@ -224,7 +218,7 @@ export default function AssignTechnicianScreen() {
   if (ticketLoading || techniciansLoading) {
     return (
       <ThemedView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3B82F6" />
+        <ActivityIndicator size="large" color={BrandColors.primary} />
         <Text style={styles.loadingText}>Loading...</Text>
       </ThemedView>
     );
@@ -233,7 +227,7 @@ export default function AssignTechnicianScreen() {
   if (techniciansError) {
     return (
       <ThemedView style={styles.errorContainer}>
-        <IconSymbol name="exclamationmark.triangle" size={48} color="#EF4444" />
+        <IconSymbol name="exclamationmark.triangle" size={48} color={Colors.error[500]} />
         <Text style={styles.errorTitle}>Failed to load technicians</Text>
         <Text style={styles.errorText}>Please check your connection and try again.</Text>
         <TouchableOpacity style={styles.retryButton} onPress={() => router.back()}>
@@ -245,19 +239,22 @@ export default function AssignTechnicianScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={handleBack}
         >
-          <IconSymbol name="chevron.left" size={24} color="#374151" />
+          <IconSymbol name="chevron.left" size={24} color={BrandColors.ink} />
         </TouchableOpacity>
 
         <View style={styles.headerContent}>
-          <ThemedText type="title" style={styles.headerTitle}>
+          <Text style={styles.headerTitle}>
             {step === 'technician' ? 'Assign Technician' : 'Set Due Date'}
-          </ThemedText>
+          </Text>
           {ticket && (
             <Text style={styles.headerSubtitle}>
               {ticket.ticket_number || ticket.ticketNumber}
@@ -304,7 +301,7 @@ export default function AssignTechnicianScreen() {
 
             {technicians.length === 0 ? (
               <View style={styles.emptyContainer}>
-                <IconSymbol name="person.3" size={48} color="#9CA3AF" />
+                <IconSymbol name="person.3" size={48} color={Colors.neutral[400]} />
                 <Text style={styles.emptyTitle}>No Technicians Available</Text>
                 <Text style={styles.emptySubtitle}>
                   Please contact your administrator.
@@ -348,9 +345,9 @@ export default function AssignTechnicianScreen() {
                 style={styles.dateButton}
                 onPress={() => setShowDatePicker(true)}
               >
-                <IconSymbol name="calendar" size={20} color="#3B82F6" />
+                <IconSymbol name="calendar" size={24} color={BrandColors.primary} />
                 <Text style={styles.dateButtonText}>{formatDate(dueDate)}</Text>
-                <IconSymbol name="chevron.right" size={16} color="#6B7280" />
+                <IconSymbol name="pencil" size={16} color={Colors.neutral[500]} />
               </TouchableOpacity>
 
               {/* Quick Date Options */}
@@ -374,16 +371,6 @@ export default function AssignTechnicianScreen() {
                   })}
                 </View>
               </View>
-
-              {/* Date Picker */}
-              {showDatePicker && (
-                <DateTimePicker
-                  value={dueDate}
-                  mode="date"
-                  minimumDate={new Date()}
-                  onChange={handleDateChange}
-                />
-              )}
             </View>
 
             {/* Assign Button */}
@@ -409,6 +396,19 @@ export default function AssignTechnicianScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Custom Date Filter Modal */}
+      <DateFilterModal
+        visible={showDatePicker}
+        onClose={() => setShowDatePicker(false)}
+        onApply={(start) => {
+          setDueDate(start);
+          setShowDatePicker(false);
+        }}
+        initialStartDate={dueDate}
+        initialEndDate={dueDate}
+        mode="single"
+      />
     </ThemedView>
   );
 }
@@ -416,139 +416,141 @@ export default function AssignTechnicianScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: Colors.neutral[50],
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: Colors.neutral[50],
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#6B7280',
+    marginTop: Spacing.md,
+    fontSize: Typography.fontSize.base,
+    color: Colors.neutral[600],
+    fontFamily: Typography.fontFamily.medium,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#F9FAFB',
+    padding: Spacing.lg,
+    backgroundColor: BrandColors.background,
   },
   errorTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    marginTop: 16,
-    marginBottom: 8,
+    fontSize: Typography.fontSize.lg,
+    color: BrandColors.title,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.sm,
+    fontFamily: Typography.fontFamily.bold,
   },
   errorText: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: Typography.fontSize.base,
+    color: Colors.neutral[600],
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: Spacing.xl,
+    fontFamily: Typography.fontFamily.regular,
   },
   retryButton: {
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
+    backgroundColor: BrandColors.primary,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
   },
   retryText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+    color: Colors.white,
+    fontFamily: Typography.fontFamily.semibold,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
-    paddingTop: 60,
-    backgroundColor: '#FFFFFF',
+    padding: Spacing.lg,
+    paddingTop: Platform.OS === 'ios' ? 60 : Spacing.lg + (StatusBar.currentHeight || 0),
+    backgroundColor: Colors.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: Colors.neutral[100],
   },
   backButton: {
-    padding: 8,
-    marginRight: 12,
+    padding: Spacing.xs,
+    marginRight: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.neutral[100],
   },
   headerContent: {
     flex: 1,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: Typography.fontSize.xl,
+    fontFamily: Typography.fontFamily.bold,
+    color: BrandColors.title,
   },
   headerSubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: Typography.fontSize.sm,
+    color: Colors.neutral[500],
+    fontFamily: Typography.fontFamily.medium,
     marginTop: 2,
   },
   ticketInfo: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    marginBottom: 8,
+    backgroundColor: Colors.white,
+    padding: Spacing.lg,
+    marginBottom: Spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: Colors.neutral[100],
   },
   ticketInfoRow: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: Spacing.xs,
   },
   ticketInfoLabel: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: Typography.fontSize.sm,
+    color: Colors.neutral[500],
     width: 80,
-    fontWeight: '500',
+    fontFamily: Typography.fontFamily.medium,
   },
   ticketInfoValue: {
-    fontSize: 14,
-    color: '#111827',
+    fontSize: Typography.fontSize.sm,
+    color: BrandColors.ink,
     flex: 1,
-    fontWeight: '600',
+    fontFamily: Typography.fontFamily.semibold,
   },
   sectionHeader: {
-    padding: 20,
-    paddingBottom: 12,
-    backgroundColor: '#F9FAFB',
+    padding: Spacing.lg,
+    paddingBottom: Spacing.md,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+    color: BrandColors.title,
     marginBottom: 4,
   },
   sectionSubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: Typography.fontSize.sm,
+    color: Colors.neutral[500],
+    fontFamily: Typography.fontFamily.regular,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
+    padding: Spacing.lg,
     paddingTop: 0,
+    paddingBottom: Spacing['3xl'],
   },
   techniciansList: {
-    gap: 12,
+    gap: Spacing.md,
   },
   technicianCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-    borderWidth: 2,
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    ...Shadows.sm,
+    borderWidth: 1.5,
     borderColor: 'transparent',
-    position: 'relative',
   },
   technicianCardSelected: {
-    borderColor: '#10B981',
-    backgroundColor: '#F0FDF4',
+    borderColor: BrandColors.primary,
+    backgroundColor: BrandColors.primary + '05',
+    ...Shadows.md,
   },
   technicianHeader: {
     flexDirection: 'row',
@@ -557,83 +559,82 @@ const styles = StyleSheet.create({
   },
   technicianInfo: {
     flex: 1,
-    marginRight: 12,
+    marginRight: Spacing.md,
   },
   technicianName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 4,
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.semibold,
+    color: BrandColors.title,
+    marginBottom: 2,
   },
   technicianNameSelected: {
-    color: '#059669',
+    color: BrandColors.primary,
   },
   technicianEmail: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.neutral[500],
   },
   technicianEmailSelected: {
-    color: '#047857',
+    color: BrandColors.primary + 'CC',
   },
   workloadContainer: {
     alignItems: 'flex-end',
     minWidth: 80,
   },
   workloadText: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 4,
-    fontWeight: '500',
+    fontSize: Typography.fontSize.xs,
+    color: Colors.neutral[500],
+    marginBottom: 6,
+    fontFamily: Typography.fontFamily.medium,
   },
   workloadTextSelected: {
-    color: '#047857',
+    color: BrandColors.primary,
   },
   workloadBar: {
     width: 60,
     height: 6,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 3,
+    backgroundColor: Colors.neutral[100],
+    borderRadius: BorderRadius.full,
   },
   workloadProgress: {
     height: 6,
-    borderRadius: 3,
+    borderRadius: BorderRadius.full,
   },
   selectedIndicator: {
     position: 'absolute',
-    top: 12,
-    right: 12,
+    top: Spacing.sm,
+    right: Spacing.sm,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    padding: Spacing['2xl'],
+    marginTop: Spacing.xl,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    marginTop: 16,
-    marginBottom: 8,
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+    color: BrandColors.title,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.xs,
   },
   emptySubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: Typography.fontSize.sm,
+    color: Colors.neutral[500],
     textAlign: 'center',
+    fontFamily: Typography.fontFamily.regular,
   },
   dueDateContainer: {
-    gap: 20,
-    marginTop: 20,
+    gap: Spacing.lg,
+    marginTop: Spacing.md,
   },
   assignmentSummary: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    backgroundColor: BrandColors.surface,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    ...Shadows.sm,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -641,94 +642,95 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   summaryLabel: {
-    fontSize: 14,
-    color: '#6B7280',
-    fontWeight: '500',
+    fontSize: Typography.fontSize.sm,
+    color: Colors.neutral[500],
+    fontFamily: Typography.fontFamily.medium,
   },
   summaryValue: {
-    fontSize: 16,
-    color: '#111827',
-    fontWeight: '600',
+    fontSize: Typography.fontSize.base,
+    color: BrandColors.title,
+    fontFamily: Typography.fontFamily.bold,
   },
   dueDateSection: {
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    backgroundColor: BrandColors.surface,
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    ...Shadows.sm,
   },
   dueDateTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 4,
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+    color: BrandColors.title,
+    marginBottom: Spacing.xs,
   },
   dueDateSubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 20,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.neutral[500],
+    marginBottom: Spacing.lg,
+    fontFamily: Typography.fontFamily.regular,
   },
   dateButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 20,
-    gap: 12,
+    backgroundColor: Colors.neutral[50],
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.lg,
+    gap: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.neutral[200],
   },
   dateButtonText: {
     flex: 1,
-    fontSize: 16,
-    color: '#111827',
-    fontWeight: '500',
+    fontSize: Typography.fontSize.lg,
+    color: BrandColors.title,
+    fontFamily: Typography.fontFamily.semibold,
   },
   quickDateOptions: {
-    gap: 12,
+    gap: Spacing.sm,
   },
   quickDateTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 4,
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.semibold,
+    color: Colors.neutral[600],
+    marginBottom: Spacing.xs,
   },
   quickDateButtons: {
     flexDirection: 'row',
-    gap: 8,
+    gap: Spacing.sm,
     flexWrap: 'wrap',
   },
   quickDateButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#EFF6FF',
-    borderRadius: 20,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    backgroundColor: BrandColors.primary + '10',
+    borderRadius: BorderRadius.full,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: BrandColors.primary + '20',
   },
   quickDateButtonText: {
-    fontSize: 14,
-    color: '#2563EB',
-    fontWeight: '500',
+    fontSize: Typography.fontSize.sm,
+    color: BrandColors.primary,
+    fontFamily: Typography.fontFamily.medium,
   },
   assignButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: BrandColors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
-    gap: 8,
-    marginTop: 20,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    gap: Spacing.sm,
+    marginTop: Spacing.xl,
+    ...Shadows.md,
   },
   assignButtonDisabled: {
-    backgroundColor: '#9CA3AF',
+    backgroundColor: Colors.neutral[400],
+    elevation: 0,
   },
   assignButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    color: Colors.white,
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
   },
 });

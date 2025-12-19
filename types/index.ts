@@ -108,12 +108,16 @@ export interface ServiceTicket {
   // Note: battery_cases[] are fetched via service_ticket_id
 
   // Location context
-  location_id?: string | null;
   location?: {
     id: string;
     name: string;
     code?: string;
   };
+  ticket_attachments?: {
+    storage_path: string;
+    attachment_type: 'photo' | 'audio' | 'document';
+    source?: 'internal' | 'media_hub';
+  }[];
 }
 
 export interface TicketAttachment {
