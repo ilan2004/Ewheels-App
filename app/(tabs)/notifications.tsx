@@ -1,27 +1,23 @@
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { BorderRadius, BrandColors, Colors, ComponentStyles, Shadows, Spacing, Typography } from '@/constants/design-system';
+import { dataService } from '@/services/dataService';
+import { useAuthStore } from '@/stores/authStore';
+import { useLocationStore } from '@/stores/locationStore';
+import { AlertItem } from '@/types';
+import { useQuery } from '@tanstack/react-query';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
   RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { ThemedView } from '@/components/themed-view';
-import { ThemedText } from '@/components/themed-text';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { useAuthStore } from '@/stores/authStore';
-import { BrandColors, Colors, Typography, Spacing, BorderRadius, ComponentStyles, Shadows } from '@/constants/design-system';
 
-interface AlertItem {
-  id: string;
-  type: 'critical' | 'warning' | 'info' | 'success';
-  title: string;
-  message: string;
-  timestamp: Date;
-  read: boolean;
-  category: 'system' | 'security' | 'operations' | 'maintenance';
-}
+
 
 interface AlertCardProps {
   alert: AlertItem;
@@ -103,61 +99,58 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onPress, onMarkAsRead }) =
 
 export default function NotificationsScreen() {
   const { user } = useAuthStore();
-  const [refreshing, setRefreshing] = useState(false);
+  const { activeLocation } = useLocationStore();
   const [filter, setFilter] = useState<'all' | 'unread' | 'critical'>('all');
+  const [localReadState, setLocalReadState] = useState<Set<string>>(new Set());
 
-  // Mock admin alerts data
-  const [alerts, setAlerts] = useState<AlertItem[]>([
-    {
-      id: '1',
-      type: 'critical',
-      title: 'System Performance Alert',
-      message: 'Server response time is above threshold (2.5s). Immediate attention required.',
-      timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
-      read: false,
-      category: 'system'
+  const {
+    data: alerts = [],
+    isLoading,
+    refetch,
+    isRefetching
+  } = useQuery({
+    queryKey: ['dashboard-notifications', user?.role, activeLocation?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const data = await dataService.getDashboardNotifications(user.role, activeLocation?.id);
+      // Apply local read state
+      return data.map(alert => ({
+        ...alert,
+        read: localReadState.has(alert.id)
+      }));
     },
-    {
-      id: '2',
-      type: 'warning',
-      title: 'High Technician Workload',
-      message: '3 technicians are over capacity. Consider redistributing assignments.',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-      read: false,
-      category: 'operations'
-    },
-    {
-      id: '3',
-      type: 'info',
-      title: 'Scheduled Maintenance',
-      message: 'System maintenance is scheduled for tonight at 2:00 AM - 4:00 AM.',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4), // 4 hours ago
-      read: true,
-      category: 'maintenance'
-    },
-    {
-      id: '4',
-      type: 'success',
-      title: 'Backup Completed',
-      message: 'Daily system backup completed successfully at 3:15 AM.',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 8), // 8 hours ago
-      read: true,
-      category: 'system'
-    }
-  ]);
+    enabled: !!user,
+    refetchInterval: 30000,
+  });
 
   const onRefresh = React.useCallback(() => {
-    setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000);
-  }, []);
+    refetch();
+  }, [refetch]);
 
   const handleMarkAsRead = (alertId: string) => {
-    setAlerts(prev => prev.map(alert => 
-      alert.id === alertId ? { ...alert, read: true } : alert
-    ));
+    setLocalReadState(prev => {
+      const next = new Set(prev);
+      next.add(alertId);
+      return next;
+    });
+    // Optimistically update the query cache would be better, but refetching or local state masking works for now
+    // Since we are mapping in queryFn, the next refetch will respect local state, 
+    // but we need immediate feedback. The queryFn mapping handles the data prop, 
+    // but we need to force a re-render or update the cache.
+    // Actually, since 'alerts' comes from useQuery, we can't mutate it directly.
+    // We rely on the queryFn to merge the state. 
+    // To make it instant, we can invalidate or setQueryData, but for simplicity let's just trigger a refetch or let the next interval handle it?
+    // No, user expects instant feedback.
+    // Let's just use the derived state in the render.
   };
+
+  // Merge alerts with local read state for rendering
+  const displayedAlerts = React.useMemo(() => {
+    return alerts.map(alert => ({
+      ...alert,
+      read: alert.read || localReadState.has(alert.id)
+    }));
+  }, [alerts, localReadState]);
 
   const handleAlertPress = (alert: AlertItem) => {
     if (!alert.read) {
@@ -165,7 +158,7 @@ export default function NotificationsScreen() {
     }
   };
 
-  const filteredAlerts = alerts.filter(alert => {
+  const filteredAlerts = displayedAlerts.filter(alert => {
     switch (filter) {
       case 'unread': return !alert.read;
       case 'critical': return alert.type === 'critical';
@@ -173,8 +166,8 @@ export default function NotificationsScreen() {
     }
   });
 
-  const unreadCount = alerts.filter(alert => !alert.read).length;
-  const criticalCount = alerts.filter(alert => alert.type === 'critical').length;
+  const unreadCount = displayedAlerts.filter(alert => !alert.read).length;
+  const criticalCount = displayedAlerts.filter(alert => alert.type === 'critical').length;
 
   return (
     <ThemedView style={styles.container}>
@@ -197,7 +190,7 @@ export default function NotificationsScreen() {
               onPress={() => setFilter('all')}
             >
               <Text style={[styles.filterButtonText, filter === 'all' && styles.filterButtonTextActive]}>
-                All ({alerts.length})
+                All ({displayedAlerts.length})
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -224,7 +217,7 @@ export default function NotificationsScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={isLoading || isRefetching} onRefresh={onRefresh} />
         }
       >
         {user?.role === 'admin' && filteredAlerts.length > 0 ? (

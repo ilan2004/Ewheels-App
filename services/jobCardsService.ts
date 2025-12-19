@@ -1,7 +1,6 @@
-
 import { supabase } from '@/lib/supabase';
 import {
-  CreateTicketForm, // Keeping original CreateTicketForm as 'Form' is not defined in the original types
+  CreateTicketForm,
   Customer,
   DashboardKPIs,
   PaginatedResponse,
@@ -12,12 +11,14 @@ import {
 import { notificationService } from './notificationService';
 
 export class JobCardsService {
+  private cachedMockTickets: ServiceTicket[] | null = null;
+  private cachedTeamWorkload: TechnicianWorkload[] | null = null;
+
   // Check if we're in mock mode - only use mock when explicitly enabled
   private isMockMode(): boolean {
     return (process.env.EXPO_PUBLIC_USE_MOCK_API === 'true') || (process.env.USE_MOCK_API === 'true');
   }
 
-  // Mock data for development
   private getMockKPIs(): DashboardKPIs {
     return {
       openTickets: 15,
@@ -250,7 +251,7 @@ export class JobCardsService {
     this.cachedMockTickets = null;
   }
 
-  private cachedMockTickets: ServiceTicket[] | null = null;
+
 
   // Fetch recent tickets
   async getRecentTickets(limit: number = 10): Promise<ServiceTicket[]> {
@@ -590,7 +591,7 @@ export class JobCardsService {
     return this.cachedTeamWorkload;
   }
 
-  private cachedTeamWorkload: TechnicianWorkload[] | null = null;
+
 
   // Get team workload
   async getTeamWorkload(): Promise<TechnicianWorkload[]> {
@@ -795,6 +796,16 @@ export class JobCardsService {
         .single();
 
       if (error) throw error;
+
+      // Trigger push notification for status update
+      if (data) {
+        notificationService.notifyJobCardUpdate(
+          data.id,
+          data.ticket_number,
+          'Job Card Status Updated',
+          `Job Card #${data.ticket_number} status changed to ${status}.`
+        ).catch(err => console.error('Failed to send push notification:', err));
+      }
 
       return data;
     } catch (error) {

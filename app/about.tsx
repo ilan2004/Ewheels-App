@@ -10,7 +10,7 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { updateService } from '../../services/updateService';
+import { updateService } from '../services/updateService';
 
 export default function AboutScreen() {
     const version = Constants.expoConfig?.version || '1.0.0';

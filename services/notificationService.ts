@@ -81,6 +81,47 @@ export class NotificationService {
             console.error('Error in notifyFloorManagers:', error);
         }
     }
+
+    async notifyJobCardUpdate(ticketId: string, ticketNumber: string, title: string, body: string) {
+        try {
+            // 1. Get all users with role 'floor_manager'
+            const { data: floorManagers, error: roleError } = await supabase
+                .from('app_roles')
+                .select('user_id')
+                .eq('role', 'floor_manager');
+
+            if (roleError) throw roleError;
+            if (!floorManagers || floorManagers.length === 0) return;
+
+            const userIds = floorManagers.map(fm => fm.user_id);
+
+            // 2. Get push tokens for these users
+            const { data: profiles, error: profileError } = await supabase
+                .from('profiles')
+                .select('expo_push_token')
+                .in('user_id', userIds)
+                .not('expo_push_token', 'is', null);
+
+            if (profileError) throw profileError;
+            if (!profiles || profiles.length === 0) return;
+
+            // 3. Send notification to each token
+            const data = { ticketId, ticketNumber };
+
+            const sendPromises = profiles.map(profile => {
+                if (profile.expo_push_token) {
+                    return this.sendPushNotification(profile.expo_push_token, title, body, data);
+                }
+                return Promise.resolve(null);
+            });
+
+            await Promise.all(sendPromises);
+            console.log(`Notified ${profiles.length} floor managers of update.`);
+
+        } catch (error) {
+            console.error('Error in notifyJobCardUpdate:', error);
+        }
+    }
 }
 
 export const notificationService = new NotificationService();

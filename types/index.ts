@@ -170,6 +170,16 @@ export interface Notification {
   actionUrl?: string;
 }
 
+export interface AlertItem {
+  id: string;
+  type: 'critical' | 'warning' | 'info' | 'success';
+  title: string;
+  message: string;
+  timestamp: Date;
+  read: boolean;
+  category: 'system' | 'security' | 'operations' | 'maintenance';
+}
+
 // API Response types
 export interface ApiResponse<T> {
   success: boolean;

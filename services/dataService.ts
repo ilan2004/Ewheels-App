@@ -1,6 +1,7 @@
 import { canBypassLocationFilter } from '@/lib/permissions';
 import { supabase } from '@/lib/supabase';
 import {
+  AlertItem,
   CreateTicketForm,
   Customer,
   DashboardKPIs,
@@ -11,6 +12,7 @@ import {
   User,
   UserRole
 } from '@/types';
+import { notificationService } from './notificationService';
 
 // Tables that should be scoped by location
 const SCOPED_TABLES = new Set([
@@ -470,6 +472,17 @@ export class DataService {
 
       if (error) throw error;
 
+
+
+      // Trigger push notification to floor managers (fire and forget)
+      if (data) {
+        notificationService.notifyFloorManagers(
+          data.id,
+          data.ticket_number,
+          data.customer?.name || 'Unknown Customer'
+        ).catch(err => console.error('Failed to send push notification:', err));
+      }
+
       return data;
     } catch (error) {
       console.error('Error creating ticket:', error);
@@ -736,6 +749,177 @@ export class DataService {
       return data || [];
     } catch (error) {
       console.error('Error fetching overdue job cards:', error);
+      return [];
+    }
+  }
+
+  // Get dashboard notifications
+  async getDashboardNotifications(
+    userRole: UserRole,
+    activeLocationId?: string | null
+  ): Promise<AlertItem[]> {
+    if (this.isMockMode()) {
+      return [
+        {
+          id: '1',
+          type: 'critical',
+          title: 'System Performance Alert',
+          message: 'Server response time is above threshold (2.5s). Immediate attention required.',
+          timestamp: new Date(Date.now() - 1000 * 60 * 30),
+          read: false,
+          category: 'system'
+        },
+        {
+          id: '2',
+          type: 'warning',
+          title: 'High Technician Workload',
+          message: '3 technicians are over capacity. Consider redistributing assignments.',
+          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
+          read: false,
+          category: 'operations'
+        }
+      ];
+    }
+
+    try {
+      const notifications: AlertItem[] = [];
+      const today = new Date();
+      const twentyFourHoursAgo = new Date(today.getTime() - 24 * 60 * 60 * 1000).toISOString();
+
+      // 1. New Job Cards (Last 24h)
+      let newJobCardsQuery = supabase
+        .from('service_tickets')
+        .select('id, ticket_number, created_at, customer_complaint')
+        .gte('created_at', twentyFourHoursAgo)
+        .order('created_at', { ascending: false });
+
+      newJobCardsQuery = this.applyScopeToQuery('service_tickets', newJobCardsQuery, userRole, activeLocationId);
+      const { data: newJobCards } = await newJobCardsQuery;
+
+      if (newJobCards) {
+        newJobCards.forEach(ticket => {
+          notifications.push({
+            id: `new-ticket-${ticket.id}`,
+            type: 'info',
+            title: 'New Job Card Created',
+            message: `Job Card #${ticket.ticket_number} was created. Issue: ${Array.isArray(ticket.customer_complaint) ? ticket.customer_complaint[0] : ticket.customer_complaint}`,
+            timestamp: new Date(ticket.created_at),
+            read: false,
+            category: 'operations'
+          });
+        });
+      }
+
+      // 2. New Sales (Last 24h)
+      let newSalesQuery = supabase
+        .from('sales')
+        .select('id, sale_number, sale_date, total_amount, created_at')
+        .gte('created_at', twentyFourHoursAgo)
+        .order('created_at', { ascending: false });
+
+      newSalesQuery = this.applyScopeToQuery('sales', newSalesQuery, userRole, activeLocationId);
+      const { data: newSales } = await newSalesQuery;
+
+      if (newSales) {
+        newSales.forEach(sale => {
+          notifications.push({
+            id: `new-sale-${sale.id}`,
+            type: 'success',
+            title: 'New Sale Recorded',
+            message: `Sale #${sale.sale_number} of ₹${sale.total_amount} was recorded.`,
+            timestamp: new Date(sale.created_at || sale.sale_date),
+            read: false,
+            category: 'operations'
+          });
+        });
+      }
+
+      // 3. New Expenses (Last 24h)
+      let newExpensesQuery = supabase
+        .from('expenses')
+        .select('id, expense_number, expense_date, amount, created_at, description')
+        .gte('created_at', twentyFourHoursAgo)
+        .order('created_at', { ascending: false });
+
+      newExpensesQuery = this.applyScopeToQuery('expenses', newExpensesQuery, userRole, activeLocationId);
+      const { data: newExpenses } = await newExpensesQuery;
+
+      if (newExpenses) {
+        newExpenses.forEach(expense => {
+          notifications.push({
+            id: `new-expense-${expense.id}`,
+            type: 'warning',
+            title: 'New Expense Recorded',
+            message: `Expense #${expense.expense_number || 'N/A'} of ₹${expense.amount} was recorded for ${expense.description}.`,
+            timestamp: new Date(expense.created_at || expense.expense_date),
+            read: false,
+            category: 'operations'
+          });
+        });
+      }
+
+      // 4. Job Cards Due Soon (Next 2 days)
+      const twoDaysFromNow = new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString();
+      const todayISO = today.toISOString();
+
+      let dueSoonQuery = supabase
+        .from('service_tickets')
+        .select('id, ticket_number, due_date')
+        .gte('due_date', todayISO)
+        .lte('due_date', twoDaysFromNow)
+        .not('status', 'in', '(completed,delivered,closed,cancelled)')
+        .order('due_date', { ascending: true });
+
+      dueSoonQuery = this.applyScopeToQuery('service_tickets', dueSoonQuery, userRole, activeLocationId);
+      const { data: dueSoonTickets } = await dueSoonQuery;
+
+      if (dueSoonTickets) {
+        dueSoonTickets.forEach(ticket => {
+          const dueDate = new Date(ticket.due_date);
+          const daysUntil = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+          notifications.push({
+            id: `due-soon-${ticket.id}`,
+            type: 'warning',
+            title: 'Job Card Due Soon',
+            message: `Job Card #${ticket.ticket_number} is due in ${daysUntil} day${daysUntil !== 1 ? 's' : ''}.`,
+            timestamp: new Date(), // Alert timestamp is now
+            read: false,
+            category: 'operations'
+          });
+        });
+      }
+
+      // 5. Overdue Job Cards
+      let overdueQuery = supabase
+        .from('service_tickets')
+        .select('id, ticket_number, due_date')
+        .lt('due_date', todayISO)
+        .not('status', 'in', '(completed,delivered,closed,cancelled)')
+        .order('due_date', { ascending: true });
+
+      overdueQuery = this.applyScopeToQuery('service_tickets', overdueQuery, userRole, activeLocationId);
+      const { data: overdueTickets } = await overdueQuery;
+
+      if (overdueTickets) {
+        overdueTickets.forEach(ticket => {
+          notifications.push({
+            id: `overdue-${ticket.id}`,
+            type: 'critical',
+            title: 'Overdue Job Card',
+            message: `Job Card #${ticket.ticket_number} is overdue since ${new Date(ticket.due_date).toLocaleDateString()}.`,
+            timestamp: new Date(), // Alert timestamp is now
+            read: false,
+            category: 'operations'
+          });
+        });
+      }
+
+      // Sort by timestamp descending
+      return notifications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+    } catch (error) {
+      console.error('Error fetching dashboard notifications:', error);
       return [];
     }
   }

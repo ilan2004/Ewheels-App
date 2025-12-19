@@ -12,11 +12,14 @@ export interface InvoiceCustomer {
 export interface InvoiceTotals {
   subtotal: number;
   discount_total: number;
+  total_discount: number; // Alias for discount_total
   sgst_total: number;
   cgst_total: number;
+  total_tax: number; // Sum of sgst_total + cgst_total
   shipping_amount: number;
   adjustment_amount: number;
   grand_total: number;
+  total: number; // Alias for grand_total
 }
 
 export interface Invoice {
@@ -40,18 +43,21 @@ export interface Invoice {
 
 export interface InvoiceItem {
   id?: string;
+  line_id?: string; // Legacy field name for id
   description: string;
   quantity: number;
   unit_price: number;
   discount: number; // Percentage
   sgst_rate: number; // Percentage
   cgst_rate: number; // Percentage
+  tax_rate?: number; // Legacy combined tax rate
 
   // Calculated fields
   subtotal: number;
   discount_amount: number;
   sgst_amount: number;
   cgst_amount: number;
+  tax_amount?: number; // Legacy combined tax amount
   total: number;
   // Inventory links
   inventory_item_id?: string;
